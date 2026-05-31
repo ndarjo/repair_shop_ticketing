@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user, login_user, logout_user
 from datetime import datetime
 from sqlalchemy import desc
-from models import db, User, Role, Permission, Customer, Device, Ticket, Note, Payment
+from models import db, User, Role, Permission, Customer, Device, Ticket, Note, Payment, PhaseLog
 import uuid
 from functools import wraps
 
@@ -123,9 +123,10 @@ def dashboard():
     
     stats = {
         'total_tickets': Ticket.query.count(),
-        'open_tickets': Ticket.query.filter_by(status='Open').count(),
-        'in_progress': Ticket.query.filter_by(status='In Progress').count(),
-        'completed': Ticket.query.filter_by(status='Completed').count(),
+        'open_tickets': Ticket.query.filter_by(current_phase='Open').count(),
+        'diagnostic': Ticket.query.filter_by(current_phase='Diagnostic').count(),
+        'repairing': Ticket.query.filter_by(current_phase='Repairing').count(),
+        'finished': Ticket.query.filter_by(current_phase='Finished').count(),
         'total_customers': Customer.query.count(),
     }
     
@@ -143,13 +144,23 @@ def new_ticket():
     if request.method == 'POST':
         customer_id = request.form.get('customer_id')
         device_id = request.form.get('device_id')
-        issue = request.form.get('issue_description')
+        items_included = request.form.get('items_included')
+        problem_description = request.form.get('problem_description')
         priority = request.form.get('priority', 'Medium')
         assigned_to = request.form.get('assigned_to')
+        created_date = request.form.get('created_date')
+        created_time = request.form.get('created_time')
         
         # Validate inputs
         if not device_id:
             flash('Please select a device', 'error')
+            return redirect(url_for('ticket.new_ticket'))
+        
+        # Combine date and time
+        try:
+            created_datetime = datetime.strptime(f"{created_date} {created_time}", "%Y-%m-%d %H:%M")
+        except ValueError:
+            flash('Invalid date or time format', 'error')
             return redirect(url_for('ticket.new_ticket'))
         
         # Generate unique ticket number
@@ -161,12 +172,24 @@ def new_ticket():
             ticket_number=ticket_number,
             customer_id=customer_id,
             device_id=device_id,
-            issue_description=issue,
+            items_included=items_included,
+            problem_description=problem_description,
             priority=priority,
-            assigned_to=assigned_to if assigned_to else None
+            assigned_to=assigned_to if assigned_to else None,
+            created_at=created_datetime
         )
         
         db.session.add(ticket)
+        db.session.commit()
+        
+        # Create initial phase log
+        initial_log = PhaseLog(
+            ticket_id=ticket.id,
+            user_id=current_user.id,
+            phase='Open',
+            commentary='Ticket created and device received'
+        )
+        db.session.add(initial_log)
         db.session.commit()
         
         flash(f'Ticket {ticket_number} created successfully!', 'success')
@@ -191,20 +214,50 @@ def edit_ticket(ticket_id):
     users = User.query.filter(User.role.any(Role.name == 'technician')).all()
     
     if request.method == 'POST':
-        ticket.status = request.form.get('status')
         ticket.priority = request.form.get('priority')
         ticket.assigned_to = request.form.get('assigned_to') or None
         ticket.estimated_cost = request.form.get('estimated_cost') or None
         ticket.actual_cost = request.form.get('actual_cost') or None
-        
-        if ticket.status == 'Completed':
-            ticket.completed_at = datetime.utcnow()
         
         db.session.commit()
         flash('Ticket updated successfully!', 'success')
         return redirect(url_for('ticket.view_ticket', ticket_id=ticket.id))
     
     return render_template('edit_ticket.html', ticket=ticket, users=users)
+
+
+@ticket_bp.route('/<int:ticket_id>/phase', methods=['POST'])
+@login_required
+@require_permission('update_phase')
+def update_phase(ticket_id):
+    """Update ticket phase and log the change"""
+    ticket = Ticket.query.get_or_404(ticket_id)
+    phase = request.form.get('phase')
+    commentary = request.form.get('commentary')
+    
+    if not phase or phase not in ticket.PHASE_CHOICES:
+        flash('Invalid phase selected', 'error')
+        return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
+    
+    # Create phase log with timestamp
+    phase_log = PhaseLog(
+        ticket_id=ticket_id,
+        user_id=current_user.id,
+        phase=phase,
+        commentary=commentary,
+        timestamp=datetime.utcnow()
+    )
+    
+    # Update current phase
+    ticket.current_phase = phase
+    if phase == 'Finished':
+        ticket.completed_at = datetime.utcnow()
+    
+    db.session.add(phase_log)
+    db.session.commit()
+    
+    flash(f'Ticket moved to {phase} phase!', 'success')
+    return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
 
 
 @ticket_bp.route('/<int:ticket_id>/note', methods=['POST'])
@@ -323,6 +376,11 @@ def add_device(customer_id):
         device_type = request.form.get('device_type')
         brand = request.form.get('brand')
         model = request.form.get('model')
+        model_number = request.form.get('model_number')
+        cpu = request.form.get('cpu')
+        ram = request.form.get('ram')
+        storage_type = request.form.get('storage_type')
+        storage_capacity = request.form.get('storage_capacity')
         serial_number = request.form.get('serial_number')
         color = request.form.get('color')
         notes = request.form.get('notes')
@@ -332,6 +390,11 @@ def add_device(customer_id):
             device_type=device_type,
             brand=brand,
             model=model,
+            model_number=model_number,
+            cpu=cpu,
+            ram=ram,
+            storage_type=storage_type,
+            storage_capacity=storage_capacity,
             serial_number=serial_number,
             color=color,
             notes=notes

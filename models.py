@@ -24,6 +24,7 @@ class User(UserMixin, db.Model):
     tickets = db.relationship('Ticket', backref='assigned_to_user', lazy=True, foreign_keys='Ticket.assigned_to')
     notes = db.relationship('Note', backref='author', lazy=True)
     payments = db.relationship('Payment', backref='recorded_by_user', lazy=True)
+    phase_logs = db.relationship('PhaseLog', backref='technician_user', lazy=True)
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -104,14 +105,19 @@ class Customer(db.Model):
 
 
 class Device(db.Model):
-    """Device model - each customer can have multiple devices"""
+    """Device model - each customer can have multiple devices with detailed specifications"""
     __tablename__ = 'devices'
     
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
-    device_type = db.Column(db.String(100), nullable=False)  # Phone, Laptop, Tablet, etc.
+    device_type = db.Column(db.String(100), nullable=False)  # Phone, Laptop, Tablet, Desktop, etc.
     brand = db.Column(db.String(80))
     model = db.Column(db.String(80))
+    model_number = db.Column(db.String(100))
+    cpu = db.Column(db.String(100))  # Processor information
+    ram = db.Column(db.String(50))  # RAM specification (e.g., 8GB, 16GB)
+    storage_type = db.Column(db.String(50))  # HDD, SSD, or both
+    storage_capacity = db.Column(db.String(100))  # Storage capacity with unit (e.g., 256GB, 512GB SSD + 1TB HDD)
     serial_number = db.Column(db.String(100))
     color = db.Column(db.String(50))
     notes = db.Column(db.Text)
@@ -128,12 +134,12 @@ class Ticket(db.Model):
     """Repair ticket model"""
     __tablename__ = 'tickets'
     
-    STATUS_CHOICES = [
+    PHASE_CHOICES = [
         'Open',
-        'In Progress',
+        'Diagnostic',
         'Waiting for Parts',
-        'On Hold',
-        'Completed',
+        'Repairing',
+        'Finished',
         'Cancelled'
     ]
     
@@ -150,8 +156,12 @@ class Ticket(db.Model):
     device_id = db.Column(db.Integer, db.ForeignKey('devices.id'), nullable=False)
     assigned_to = db.Column(db.Integer, db.ForeignKey('users.id'))
     
-    issue_description = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(20), default='Open', nullable=False)
+    # Inclusions and problems
+    items_included = db.Column(db.Text, nullable=False)  # What customer brought with device (charger, cables, etc.)
+    problem_description = db.Column(db.Text, nullable=False)  # What problem device has
+    
+    # Phase tracking
+    current_phase = db.Column(db.String(20), default='Open', nullable=False)  # Current phase
     priority = db.Column(db.String(10), default='Medium', nullable=False)
     
     device_picked_up = db.Column(db.Boolean, default=False)  # Track if device was picked up
@@ -160,16 +170,37 @@ class Ticket(db.Model):
     estimated_cost = db.Column(db.Float)
     actual_cost = db.Column(db.Float)
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # When ticket was created
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    completed_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)  # When repair was finished
     
     # Relationships
     notes = db.relationship('Note', backref='ticket', lazy=True, cascade='all, delete-orphan')
     payments = db.relationship('Payment', backref='ticket', lazy=True, cascade='all, delete-orphan')
+    phase_logs = db.relationship('PhaseLog', backref='ticket', lazy=True, cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Ticket {self.ticket_number}>'
+    
+    @property
+    def customer(self):
+        return Customer.query.get(self.customer_id)
+
+
+class PhaseLog(db.Model):
+    """Log for tracking phase changes and their details"""
+    __tablename__ = 'phase_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # Technician who made the change
+    phase = db.Column(db.String(50), nullable=False)  # Phase name
+    commentary = db.Column(db.Text)  # What was done in this phase
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)  # When this phase was logged
+    
+    def __repr__(self):
+        return f'<PhaseLog Ticket {self.ticket_id} - {self.phase}>'
 
 
 class Note(db.Model):

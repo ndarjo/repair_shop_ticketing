@@ -30,12 +30,29 @@
                         </div>
                     </div>
 
-                    <h5 class="mb-3">Issue Details</h5>
-                    <div class="mb-3">
-                        <label for="issue_description" class="form-label">Issue Description *</label>
-                        <textarea class="form-control" id="issue_description" name="issue_description" rows="5" required></textarea>
+                    <!-- Date and Time - Auto filled -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="created_date" class="form-label">Date *</label>
+                            <input type="date" class="form-control" id="created_date" name="created_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="created_time" class="form-label">Time *</label>
+                            <input type="time" class="form-control" id="created_time" name="created_time" required>
+                        </div>
                     </div>
 
+                    <h5 class="mb-3 mt-4">Device Inclusions & Problem</h5>
+                    <div class="mb-3">
+                        <label for="items_included" class="form-label">Items Included *</label>
+                        <textarea class="form-control" id="items_included" name="items_included" rows="2" placeholder="What did customer bring with device? (e.g., Charger, Cable, Box, Accessories)" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="problem_description" class="form-label">Problem Description *</label>
+                        <textarea class="form-control" id="problem_description" name="problem_description" rows="4" placeholder="What is the problem with the device?" required></textarea>
+                    </div>
+
+                    <h5 class="mb-3 mt-4">Ticket Details</h5>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="priority" class="form-label">Priority</label>
@@ -67,6 +84,13 @@
 </div>
 
 <script>
+// Auto-fill current date and time
+window.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    document.getElementById('created_date').value = now.toISOString().split('T')[0];
+    document.getElementById('created_time').value = now.toTimeString().slice(0, 5);
+});
+
 function loadDevices(customerId) {
     const deviceSelect = document.getElementById('device_id');
     deviceSelect.innerHTML = '<option value="">Select Device</option>';
