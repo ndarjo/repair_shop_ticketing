@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Create Ticket - Repair Shop{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h4>Create New Repair Ticket</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <h5 class="mb-3">Customer Information</h5>
+                    <div class="mb-3">
+                        <label for="customer_id" class="form-label">Customer *</label>
+                        <select class="form-control" id="customer_id" name="customer_id" required>
+                            <option value="">Select or create customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}">{{ customer.full_name }} - {{ customer.phone }}</option>
+                            {% endfor %}
+                        </select>
+                        <small><a href="{{ url_for('customer.new_customer') }}" target="_blank">Create new customer</a></small>
+                    </div>
+
+                    <h5 class="mb-3">Device Information</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="device_type" class="form-label">Device Type *</label>
+                            <input type="text" class="form-control" id="device_type" name="device_type" placeholder="e.g., Smartphone, Laptop" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="device_brand" class="form-label">Brand</label>
+                            <input type="text" class="form-control" id="device_brand" name="device_brand" placeholder="e.g., Apple, Dell">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="device_model" class="form-label">Model</label>
+                            <input type="text" class="form-control" id="device_model" name="device_model" placeholder="e.g., iPhone 13 Pro">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="serial_number" class="form-label">Serial Number</label>
+                            <input type="text" class="form-control" id="serial_number" name="serial_number">
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3">Issue Details</h5>
+                    <div class="mb-3">
+                        <label for="issue_description" class="form-label">Issue Description *</label>
+                        <textarea class="form-control" id="issue_description" name="issue_description" rows="5" required></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="priority" class="form-label">Priority</label>
+                            <select class="form-control" id="priority" name="priority">
+                                {% for priority in ['Low', 'Medium', 'High', 'Urgent'] %}
+                                <option value="{{ priority }}" {% if priority == 'Medium' %}selected{% endif %}>{{ priority }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="assigned_to" class="form-label">Assign To Technician</label>
+                            <select class="form-control" id="assigned_to" name="assigned_to">
+                                <option value="">Unassigned</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <button type="submit" class="btn btn-primary">Create Ticket</button>
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

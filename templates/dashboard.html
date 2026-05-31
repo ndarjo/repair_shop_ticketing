@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Repair Shop{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Tickets</h5>
+                <h2>{{ stats.total_tickets }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">Open</h5>
+                <h2>{{ stats.open_tickets }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">In Progress</h5>
+                <h2>{{ stats.in_progress }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Completed</h5>
+                <h2>{{ stats.completed }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-12">
+        <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-primary">+ New Ticket</a>
+        <a href="{{ url_for('customer.new_customer') }}" class="btn btn-secondary">+ New Customer</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Recent Tickets</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ticket #</th>
+                            <th>Customer</th>
+                            <th>Device</th>
+                            <th>Issue</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Created</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets.items %}
+                        <tr>
+                            <td><strong>{{ ticket.ticket_number }}</strong></td>
+                            <td>{{ ticket.customer.full_name }}</td>
+                            <td>{{ ticket.device_type }} - {{ ticket.device_brand }} {{ ticket.device_model }}</td>
+                            <td>{{ ticket.issue_description[:50] }}...</td>
+                            <td>
+                                <span class="badge bg-{% if ticket.status == 'Completed' %}success{% elif ticket.status == 'Open' %}danger{% elif ticket.status == 'In Progress' %}warning{% else %}secondary{% endif %}">
+                                    {{ ticket.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if ticket.priority == 'Urgent' %}danger{% elif ticket.priority == 'High' %}warning{% elif ticket.priority == 'Medium' %}info{% else %}secondary{% endif %}">
+                                    {{ ticket.priority }}
+                                </span>
+                            </td>
+                            <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-info">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <nav>
+                    <ul class="pagination">
+                        {% if tickets.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=tickets.prev_num) }}">Previous</a>
+                        </li>
+                        {% endif %}
+
+                        {% for page_num in tickets.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num == tickets.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('main.dashboard', page=page_num) }}">{{ page_num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if tickets.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.dashboard', page=tickets.next_num) }}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

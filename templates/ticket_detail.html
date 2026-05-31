@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}{{ ticket.ticket_number }} - Repair Shop{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4>{{ ticket.ticket_number }}</h4>
+                <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-warning btn-sm">Edit</a>
+            </div>
+            <div class="card-body">
+                <h5>Customer</h5>
+                <p>{{ ticket.customer.full_name }} - {{ ticket.customer.phone }}</p>
+
+                <h5>Device</h5>
+                <p>
+                    <strong>Type:</strong> {{ ticket.device_type }}<br>
+                    <strong>Brand:</strong> {{ ticket.device_brand or 'N/A' }}<br>
+                    <strong>Model:</strong> {{ ticket.device_model or 'N/A' }}<br>
+                    <strong>Serial:</strong> {{ ticket.serial_number or 'N/A' }}
+                </p>
+
+                <h5>Issue</h5>
+                <p>{{ ticket.issue_description }}</p>
+
+                <h5>Costs</h5>
+                <p>
+                    <strong>Estimated:</strong> ${{ ticket.estimated_cost or '0.00' }}<br>
+                    <strong>Actual:</strong> ${{ ticket.actual_cost or '0.00' }}
+                </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5>Notes & Updates</h5>
+            </div>
+            <div class="card-body">
+                {% for note in ticket.notes %}
+                <div class="mb-3 pb-3 border-bottom">
+                    <small class="text-muted">{{ note.author.full_name }} - {{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    <p>{{ note.content }}</p>
+                </div>
+                {% endfor %}
+
+                <form method="POST" action="{{ url_for('ticket.add_note', ticket_id=ticket.id) }}">
+                    <div class="mb-3">
+                        <textarea class="form-control" name="content" rows="3" placeholder="Add a note..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Add Note</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Ticket Details</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    <strong>Status:</strong><br>
+                    <span class="badge bg-{% if ticket.status == 'Completed' %}success{% elif ticket.status == 'Open' %}danger{% elif ticket.status == 'In Progress' %}warning{% else %}secondary{% endif %}">
+                        {{ ticket.status }}
+                    </span>
+                </p>
+                <p>
+                    <strong>Priority:</strong><br>
+                    <span class="badge bg-{% if ticket.priority == 'Urgent' %}danger{% elif ticket.priority == 'High' %}warning{% elif ticket.priority == 'Medium' %}info{% else %}secondary{% endif %}">
+                        {{ ticket.priority }}
+                    </span>
+                </p>
+                <p>
+                    <strong>Assigned To:</strong><br>
+                    {{ ticket.assigned_to_user.full_name if ticket.assigned_to_user else 'Unassigned' }}
+                </p>
+                <p>
+                    <strong>Created:</strong><br>
+                    {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </p>
+                <p>
+                    <strong>Updated:</strong><br>
+                    {{ ticket.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

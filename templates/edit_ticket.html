@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ ticket.ticket_number }} - Repair Shop{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h4>Edit Ticket: {{ ticket.ticket_number }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-control" id="status" name="status">
+                                {% for status in ticket.STATUS_CHOICES %}
+                                <option value="{{ status }}" {% if status == ticket.status %}selected{% endif %}>{{ status }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="priority" class="form-label">Priority</label>
+                            <select class="form-control" id="priority" name="priority">
+                                {% for priority in ticket.PRIORITY_CHOICES %}
+                                <option value="{{ priority }}" {% if priority == ticket.priority %}selected{% endif %}>{{ priority }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Assign To Technician</label>
+                        <select class="form-control" id="assigned_to" name="assigned_to">
+                            <option value="">Unassigned</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if user.id == ticket.assigned_to %}selected{% endif %}>{{ user.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="estimated_cost" class="form-label">Estimated Cost</label>
+                            <input type="number" class="form-control" id="estimated_cost" name="estimated_cost" step="0.01" value="{{ ticket.estimated_cost or '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="actual_cost" class="form-label">Actual Cost</label>
+                            <input type="number" class="form-control" id="actual_cost" name="actual_cost" step="0.01" value="{{ ticket.actual_cost or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
