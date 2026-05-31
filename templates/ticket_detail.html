@@ -11,15 +11,11 @@
                 <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-warning btn-sm">Edit</a>
             </div>
             <div class="card-body">
-                <h5>Customer</h5>
-                <p>{{ ticket.customer.full_name }} - {{ ticket.customer.phone }}</p>
-
-                <h5>Device</h5>
+                <h5>Customer & Device</h5>
                 <p>
-                    <strong>Type:</strong> {{ ticket.device_type }}<br>
-                    <strong>Brand:</strong> {{ ticket.device_brand or 'N/A' }}<br>
-                    <strong>Model:</strong> {{ ticket.device_model or 'N/A' }}<br>
-                    <strong>Serial:</strong> {{ ticket.serial_number or 'N/A' }}
+                    <strong>Customer:</strong> <a href="{{ url_for('customer.view_customer', customer_id=ticket.customer_id) }}">{{ ticket.customer.name }}</a> - {{ ticket.customer.phone }}<br>
+                    <strong>Device:</strong> {{ ticket.device.brand }} {{ ticket.device.model }} ({{ ticket.device.device_type }})<br>
+                    <strong>Serial:</strong> {{ ticket.device.serial_number or 'N/A' }}
                 </p>
 
                 <h5>Issue</h5>
@@ -30,9 +26,76 @@
                     <strong>Estimated:</strong> ${{ ticket.estimated_cost or '0.00' }}<br>
                     <strong>Actual:</strong> ${{ ticket.actual_cost or '0.00' }}
                 </p>
+
+                <h5>Device Status</h5>
+                <p>
+                    {% if ticket.device_picked_up %}
+                    <span class="badge bg-success">Picked Up on {{ ticket.picked_up_date.strftime('%Y-%m-%d %H:%M') }}</span>
+                    {% else %}
+                    <span class="badge bg-warning">In Shop</span>
+                    {% endif %}
+                </p>
             </div>
         </div>
 
+        <!-- Payment Section -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>Payments</h5>
+            </div>
+            <div class="card-body">
+                {% if ticket.payments %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Date</th>
+                            <th>Recorded By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in ticket.payments %}
+                        <tr>
+                            <td>{{ payment.payment_type }}</td>
+                            <td>${{ payment.amount }}</td>
+                            <td>{{ payment.payment_method or 'N/A' }}</td>
+                            <td>{{ payment.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ payment.recorded_by_user.full_name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                {% if current_user.has_permission('record_payment') %}
+                <form method="POST" action="{{ url_for('ticket.record_payment', ticket_id=ticket.id) }}">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <input type="number" class="form-control" name="amount" placeholder="Amount" step="0.01" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <select class="form-control" name="payment_type" required>
+                                <option value="">Select Type</option>
+                                <option value="Down Payment">Down Payment</option>
+                                <option value="Full Payment">Full Payment</option>
+                                <option value="Additional Payment">Additional Payment</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <input type="text" class="form-control" name="payment_method" placeholder="Payment Method (Cash, Card, etc.)">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button type="submit" class="btn btn-success btn-sm w-100">Record Payment</button>
+                        </div>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Notes Section -->
         <div class="card">
             <div class="card-header">
                 <h5>Notes & Updates</h5>
@@ -41,16 +104,27 @@
                 {% for note in ticket.notes %}
                 <div class="mb-3 pb-3 border-bottom">
                     <small class="text-muted">{{ note.author.full_name }} - {{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    <span class="badge bg-info">{{ note.note_type }}</span>
                     <p>{{ note.content }}</p>
                 </div>
                 {% endfor %}
 
+                {% if current_user.has_permission('add_note') %}
                 <form method="POST" action="{{ url_for('ticket.add_note', ticket_id=ticket.id) }}">
+                    <div class="mb-3">
+                        <label for="note_type" class="form-label">Note Type</label>
+                        <select class="form-control" name="note_type">
+                            {% for note_type in ticket.notes[0].__class__.NOTE_TYPES if ticket.notes else ['General', 'Down Payment', 'Full Payment', 'Device Picked Up', 'Technical Update', 'Customer Communication'] %}
+                            <option value="{{ note_type }}">{{ note_type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     <div class="mb-3">
                         <textarea class="form-control" name="content" rows="3" placeholder="Add a note..." required></textarea>
                     </div>
                     <button type="submit" class="btn btn-primary btn-sm">Add Note</button>
                 </form>
+                {% endif %}
             </div>
         </div>
     </div>

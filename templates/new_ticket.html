@@ -11,37 +11,22 @@
             </div>
             <div class="card-body">
                 <form method="POST">
-                    <h5 class="mb-3">Customer Information</h5>
-                    <div class="mb-3">
-                        <label for="customer_id" class="form-label">Customer *</label>
-                        <select class="form-control" id="customer_id" name="customer_id" required>
-                            <option value="">Select or create customer</option>
-                            {% for customer in customers %}
-                            <option value="{{ customer.id }}">{{ customer.full_name }} - {{ customer.phone }}</option>
-                            {% endfor %}
-                        </select>
-                        <small><a href="{{ url_for('customer.new_customer') }}" target="_blank">Create new customer</a></small>
-                    </div>
-
-                    <h5 class="mb-3">Device Information</h5>
+                    <h5 class="mb-3">Customer & Device Information</h5>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="device_type" class="form-label">Device Type *</label>
-                            <input type="text" class="form-control" id="device_type" name="device_type" placeholder="e.g., Smartphone, Laptop" required>
+                            <label for="customer_id" class="form-label">Customer *</label>
+                            <select class="form-control" id="customer_id" name="customer_id" required onchange="loadDevices(this.value)">
+                                <option value="">Select Customer</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}">{{ customer.name }} - {{ customer.phone }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="device_brand" class="form-label">Brand</label>
-                            <input type="text" class="form-control" id="device_brand" name="device_brand" placeholder="e.g., Apple, Dell">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="device_model" class="form-label">Model</label>
-                            <input type="text" class="form-control" id="device_model" name="device_model" placeholder="e.g., iPhone 13 Pro">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="serial_number" class="form-label">Serial Number</label>
-                            <input type="text" class="form-control" id="serial_number" name="serial_number">
+                            <label for="device_id" class="form-label">Device *</label>
+                            <select class="form-control" id="device_id" name="device_id" required>
+                                <option value="">Select Device</option>
+                            </select>
                         </div>
                     </div>
 
@@ -80,4 +65,25 @@
         </div>
     </div>
 </div>
+
+<script>
+function loadDevices(customerId) {
+    const deviceSelect = document.getElementById('device_id');
+    deviceSelect.innerHTML = '<option value="">Select Device</option>';
+    
+    if (customerId) {
+        fetch(`/admin/get-devices/${customerId}`)
+            .then(response => response.json())
+            .then(devices => {
+                devices.forEach(device => {
+                    const option = document.createElement('option');
+                    option.value = device.id;
+                    option.textContent = device.display;
+                    deviceSelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error loading devices:', error));
+    }
+}
+</script>
 {% endblock %}
