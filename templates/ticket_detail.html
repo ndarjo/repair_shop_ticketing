@@ -83,7 +83,13 @@
                                     <td>{{ item.quantity }}</td>
                                     <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price) }}</td>
                                     <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price) }}</td>
-                                    <td class="text-end"></td>
+                                    <td class="text-end">
+                                        {% if current_user.has_permission('add_service') %}
+                                        <form action="{{ url_for('ticket.remove_part', ticket_id=ticket.id, item_id=item.id) }}" method="POST" style="display:inline;">
+                                            <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Remove this part from costs?')"><i class="fas fa-times"></i></button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             {% endfor %}

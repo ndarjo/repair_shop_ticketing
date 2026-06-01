@@ -166,7 +166,9 @@ function initCommonProblems() {
             e.preventDefault();
             const textarea = document.getElementById('problem_description');
             if (textarea) {
-                textarea.value = this.dataset.problem;
+                const existingText = textarea.value.trim();
+                const newProblem = this.dataset.problem;
+                textarea.value = existingText ? `${existingText}, ${newProblem}` : newProblem;
                 textarea.focus();
             }
         });

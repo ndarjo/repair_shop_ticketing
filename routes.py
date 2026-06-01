@@ -3,6 +3,7 @@ from flask_login import login_required, current_user, login_user, logout_user
 from datetime import datetime, timezone
 from sqlalchemy import desc, or_, func
 from models import db, User, Role, Permission, Customer, Device, Ticket, Note, Payment, PhaseLog, Service, SparePart, Invoice, InvoiceItem, TicketService, CommonProblem
+from decimal import Decimal
 import uuid
 from functools import wraps
 import json
@@ -768,14 +769,14 @@ def add_part(ticket_id):
         part = db.session.get(SparePart, part_id)
         if part:
             description = part.name
-            item_price = price if price is not None else float(part.selling_price)
+            item_price = Decimal(str(price)) if price is not None else part.selling_price
             spare_part_id = part.id
     elif manual_name:
         description = manual_name
         if price is None:
             flash('Price is required for manual parts.', 'error')
             return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
-        item_price = price
+        item_price = Decimal(str(price))
 
     if description:
         # Ensure a draft invoice exists to hold the part costs
@@ -804,6 +805,21 @@ def add_part(ticket_id):
     else:
         flash('Please select a part or enter a description.', 'error')
         
+    return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
+
+@ticket_bp.route('/remove_part/<int:ticket_id>/<int:item_id>', methods=['POST'])
+@login_required
+@require_permission('add_service')
+def remove_part(ticket_id, item_id):
+    """Remove a spare part from the ticket and recalculate invoice total"""
+    item = db.session.get(InvoiceItem, item_id)
+    if item:
+        invoice = item.invoice
+        db.session.delete(item)
+        db.session.flush() # Ensure item is removed before recalculation
+        invoice.calculate_total()
+        db.session.commit()
+        flash('Spare part removed.', 'success')
     return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
 @ticket_bp.route('/record_payment/<int:ticket_id>', methods=['POST'])

@@ -163,7 +163,7 @@ def initialize_roles_and_permissions():
     # Optional: Map default permissions to roles
     tech_role = Role.query.filter_by(name='technician').first()
     if tech_role:
-        tech_perms = ['view_ticket', 'add_note', 'update_phase', 'add_service', 'view_customer', 'view_payment', 'mark_as_taken']
+        tech_perms = ['view_ticket', 'add_note', 'update_phase', 'add_service', 'view_customer', 'view_payment']
         for p_name in tech_perms:
             perm = Permission.query.filter_by(name=p_name).first()
             if perm and perm not in tech_role.permissions:

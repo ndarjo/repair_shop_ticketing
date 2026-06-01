@@ -296,7 +296,10 @@ document.getElementById('device_search').addEventListener('input', async functio
 document.querySelectorAll('.problem-quick-select').forEach(btn => {
     btn.addEventListener('click', function(e) {
         e.preventDefault();
-        document.getElementById('problem_description').value = this.dataset.problem;
+        const textarea = document.getElementById('problem_description');
+        const existingText = textarea.value.trim();
+        const newProblem = this.dataset.problem;
+        textarea.value = existingText ? `${existingText}, ${newProblem}` : newProblem;
     });
 });
 
