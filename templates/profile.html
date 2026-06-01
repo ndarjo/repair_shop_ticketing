@@ -5,50 +5,110 @@
 {% block content %}
 <div class="row">
     <div class="col-md-8 offset-md-2">
-        <div class="card">
-            <div class="card-header">
-                <h4>My Profile</h4>
-            </div>
-            <div class="card-body">
-                <div class="row mb-4 pb-4 border-bottom">
-                    <div class="col-md-6">
-                        <h5>Account Information</h5>
+        <h1 class="mb-4">My Profile</h1>
+        
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Account Information</h5>
+                    </div>
+                    <div class="card-body">
                         <p><strong>Username:</strong> {{ current_user.username }}</p>
                         <p><strong>Full Name:</strong> {{ current_user.full_name }}</p>
-                        <p><strong>Email:</strong> {{ current_user.email }}</p>
-                        <p><strong>Account Type:</strong> 
-                            {% if current_user.is_superuser %}
-                                <span class="badge bg-danger">Superuser</span>
-                            {% else %}
-                                {% for role in current_user.role %}
-                                    <span class="badge bg-primary">{{ role.name }}</span>
-                                {% endfor %}
-                            {% endif %}
-                        </p>
+                        <p><strong>Email:</strong> {{ current_user.email or 'Not set' }}</p>
+                        <p><strong>User Type:</strong> <span class="badge bg-primary">{% if current_user.is_superuser %}Superuser{% else %}Regular User{% endif %}</span></p>
                     </div>
                 </div>
-
-                <!-- Change Username -->
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <h5>Change Username</h5>
-                        <form method="POST">
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Appearance Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('auth.profile') }}">
+                            <input type="hidden" name="action" value="change_theme">
+                            
+                            <div class="mb-3">
+                                <label for="theme" class="form-label">Theme</label>
+                                <select class="form-control" id="theme" name="theme" onchange="applyTheme(this.value)">
+                                    <option value="light" {% if current_user.theme_preference == 'light' %}selected{% endif %}>☀️ Light</option>
+                                    <option value="dark" {% if current_user.theme_preference == 'dark' %}selected{% endif %}>🌙 Dark</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="color_theme" class="form-label">Color Scheme</label>
+                                <div class="color-scheme-picker">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="color_theme" id="color_blue" value="blue" {% if current_user.color_theme == 'blue' %}checked{% endif %}>
+                                        <label class="form-check-label" for="color_blue">
+                                            <span class="color-swatch" style="background-color: #0d6efd;"></span> Blue
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="color_theme" id="color_green" value="green" {% if current_user.color_theme == 'green' %}checked{% endif %}>
+                                        <label class="form-check-label" for="color_green">
+                                            <span class="color-swatch" style="background-color: #198754;"></span> Green
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="color_theme" id="color_purple" value="purple" {% if current_user.color_theme == 'purple' %}checked{% endif %}>
+                                        <label class="form-check-label" for="color_purple">
+                                            <span class="color-swatch" style="background-color: #6f42c1;"></span> Purple
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="color_theme" id="color_red" value="red" {% if current_user.color_theme == 'red' %}checked{% endif %}>
+                                        <label class="form-check-label" for="color_red">
+                                            <span class="color-swatch" style="background-color: #dc3545;"></span> Red
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="color_theme" id="color_orange" value="orange" {% if current_user.color_theme == 'orange' %}checked{% endif %}>
+                                        <label class="form-check-label" for="color_orange">
+                                            <span class="color-swatch" style="background-color: #fd7e14;"></span> Orange
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">Save Preferences</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Change Username</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('auth.profile') }}">
+                            <input type="hidden" name="action" value="change_username">
                             <div class="mb-3">
                                 <label for="new_username" class="form-label">New Username</label>
                                 <input type="text" class="form-control" id="new_username" name="new_username" required>
                             </div>
-                            <button type="submit" name="action" value="change_username" class="btn btn-primary">Update Username</button>
+                            <button type="submit" class="btn btn-primary">Change Username</button>
                         </form>
                     </div>
                 </div>
-
-                <hr>
-
-                <!-- Change Password -->
-                <div class="row">
-                    <div class="col-md-6">
-                        <h5>Change Password</h5>
-                        <form method="POST">
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Change Password</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('auth.profile') }}">
+                            <input type="hidden" name="action" value="change_password">
                             <div class="mb-3">
                                 <label for="old_password" class="form-label">Current Password</label>
                                 <input type="password" class="form-control" id="old_password" name="old_password" required>
@@ -58,10 +118,10 @@
                                 <input type="password" class="form-control" id="new_password" name="new_password" required>
                             </div>
                             <div class="mb-3">
-                                <label for="confirm_password" class="form-label">Confirm Password</label>
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
                                 <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
                             </div>
-                            <button type="submit" name="action" value="change_password" class="btn btn-primary">Change Password</button>
+                            <button type="submit" class="btn btn-primary">Change Password</button>
                         </form>
                     </div>
                 </div>
@@ -69,4 +129,14 @@
         </div>
     </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    document.body.className = document.body.className.replace(/theme-\w+/, 'theme-' + theme);
+}
+</script>
 {% endblock %}
