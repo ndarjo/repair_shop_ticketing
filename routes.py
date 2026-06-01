@@ -1,20 +1,15 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file
 from flask_login import login_required, current_user, login_user, logout_user
-from datetime import datetime
-from sqlalchemy import desc, or_
-from models import db, User, Role, Permission, Customer, Device, Ticket, Note, Payment, PhaseLog, Service, SparePart, Invoice, InvoiceItem, TicketService, CommonProblem, Backup
+from datetime import datetime, timezone
+from sqlalchemy import desc, or_, func
+from models import db, User, Role, Permission, Customer, Device, Ticket, Note, Payment, PhaseLog, Service, SparePart, Invoice, InvoiceItem, TicketService, CommonProblem
 import uuid
 from functools import wraps
 import json
 import io
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib import colors
-from flask import send_file
+import os
 
-# Create blueprints
+# Create blueprints cleanly
 auth_bp = Blueprint('auth', __name__)
 main_bp = Blueprint('main', __name__)
 ticket_bp = Blueprint('ticket', __name__)
@@ -31,9 +26,13 @@ def require_permission(permission_name):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
+                if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': 'Authentication required'}), 401
                 flash('Please log in first.', 'error')
                 return redirect(url_for('auth.login'))
             if not current_user.has_permission(permission_name):
+                if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': 'Permission denied'}), 403
                 flash('You do not have permission to access this page.', 'error')
                 return redirect(url_for('main.dashboard'))
             return f(*args, **kwargs)
@@ -118,10 +117,13 @@ def profile():
         
         elif action == 'change_theme':
             theme = request.form.get('theme')
+            color = request.form.get('color_theme')
             if theme in ['light', 'dark']:
                 current_user.theme_preference = theme
-                db.session.commit()
-                flash('Theme changed successfully!', 'success')
+            if color in ['blue', 'green', 'purple', 'red', 'orange']:
+                current_user.color_theme = color
+            db.session.commit()
+            flash('Preferences updated successfully!', 'success')
         
         return redirect(url_for('auth.profile'))
     
@@ -138,17 +140,18 @@ def dashboard():
     query = Ticket.query.order_by(desc(Ticket.created_at))
     tickets = query.paginate(page=page, per_page=10)
     
-    # Get current month stats
-    from datetime import date
-    today = date.today()
-    current_month_start = today.replace(day=1)
-    
+    # Single aggregate query for status counts
+    phase_counts = db.session.query(
+        Ticket.current_phase, func.count(Ticket.id)
+    ).group_by(Ticket.current_phase).all()
+    phase_map = dict(phase_counts)
+
     stats = {
         'total_tickets': Ticket.query.count(),
-        'open_tickets': Ticket.query.filter_by(current_phase='Open').count() or 0,
-        'diagnostic': Ticket.query.filter_by(current_phase='Diagnostic').count() or 0,
-        'repairing': Ticket.query.filter_by(current_phase='Repairing').count() or 0,
-        'finished': Ticket.query.filter_by(current_phase='Finished').count() or 0,
+        'open_tickets': phase_map.get('Open', 0),
+        'diagnostic': phase_map.get('Diagnostic', 0),
+        'repairing': phase_map.get('Repairing', 0),
+        'finished': phase_map.get('Finished', 0),
         'total_customers': Customer.query.count(),
     }
     
@@ -156,366 +159,423 @@ def dashboard():
 
 
 # ==================== TICKET ROUTES ====================
+@ticket_bp.route('/')
+@login_required
+@require_permission('view_ticket')
+def tickets_list():
+    """Dedicated page for all tickets with full pagination"""
+    page = request.args.get('page', 1, type=int)
+    query = Ticket.query.order_by(desc(Ticket.created_at))
+    tickets = query.paginate(page=page, per_page=20)
+    return render_template('tickets_list.html', tickets=tickets)
+
 @ticket_bp.route('/new', methods=['GET', 'POST'])
 @login_required
 @require_permission('create_ticket')
 def new_ticket():
     customers = Customer.query.order_by(desc(Customer.created_at)).all()
-    users = User.query.filter(User.role.any(Role.name == 'technician')).all()
+    users = User.query.filter(User.roles.any(Role.name == 'technician')).all()
     common_problems = CommonProblem.query.filter_by(is_active=True).all()
+    
+    # Calculate default values for the form
+    now = datetime.now(timezone.utc)
+    now_date = now.strftime('%Y-%m-%d')
+    now_time = now.strftime('%H:%M')
     
     if request.method == 'POST':
         customer_id = request.form.get('customer_id')
         device_id = request.form.get('device_id')
-        items_included = request.form.get('items_included')
-        problem_description = request.form.get('problem_description')
+        items_included = request.form.get('items_included', '')
+        problem_description = request.form.get('problem_description', '')
         assigned_to = request.form.get('assigned_to')
         created_date = request.form.get('created_date')
         created_time = request.form.get('created_time')
-        down_payment = request.form.get('down_payment', 0)
         
-        # Validate inputs
+        # Financial fields from form
+        down_payment = max(0, request.form.get('down_payment_amount', 0, type=float))
+        payment_method = request.form.get('payment_method')
+        
         if not device_id:
             flash('Please select a device', 'error')
             return redirect(url_for('ticket.new_ticket'))
         
-        # Combine date and time
+        # Verify device ownership to prevent data mismatch
+        device = db.session.get(Device, device_id)
+        if not device or str(device.customer_id) != str(customer_id):
+            flash('Security Error: Selected device does not belong to the selected customer.', 'error')
+            return redirect(url_for('ticket.new_ticket'))
+
         try:
             created_datetime = datetime.strptime(f"{created_date} {created_time}", "%Y-%m-%d %H:%M")
-        except ValueError:
-            flash('Invalid date or time format', 'error')
+        except (ValueError, TypeError):
+            created_datetime = datetime.now(timezone.utc)
+        
+        ticket_number = Ticket.generate_unique_number()
+
+        try:
+            ticket = Ticket(
+                ticket_number=ticket_number,
+                customer_id=customer_id,
+                device_id=device_id,
+                items_included=items_included,
+                problem_description=problem_description,
+                assigned_to=assigned_to if assigned_to else None,
+                created_at=created_datetime
+            )
+            db.session.add(ticket)
+            db.session.flush() # Secure ID assignment prior to child creations
+            
+            initial_log = PhaseLog(
+                ticket_id=ticket.id,
+                user_id=current_user.id,
+                old_phase=None,
+                new_phase='Open'
+            )
+            db.session.add(initial_log)
+
+            # Handle optional down payment
+            if down_payment > 0:
+                payment = Payment(
+                    ticket_id=ticket.id,
+                    user_id=current_user.id,
+                    amount=down_payment,
+                    payment_method=payment_method or 'Cash',
+                    paid_at=created_datetime
+                )
+                db.session.add(payment)
+                
+                payment_note = Note(
+                    ticket_id=ticket.id,
+                    user_id=current_user.id,
+                    content=f"Initial down payment of {down_payment} received via {payment_method or 'Cash'}.",
+                    is_internal=True
+                )
+                db.session.add(payment_note)
+
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating ticket: {str(e)}', 'error')
             return redirect(url_for('ticket.new_ticket'))
         
-        # Generate unique ticket number
-        ticket_number = f"TKT-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
-        
-        device = Device.query.get(device_id)
-        
-        ticket = Ticket(
-            ticket_number=ticket_number,
-            customer_id=customer_id,
-            device_id=device_id,
-            items_included=items_included,
-            problem_description=problem_description,
-            assigned_to=assigned_to if assigned_to else None,
-            created_at=created_datetime
-        )
-        
-        db.session.add(ticket)
-        db.session.flush()
-        
-        # Create initial phase log
-        initial_log = PhaseLog(
-            ticket_id=ticket.id,
-            user_id=current_user.id,
-            phase='Open',
-            commentary='Ticket created and device received'
-        )
-        db.session.add(initial_log)
-        
-        # Record down payment if provided
-        if down_payment and float(down_payment) > 0:
-            payment = Payment(
-                ticket_id=ticket.id,
-                user_id=current_user.id,
-                amount=float(down_payment),
-                payment_type='Down Payment',
-                payment_method='Cash'
-            )
-            db.session.add(payment)
-            
-            note = Note(
-                ticket_id=ticket.id,
-                user_id=current_user.id,
-                note_type='Down Payment',
-                content=f'Down Payment: ${down_payment}'
-            )
-            db.session.add(note)
-        
-        db.session.commit()
-        
         flash(f'Ticket {ticket_number} created successfully!', 'success')
-        return redirect(url_for('ticket.view_ticket', ticket_id=ticket.id))
+        return redirect(url_for('main.dashboard'))
+        
+    return render_template('ticket_form.html', 
+                           customers=customers, 
+                           users=users, 
+                           common_problems=common_problems,
+                           now_date=now_date,
+                           now_time=now_time)
+
+
+# ==================== MISSING VIEW ROUTES (REPAIRING NAV LINKS) ====================
+@customer_bp.route('/')
+@login_required
+def customers_list():
+    """Route for the Customers link in base.html"""
+    page = request.args.get('page', 1, type=int)
+    customers = Customer.query.order_by(desc(Customer.created_at)).paginate(page=page, per_page=15)
+    return render_template('customers.html', customers=customers)
+
+@main_bp.route('/devices')
+@login_required
+def devices_list():
+    """Route for the Devices link in base.html"""
+    page = request.args.get('page', 1, type=int)
+    devices = Device.query.order_by(desc(Device.created_at)).paginate(page=page, per_page=15)
+    return render_template('devices.html', devices=devices)
+
+@report_bp.route('/')
+@login_required
+@require_permission('view_reports')
+def reports():
+    """Route for the Reports link in base.html"""
+    monthly_stats = {
+        'total_tickets': Ticket.query.count(),
+        'completed_tickets': Ticket.query.filter_by(current_phase='Finished').count(),
+        'total_revenue': db.session.query(func.sum(Payment.amount)).scalar() or 0.0
+    }
+    # Fetch recent tickets for the report table
+    recent_tickets = Ticket.query.order_by(desc(Ticket.created_at)).limit(5).all()
+    return render_template('reports.html', monthly_stats=monthly_stats, recent_tickets=recent_tickets)
+
+@admin_bp.route('/', endpoint='dashboard')
+@admin_bp.route('/dashboard', endpoint='dashboard')
+@login_required
+@require_superuser()
+def admin_dashboard():
+    """Admin control panel requested by base.html dropdown"""
+    return render_template('admin/dashboard.html')
+
+@admin_bp.route('/users', endpoint='manage_users')
+@login_required
+@require_superuser()
+def manage_users():
+    users = User.query.paginate(page=request.args.get('page', 1, type=int), per_page=15)
+    return render_template('admin/manage_users.html', users=users)
+
+@admin_bp.route('/users/create', methods=['GET', 'POST'])
+@login_required
+@require_superuser()
+def create_user():
+    roles = Role.query.all()
+    if request.method == 'POST':
+        username = request.form.get('username')
+        full_name = request.form.get('full_name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        role_ids = request.form.getlist('roles')
+        
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists', 'error')
+        else:
+            user = User(username=username, full_name=full_name, email=email, is_active=True)
+            user.set_password(password)
+            for rid in role_ids:
+                role = db.session.get(Role, int(rid))
+                if role: user.roles.append(role)
+            db.session.add(user)
+            db.session.commit()
+            flash('User created successfully!', 'success')
+            return redirect(url_for('admin.manage_users'))
+    return render_template('admin/create_user.html', roles=roles)
+
+@admin_bp.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@require_superuser()
+def edit_user(user_id):
+    user = db.session.get(User, user_id)
+    if not user: return redirect(url_for('admin.manage_users'))
     
-    return render_template('new_ticket.html', customers=customers, users=users, common_problems=common_problems)
+    # Group permissions by category for the template grid
+    permissions = Permission.query.all()
+    permissions_by_category = {}
+    for p in permissions:
+        permissions_by_category.setdefault(p.category, []).append(p)
 
+    roles = Role.query.all()
+    if request.method == 'POST':
+        user.full_name = request.form.get('full_name')
+        user.email = request.form.get('email')
+        user.is_active = 'is_active' in request.form
+        user.roles = []
+        for rid in request.form.getlist('roles'):
+            role = db.session.get(Role, int(rid))
+            if role: user.roles.append(role)
+            
+        user.permissions = []
+        for pid in request.form.getlist('permissions'):
+            perm = db.session.get(Permission, int(pid))
+            if perm: user.permissions.append(perm)
 
-@ticket_bp.route('/<int:ticket_id>', methods=['GET'])
+        db.session.commit()
+        flash('User updated!', 'success')
+        return redirect(url_for('admin.manage_users'))
+    return render_template('admin/edit_user.html', user=user, roles=roles, permissions_by_category=permissions_by_category)
+
+@admin_bp.route('/users/delete/<int:user_id>', methods=['POST'])
+@login_required
+@require_superuser()
+def delete_user(user_id):
+    user = db.session.get(User, user_id)
+    if user and not user.is_superuser:
+        db.session.delete(user)
+        db.session.commit()
+        flash('User deleted.', 'success')
+    return redirect(url_for('admin.manage_users'))
+
+@admin_bp.route('/problems', methods=['GET', 'POST'])
+@login_required
+@require_superuser()
+def manage_problems():
+    if request.method == 'POST':
+        text = request.form.get('problem_text')
+        if text and not CommonProblem.query.filter_by(problem_text=text).first():
+            db.session.add(CommonProblem(problem_text=text))
+            db.session.commit()
+            flash('Common problem added!', 'success')
+        return redirect(url_for('admin.manage_problems'))
+    problems = CommonProblem.query.all()
+    return render_template('admin/manage_common_problems.html', problems=problems)
+
+@admin_bp.route('/backup', methods=['GET', 'POST'])
+@login_required
+@require_superuser()
+def backup():
+    if request.method == 'POST':
+        backup_type = request.form.get('backup_type')
+        if backup_type == 'json_data':
+            data = {
+                'customers': [{'id': c.id, 'name': c.name, 'phone': c.phone, 'address': c.address, 'created_at': c.created_at.isoformat()} for c in Customer.query.all()],
+                'tickets': [{'id': t.id, 'ticket_number': t.ticket_number, 'customer_id': t.customer_id, 'device_id': t.device_id, 'problem_description': t.problem_description, 'current_phase': t.current_phase, 'created_at': t.created_at.isoformat()} for t in Ticket.query.all()]
+                # You can add more tables here as needed for your logical backup
+            }
+            output = io.BytesIO(json.dumps(data, indent=4, default=str).encode('utf-8')) # default=str handles datetime objects
+            return send_file(output, mimetype='application/json', as_attachment=True, 
+                             download_name=f"logical_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json")
+        elif backup_type == 'full_db':
+            db_path = db.engine.url.database # Get the path to the SQLite DB file
+            if os.path.exists(db_path):
+                return send_file(db_path, mimetype='application/octet-stream', as_attachment=True,
+                                 download_name=f"full_db_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.db")
+            else:
+                flash('Database file not found.', 'error')
+                return redirect(url_for('admin.backup'))
+    return render_template('admin/backup.html')
+
+@ticket_bp.route('/view/<int:ticket_id>')
 @login_required
 @require_permission('view_ticket')
-def view_ticket(ticket_id):
-    ticket = Ticket.query.get_or_404(ticket_id)
+def ticket_detail(ticket_id):
+    ticket = db.session.get(Ticket, ticket_id)
+    if not ticket:
+        flash('Ticket not found', 'error')
+        return redirect(url_for('main.dashboard'))
     return render_template('ticket_detail.html', ticket=ticket)
 
+@ticket_bp.route('/edit/<int:ticket_id>', methods=['GET', 'POST'])
+@login_required
+@require_permission('edit_ticket')
+def edit_ticket(ticket_id):
+    """Route to edit basic ticket information"""
+    ticket = db.session.get(Ticket, ticket_id)
+    if not ticket:
+        flash('Ticket not found', 'error')
+        return redirect(url_for('main.dashboard'))
+        
+    users = User.query.filter(User.roles.any(Role.name == 'technician')).all()
+    
+    if request.method == 'POST':
+        ticket.items_included = request.form.get('items_included')
+        ticket.problem_description = request.form.get('problem_description')
+        assigned_to = request.form.get('assigned_to')
+        
+        # Update assignment safely
+        ticket.assigned_to = int(assigned_to) if assigned_to else None
+        
+        db.session.commit()
+        flash('Ticket updated successfully!', 'success')
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
+        
+    return render_template('edit_ticket.html', ticket=ticket, users=users)
 
-@ticket_bp.route('/<int:ticket_id>/phase', methods=['POST'])
+@ticket_bp.route('/update_phase/<int:ticket_id>', methods=['POST'])
 @login_required
 @require_permission('update_phase')
 def update_phase(ticket_id):
-    """Update ticket phase and log the change"""
-    ticket = Ticket.query.get_or_404(ticket_id)
-    phase = request.form.get('phase')
-    commentary = request.form.get('commentary')
-    
-    if not phase or phase not in ticket.PHASE_CHOICES:
-        flash('Invalid phase selected', 'error')
-        return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
-    
-    # Create phase log with timestamp
-    phase_log = PhaseLog(
-        ticket_id=ticket_id,
+    """Route to advance the repair ticket through its lifecycle"""
+    ticket = db.session.get(Ticket, ticket_id)
+    if not ticket:
+        flash('Ticket not found', 'error')
+        return redirect(url_for('main.dashboard'))
+
+    new_phase = request.form.get('new_phase')
+    commentary = request.form.get('commentary', '')
+
+    if not new_phase:
+        flash('Please select a valid phase', 'error')
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
+
+    old_phase = ticket.current_phase
+    ticket.current_phase = new_phase
+
+    # Create audit log
+    log = PhaseLog(
+        ticket_id=ticket.id,
         user_id=current_user.id,
-        phase=phase,
-        commentary=commentary,
-        timestamp=datetime.utcnow()
+        old_phase=old_phase,
+        new_phase=new_phase
     )
-    
-    # Update current phase
-    ticket.current_phase = phase
-    if phase == 'Finished':
-        ticket.completed_at = datetime.utcnow()
-    
-    db.session.add(phase_log)
-    db.session.commit()
-    
-    flash(f'Ticket moved to {phase} phase!', 'success')
-    return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
+    db.session.add(log)
 
-
-@ticket_bp.route('/<int:ticket_id>/note', methods=['POST'])
-@login_required
-@require_permission('add_note')
-def add_note(ticket_id):
-    ticket = Ticket.query.get_or_404(ticket_id)
-    content = request.form.get('content')
-    note_type = request.form.get('note_type', 'General')
-    
-    if content:
+    # If commentary is provided, save it as a technical note
+    if commentary:
         note = Note(
-            ticket_id=ticket_id,
+            ticket_id=ticket.id,
             user_id=current_user.id,
-            note_type=note_type,
-            content=content
+            content=f"Phase update to {new_phase}: {commentary}",
+            is_internal=True
         )
         db.session.add(note)
-        
-        if note_type == 'Device Picked Up':
-            ticket.device_picked_up = True
-            ticket.picked_up_date = datetime.utcnow()
-        
-        db.session.commit()
-        flash('Note added successfully!', 'success')
-    
-    return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
 
-
-@ticket_bp.route('/<int:ticket_id>/payment', methods=['POST'])
-@login_required
-@require_permission('record_payment')
-def record_payment(ticket_id):
-    ticket = Ticket.query.get_or_404(ticket_id)
-    amount = request.form.get('amount')
-    payment_type = request.form.get('payment_type')
-    payment_method = request.form.get('payment_method')
-    notes = request.form.get('notes')
-    
-    if amount:
-        payment = Payment(
-            ticket_id=ticket_id,
-            user_id=current_user.id,
-            amount=float(amount),
-            payment_type=payment_type,
-            payment_method=payment_method,
-            notes=notes
-        )
-        db.session.add(payment)
-        
-        note = Note(
-            ticket_id=ticket_id,
-            user_id=current_user.id,
-            note_type=payment_type,
-            content=f'{payment_type}: {payment_method} - ${amount}'
-        )
-        db.session.add(note)
-        db.session.commit()
-        
-        flash(f'Payment of ${amount} recorded successfully!', 'success')
-    
-    return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
-
-
-@ticket_bp.route('/<int:ticket_id>/service/add', methods=['POST'])
-@login_required
-@require_permission('add_service')
-def add_service_to_ticket(ticket_id):
-    ticket = Ticket.query.get_or_404(ticket_id)
-    service_id = request.form.get('service_id')
-    quantity = request.form.get('quantity', 1, type=int)
-    
-    service = Service.query.get_or_404(service_id)
-    
-    ticket_service = TicketService(
-        ticket_id=ticket_id,
-        service_id=service_id,
-        quantity=quantity,
-        price=service.price
-    )
-    
-    db.session.add(ticket_service)
     db.session.commit()
-    
-    flash(f'Service {service.name} added to ticket!', 'success')
-    return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
+    flash(f'Ticket phase updated to {new_phase}', 'success')
+    return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
-
-# ==================== CUSTOMER ROUTES ====================
-@customer_bp.route('/')
+@customer_bp.route('/view/<int:customer_id>', endpoint='view_customer')
 @login_required
 @require_permission('view_customer')
-def customers_list():
-    page = request.args.get('page', 1, type=int)
-    customers = Customer.query.order_by(desc(Customer.created_at)).paginate(page=page, per_page=20)
-    return render_template('customers.html', customers=customers)
+def view_customer(customer_id):
+    """Detailed view for a single customer and their devices"""
+    customer = db.session.get(Customer, customer_id)
+    if not customer:
+        flash('Customer not found', 'error')
+        return redirect(url_for('customer.customers_list'))
+    return render_template('customer_detail.html', customer=customer)
 
 
-@customer_bp.route('/search')
-@login_required
-def search_customers():
-    """API endpoint to search customers"""
-    query = request.args.get('q', '').strip()
-    if len(query) < 2:
-        return jsonify([])
-    
-    customers = Customer.query.filter(
-        or_(Customer.name.ilike(f'%{query}%'), Customer.phone.ilike(f'%{query}%'))
-    ).order_by(desc(Customer.created_at)).limit(10).all()
-    
-    return jsonify([{
-        'id': c.id,
-        'name': c.name,
-        'phone': c.phone
-    } for c in customers])
-
-
-@customer_bp.route('/new', methods=['GET', 'POST'])
+@customer_bp.route('/new_customer', methods=['GET', 'POST'])
 @login_required
 @require_permission('create_customer')
 def new_customer():
     if request.method == 'POST':
         name = request.form.get('name')
         phone = request.form.get('phone')
-        address = request.form.get('address')
+        address = request.form.get('address', '')
         
-        customer = Customer(
-            name=name,
-            phone=phone,
-            address=address
-        )
-        
-        db.session.add(customer)
-        db.session.commit()
-        
-        flash(f'Customer {customer.name} created successfully!', 'success')
-        
-        # Return JSON if called from modal
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': True, 'id': customer.id, 'name': customer.name})
-        
-        return redirect(url_for('customer.customers_list'))
-    
+        if not name or not phone:
+            flash('Name and phone are required', 'error')
+        else:
+            customer = Customer(name=name, phone=phone, address=address)
+            db.session.add(customer)
+            db.session.commit()
+            flash('Customer created successfully!', 'success')
+            return redirect(url_for('customer.customers_list'))
     return render_template('new_customer.html')
 
-
-@customer_bp.route('/<int:customer_id>', methods=['GET'])
-@login_required
-@require_permission('view_customer')
-def view_customer(customer_id):
-    customer = Customer.query.get_or_404(customer_id)
-    return render_template('customer_detail.html', customer=customer)
-
-
-# ==================== DEVICE ROUTES ====================
-@device_bp.route('/search/<int:customer_id>')
-@login_required
-def search_devices(customer_id):
-    """API endpoint to search customer devices"""
-    query = request.args.get('q', '').strip()
-    devices = Device.query.filter_by(customer_id=customer_id)
-    
-    if query:
-        devices = devices.filter(
-            or_(Device.brand.ilike(f'%{query}%'), Device.model.ilike(f'%{query}%'))
-        )
-    
-    return jsonify([{
-        'id': d.id,
-        'display': f"{d.brand} {d.model} ({d.device_type})",
-        'brand': d.brand,
-        'model': d.model,
-        'device_type': d.device_type
-    } for d in devices.all()])
-
-
-@device_bp.route('/new', methods=['GET', 'POST'])
+@device_bp.route('/new_device', methods=['GET', 'POST'])
 @login_required
 @require_permission('create_device')
 def new_device():
-    customer_id = request.args.get('customer_id')
+    customers = Customer.query.order_by(Customer.name).all()
     
     if request.method == 'POST':
         customer_id = request.form.get('customer_id')
         device_type = request.form.get('device_type')
         brand = request.form.get('brand')
-        model = request.form.get('model')
-        model_number = request.form.get('model_number')
-        cpu = request.form.get('cpu')
-        ram = request.form.get('ram')
-        storage_type = request.form.get('storage_type')
-        storage_capacity = request.form.get('storage_capacity')
-        serial_number = request.form.get('serial_number')
-        color = request.form.get('color')
-        notes = request.form.get('notes')
         
-        device = Device(
-            customer_id=customer_id,
-            device_type=device_type,
-            brand=brand,
-            model=model,
-            model_number=model_number,
-            cpu=cpu,
-            ram=ram,
-            storage_type=storage_type,
-            storage_capacity=storage_capacity,
-            serial_number=serial_number,
-            color=color,
-            notes=notes
-        )
-        
-        db.session.add(device)
-        db.session.commit()
-        
-        flash(f'Device {brand} {model} added successfully!', 'success')
-        
-        # Return JSON if called from modal
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': True, 'id': device.id, 'display': f"{brand} {model}"})
-        
-        return redirect(url_for('customer.view_customer', customer_id=customer_id))
-    
-    customer = Customer.query.get_or_404(customer_id) if customer_id else None
-    return render_template('new_device.html', customer=customer, customer_id=customer_id)
+        if not all([customer_id, device_type, brand]):
+            flash('Customer, Type, and Brand are required', 'error')
+        else:
+            device = Device(
+                customer_id=customer_id,
+                device_type=device_type,
+                brand=brand,
+                model_number=request.form.get('model_number'),
+                serial_number=request.form.get('serial_number'),
+                notes=request.form.get('notes')
+            )
+            db.session.add(device)
+            db.session.commit()
+            flash('Device added successfully!', 'success')
+            return redirect(url_for('main.devices_list'))
+            
+    return render_template('new_device.html', customers=customers)
 
-
-@device_bp.route('/<int:device_id>/edit', methods=['GET', 'POST'])
+@device_bp.route('/edit/<int:device_id>', methods=['GET', 'POST'])
 @login_required
 @require_permission('edit_device')
 def edit_device(device_id):
-    device = Device.query.get_or_404(device_id)
+    """Route to edit hardware specifications for a specific device"""
+    device = db.session.get(Device, device_id)
+    if not device:
+        flash('Device not found', 'error')
+        return redirect(url_for('main.devices_list'))
     
     if request.method == 'POST':
         device.device_type = request.form.get('device_type')
         device.brand = request.form.get('brand')
-        device.model = request.form.get('model')
         device.model_number = request.form.get('model_number')
         device.cpu = request.form.get('cpu')
         device.ram = request.form.get('ram')
@@ -528,473 +588,108 @@ def edit_device(device_id):
         db.session.commit()
         flash('Device updated successfully!', 'success')
         return redirect(url_for('customer.view_customer', customer_id=device.customer_id))
-    
+        
     return render_template('edit_device.html', device=device)
 
-
-@device_bp.route('/<int:device_id>/delete', methods=['POST'])
+@device_bp.route('/delete/<int:device_id>', methods=['POST'])
 @login_required
 @require_permission('delete_device')
 def delete_device(device_id):
-    device = Device.query.get_or_404(device_id)
-    customer_id = device.customer_id
-    
-    db.session.delete(device)
-    db.session.commit()
-    
-    flash('Device deleted successfully!', 'success')
-    return redirect(url_for('customer.view_customer', customer_id=customer_id))
+    device = db.session.get(Device, device_id)
+    if device:
+        customer_id = device.customer_id
+        db.session.delete(device)
+        db.session.commit()
+        flash('Device deleted successfully.', 'success')
+        return redirect(url_for('customer.view_customer', customer_id=customer_id))
+    return redirect(url_for('main.devices_list'))
 
-
-# ==================== INVOICE ROUTES ====================
-@ticket_bp.route('/<int:ticket_id>/invoice', methods=['GET'])
-@login_required
-@require_permission('view_ticket')
-def view_invoice(ticket_id):
-    ticket = Ticket.query.get_or_404(ticket_id)
-    invoice = ticket.invoice
-    
-    if not invoice:
-        flash('No invoice created yet', 'error')
-        return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
-    
-    return render_template('invoice.html', ticket=ticket, invoice=invoice)
-
-
-@ticket_bp.route('/<int:ticket_id>/invoice/create', methods=['POST'])
-@login_required
-@require_permission('create_invoice')
-def create_invoice(ticket_id):
-    ticket = Ticket.query.get_or_404(ticket_id)
-    
-    # Check if invoice already exists
-    if ticket.invoice:
-        flash('Invoice already created for this ticket', 'error')
-        return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
-    
-    # Calculate totals
-    services_total = sum(ts.price * ts.quantity for ts in ticket.ticket_services)
-    
-    invoice_number = f"INV-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
-    
-    invoice = Invoice(
-        invoice_number=invoice_number,
-        ticket_id=ticket_id,
-        subtotal=services_total,
-        total_amount=services_total
-    )
-    
-    db.session.add(invoice)
-    db.session.commit()
-    
-    flash('Invoice created successfully!', 'success')
-    return redirect(url_for('ticket.view_invoice', ticket_id=ticket_id))
-
-
-@ticket_bp.route('/<int:ticket_id>/invoice/pdf', methods=['GET'])
-@login_required
-@require_permission('view_ticket')
-def download_invoice_pdf(ticket_id):
-    ticket = Ticket.query.get_or_404(ticket_id)
-    invoice = ticket.invoice
-    
-    if not invoice:
-        flash('No invoice created yet', 'error')
-        return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
-    
-    # Create PDF
-    pdf_buffer = io.BytesIO()
-    doc = SimpleDocTemplate(pdf_buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
-    elements = []
-    
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        textColor=colors.HexColor('#1f4788'),
-        spaceAfter=30
-    )
-    
-    # Title
-    elements.append(Paragraph("REPAIR INVOICE", title_style))
-    elements.append(Spacer(1, 0.3*inch))
-    
-    # Invoice info
-    info_data = [
-        ['Invoice Number:', invoice.invoice_number, 'Date:', invoice.issued_date.strftime('%Y-%m-%d')],
-        ['Ticket Number:', ticket.ticket_number, 'Status:', invoice.status],
-    ]
-    info_table = Table(info_data, colWidths=[1.5*inch, 2*inch, 1.5*inch, 2*inch])
-    info_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-    ]))
-    elements.append(info_table)
-    elements.append(Spacer(1, 0.3*inch))
-    
-    # Customer info
-    customer_data = [
-        ['CUSTOMER INFORMATION', ''],
-        ['Name:', ticket.customer.name],
-        ['Phone:', ticket.customer.phone],
-        ['Device:', f"{ticket.device.brand} {ticket.device.model}"],
-    ]
-    customer_table = Table(customer_data, colWidths=[2*inch, 4*inch])
-    customer_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f4788')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('FONTSIZE', (0, 1), (-1, -1), 10),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-    ]))
-    elements.append(customer_table)
-    elements.append(Spacer(1, 0.3*inch))
-    
-    # Services
-    if ticket.ticket_services:
-        service_data = [['Service', 'Quantity', 'Unit Price', 'Total']]
-        for ts in ticket.ticket_services:
-            service_data.append([
-                ts.service.name,
-                str(ts.quantity),
-                f"${ts.price:.2f}",
-                f"${ts.price * ts.quantity:.2f}"
-            ])
-        
-        service_table = Table(service_data, colWidths=[3*inch, 1*inch, 1.5*inch, 1.5*inch])
-        service_table.setStyle(TableStyle([
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 11),
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f4788')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('FONTSIZE', (0, 1), (-1, -1), 10),
-            ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
-            ('TOPPADDING', (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
-        elements.append(service_table)
-        elements.append(Spacer(1, 0.2*inch))
-    
-    # Spare parts
-    if invoice.items:
-        spare_data = [['Spare Part', 'Quantity', 'Unit Price', 'Total']]
-        for item in invoice.items:
-            spare_data.append([
-                item.spare_part.name,
-                str(item.quantity),
-                f"${item.unit_price:.2f}",
-                f"${item.total_price:.2f}"
-            ])
-        
-        spare_table = Table(spare_data, colWidths=[3*inch, 1*inch, 1.5*inch, 1.5*inch])
-        spare_table.setStyle(TableStyle([
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 11),
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e74c3c')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('FONTSIZE', (0, 1), (-1, -1), 10),
-            ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
-            ('TOPPADDING', (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
-        elements.append(spare_table)
-        elements.append(Spacer(1, 0.2*inch))
-    
-    # Totals
-    total_data = [
-        ['Subtotal (Services):', f"${invoice.subtotal:.2f}"],
-        ['Subtotal (Spare Parts):', f"${invoice.spare_parts_total:.2f}"],
-        ['Total Amount:', f"${invoice.total_amount:.2f}"],
-        ['Down Payment:', f"${invoice.down_payment:.2f}"],
-        ['Amount Paid:', f"${invoice.full_payment_received:.2f}"],
-        ['Remaining Balance:', f"${invoice.remaining_balance:.2f}"],
-    ]
-    total_table = Table(total_data, colWidths=[4*inch, 2*inch])
-    total_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (-1, 4), 'Helvetica'),
-        ('FONTNAME', (0, 5), (-1, 5), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 4), 10),
-        ('FONTSIZE', (0, 5), (-1, 5), 12),
-        ('BACKGROUND', (0, 5), (-1, 5), colors.HexColor('#1f4788')),
-        ('TEXTCOLOR', (0, 5), (-1, 5), colors.whitesmoke),
-        ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-    ]))
-    elements.append(total_table)
-    
-    doc.build(elements)
-    pdf_buffer.seek(0)
-    
-    return send_file(
-        pdf_buffer,
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name=f"{invoice.invoice_number}.pdf"
-    )
-
-
-# ==================== REPORT ROUTES ====================
-@report_bp.route('/')
-@login_required
-@require_permission('view_reports')
-def reports():
-    """Main reports page"""
-    from datetime import date, timedelta
-    
-    today = date.today()
-    current_month_start = today.replace(day=1)
-    
-    # Monthly stats
-    monthly_stats = {
-        'total_tickets': Ticket.query.filter(Ticket.created_at >= current_month_start).count(),
-        'completed_tickets': Ticket.query.filter(
-            Ticket.current_phase == 'Finished',
-            Ticket.created_at >= current_month_start
-        ).count(),
-        'total_revenue': sum(p.amount for p in Payment.query.filter(Payment.created_at >= current_month_start).all()),
-    }
-    
-    # Recent tickets
-    recent_tickets = Ticket.query.order_by(desc(Ticket.created_at)).limit(10).all()
-    
-    return render_template('reports.html', monthly_stats=monthly_stats, recent_tickets=recent_tickets)
-
-
-# ==================== DEVICES TAB ====================
-@main_bp.route('/devices')
+@device_bp.route('/view/<int:device_id>')
 @login_required
 @require_permission('view_customer')
-def devices_list():
-    """Dedicated devices tab showing all devices"""
-    page = request.args.get('page', 1, type=int)
-    devices = Device.query.order_by(desc(Device.created_at)).paginate(page=page, per_page=20)
-    return render_template('devices.html', devices=devices)
+def device_detail(device_id):
+    """Detailed view for a single device repair history"""
+    device = db.session.get(Device, device_id)
+    if not device:
+        flash('Device not found', 'error')
+        return redirect(url_for('main.dashboard'))
+    return render_template('device_detail.html', device=device)
 
-
-# ==================== COMMON PROBLEMS ====================
-@admin_bp.route('/common-problems', methods=['GET', 'POST'])
+# ==================== CUSTOMER AJAX ROUTERS (COMPLETING MAIN.JS MATCH) ====================
+@customer_bp.route('/search', methods=['GET'])
 @login_required
-@require_superuser()
-def manage_common_problems():
-    if request.method == 'POST':
-        action = request.form.get('action')
+def search_customers():
+    """Asynchronous search endpoint requested by main.js customer_search input"""
+    query = request.args.get('q', '').strip()
+    if len(query) < 2:
+        return jsonify([])
         
-        if action == 'add':
-            problem_text = request.form.get('problem_text')
-            problem = CommonProblem(problem_text=problem_text, is_active=True)
-            db.session.add(problem)
-            db.session.commit()
-            flash('Common problem added successfully!', 'success')
-        
-        elif action == 'delete':
-            problem_id = request.form.get('problem_id')
-            problem = CommonProblem.query.get_or_404(problem_id)
-            db.session.delete(problem)
-            db.session.commit()
-            flash('Common problem deleted successfully!', 'success')
-        
-        return redirect(url_for('admin.manage_common_problems'))
+    customers = Customer.query.filter(
+        or_(Customer.name.ilike(f'%{query}%'), Customer.phone.ilike(f'%{query}%'))
+    ).limit(10).all()
     
-    problems = CommonProblem.query.filter_by(is_active=True).all()
-    return render_template('admin/manage_common_problems.html', problems=problems)
+    return jsonify([{'id': c.id, 'name': c.name, 'phone': c.phone} for c in customers])
 
 
-# ==================== ADMIN ROUTES ====================
-@admin_bp.route('/dashboard')
+@customer_bp.route('/new', methods=['POST'])
 @login_required
-@require_superuser()
-def admin_dashboard():
-    users = User.query.all()
-    roles = Role.query.all()
-    permissions = Permission.query.all()
+@require_permission('create_customer')
+def new_customer_ajax():
+    """Asynchronous modal form target managed by saveCustomerBtn click event"""
+    name = request.form.get('name')
+    phone = request.form.get('phone')
+    address = request.form.get('address', '')
     
-    stats = {
-        'total_users': len(users),
-        'total_roles': len(roles),
-        'total_permissions': len(permissions),
-    }
-    
-    return render_template('admin/dashboard.html', users=users, roles=roles, permissions=permissions, stats=stats)
-
-
-@admin_bp.route('/users')
-@login_required
-@require_superuser()
-def manage_users():
-    page = request.args.get('page', 1, type=int)
-    users = User.query.paginate(page=page, per_page=20)
-    return render_template('admin/manage_users.html', users=users)
-
-
-@admin_bp.route('/users/new', methods=['GET', 'POST'])
-@login_required
-@require_superuser()
-def create_user():
-    roles = Role.query.all()
-    
-    if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        full_name = request.form.get('full_name')
-        password = request.form.get('password')
-        role_ids = request.form.getlist('roles')
+    if not name or not phone:
+        return jsonify({'error': 'Name and phone fields are required'}), 400
         
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists', 'error')
-            return redirect(url_for('admin.create_user'))
-        
-        user = User(
-            username=username,
-            email=email,
-            full_name=full_name,
-            is_active=True
+    customer = Customer(name=name, phone=phone, address=address)
+    db.session.add(customer)
+    db.session.commit()
+    
+    return jsonify({'id': customer.id, 'name': customer.name})
+
+
+# ==================== DEVICE AJAX ROUTERS (COMPLETING MAIN.JS MATCH) ====================
+@device_bp.route('/search/<int:customer_id>', methods=['GET'])
+@login_required
+def search_devices(customer_id):
+    """Asynchronous search endpoint checking customer context profiles"""
+    query = request.args.get('q', '').strip()
+    
+    # Filter devices bound specifically to the active customer
+    device_query = Device.query.filter_by(customer_id=customer_id)
+    if query:
+        device_query = device_query.filter(
+            or_(Device.brand.ilike(f'%{query}%'), Device.model.ilike(f'%{query}%'), Device.device_type.ilike(f'%{query}%'))
         )
-        user.set_password(password)
-        
-        for role_id in role_ids:
-            role = Role.query.get(role_id)
-            if role:
-                user.role.append(role)
-        
-        db.session.add(user)
-        db.session.commit()
-        
-        flash(f'User {username} created successfully!', 'success')
-        return redirect(url_for('admin.manage_users'))
-    
-    return render_template('admin/create_user.html', roles=roles)
+    devices = device_query.limit(10).all()
+
+    return jsonify([{'id': d.id, 'display': d.display} for d in devices])
 
 
-@admin_bp.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@device_bp.route('/new', methods=['POST'])
 @login_required
-@require_superuser()
-def edit_user(user_id):
-    user = User.query.get_or_404(user_id)
-    roles = Role.query.all()
-    all_permissions = Permission.query.all()
+@require_permission('create_device')
+def new_device_ajax():
+    """Asynchronous creation of devices via modal"""
+    customer_id = request.form.get('customer_id')
+    device_type = request.form.get('device_type')
+    brand = request.form.get('brand')
     
-    # Group permissions by category
-    permissions_by_category = {}
-    for perm in all_permissions:
-        category = perm.category or 'Other'
-        if category not in permissions_by_category:
-            permissions_by_category[category] = []
-        permissions_by_category[category].append(perm)
-    
-    if request.method == 'POST':
-        user.full_name = request.form.get('full_name')
-        user.email = request.form.get('email')
-        is_active = request.form.get('is_active')
-        user.is_active = is_active == 'on'
+    if not all([customer_id, device_type, brand]):
+        return jsonify({'error': 'Customer, Type, and Brand are required'}), 400
         
-        # Update roles
-        role_ids = request.form.getlist('roles')
-        user.role.clear()
-        for role_id in role_ids:
-            role = Role.query.get(role_id)
-            if role:
-                user.role.append(role)
-        
-        # Update permissions
-        permission_ids = request.form.getlist('permissions')
-        user.permissions.clear()
-        for perm_id in permission_ids:
-            perm = Permission.query.get(perm_id)
-            if perm:
-                user.permissions.append(perm)
-        
-        db.session.commit()
-        flash('User updated successfully!', 'success')
-        return redirect(url_for('admin.manage_users'))
-    
-    return render_template('admin/edit_user.html', user=user, roles=roles, permissions_by_category=permissions_by_category)
-
-
-@admin_bp.route('/users/<int:user_id>/delete', methods=['POST'])
-@login_required
-@require_superuser()
-def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
-    
-    if user.is_superuser:
-        flash('Cannot delete superuser', 'error')
-    else:
-        db.session.delete(user)
-        db.session.commit()
-        flash('User deleted successfully!', 'success')
-    
-    return redirect(url_for('admin.manage_users'))
-
-
-@admin_bp.route('/backup', methods=['GET', 'POST'])
-@login_required
-@require_superuser()
-def manage_backup():
-    """Backup and restore database"""
-    if request.method == 'POST':
-        action = request.form.get('action')
-        
-        if action == 'backup':
-            # Create backup JSON
-            backup_data = {
-                'users': [u.username for u in User.query.all()],
-                'customers': [c.name for c in Customer.query.all()],
-                'devices': [f"{d.brand} {d.model}" for d in Device.query.all()],
-                'tickets': [t.ticket_number for t in Ticket.query.all()],
-                'timestamp': datetime.now().isoformat()
-            }
-            
-            backup = Backup(
-                backup_name=f"Backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
-                backup_data=json.dumps(backup_data),
-                file_size=f"{len(json.dumps(backup_data))} bytes",
-                created_by=current_user.id
-            )
-            
-            db.session.add(backup)
-            db.session.commit()
-            
-            flash('Backup created successfully!', 'success')
-        
-        return redirect(url_for('admin.manage_backup'))
-    
-    backups = Backup.query.order_by(desc(Backup.created_at)).all()
-    return render_template('admin/backup.html', backups=backups)
-
-
-@admin_bp.route('/backup/download/<int:backup_id>')
-@login_required
-@require_superuser()
-def download_backup(backup_id):
-    """Download backup file"""
-    backup = Backup.query.get_or_404(backup_id)
-    
-    return send_file(
-        io.BytesIO(backup.backup_data.encode()),
-        mimetype='application/json',
-        as_attachment=True,
-        download_name=f"{backup.backup_name}.json"
+    device = Device(
+        customer_id=customer_id,
+        device_type=device_type,
+        brand=brand,
+        model_number=request.form.get('model_number'),
+        serial_number=request.form.get('serial_number'),
+        notes=request.form.get('notes')
     )
-
-
-@admin_bp.route('/get-devices/<int:customer_id>')
-@login_required
-def get_customer_devices(customer_id):
-    """API endpoint to get customer devices"""
-    devices = Device.query.filter_by(customer_id=customer_id).all()
-    return jsonify([{
-        'id': d.id,
-        'display': f"{d.brand} {d.model} ({d.device_type})"
-    } for d in devices])
+    db.session.add(device)
+    db.session.commit()
+    
+    return jsonify({'id': device.id, 'display': device.display})
+    

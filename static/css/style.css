@@ -10,6 +10,7 @@
     --color-blue-dark: #0d47a1;
     --color-blue-light: #e3f2fd;
     
+
     /* Green Theme */
     --color-green-primary: #198754;
     --color-green-secondary: #6c757d;
@@ -56,10 +57,6 @@ body.theme-light .table {
     background-color: #ffffff;
 }
 
-body.theme-light .navbar {
-    background-color: #212529 !important;
-}
-
 body.theme-light .form-control,
 body.theme-light .form-select {
     background-color: #ffffff;
@@ -81,23 +78,38 @@ body.theme-light footer {
 /* Dark Theme */
 body.theme-dark {
     background-color: #1e1e1e;
-    color: #e0e0e0;
+    color: #ffffff;
+}
+
+body.theme-dark h1, body.theme-dark h2, body.theme-dark h3, 
+body.theme-dark h4, body.theme-dark h5, body.theme-dark h6 {
+    color: #ffffff !important;
 }
 
 body.theme-dark .card {
     background-color: #2d2d2d;
     border: 1px solid #404040;
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.5);
+    color: #ffffff;
+}
+
+body.theme-dark .card-title, body.theme-dark .card-text {
+    color: #ffffff;
 }
 
 body.theme-dark .card-header {
     background-color: #262626;
     border-bottom: 1px solid #404040;
+    color: #ffffff;
 }
 
 body.theme-dark .table {
     background-color: #2d2d2d;
-    color: #e0e0e0;
+    color: #ffffff;
+    --bs-table-bg: #2d2d2d;
+    --bs-table-color: #ffffff;
+    --bs-table-hover-color: #ffffff;
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
 }
 
 body.theme-dark .table thead th {
@@ -112,23 +124,34 @@ body.theme-dark .table th {
 }
 
 body.theme-dark .navbar {
-    background-color: #1a1a1a !important;
     border-bottom: 1px solid #404040;
 }
 
 body.theme-dark .form-control,
 body.theme-dark .form-select {
     background-color: #2d2d2d;
-    color: #e0e0e0;
+    color: #ffffff;
     border: 1px solid #404040;
 }
 
 body.theme-dark .form-control:focus,
 body.theme-dark .form-select:focus {
     background-color: #2d2d2d;
-    color: #e0e0e0;
+    color: #ffffff;
     border-color: #555;
     box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.1);
+}
+
+body.theme-dark .form-control::placeholder,
+body.theme-dark .form-select::placeholder,
+body.theme-dark textarea::placeholder {
+    color: #adb5bd !important;
+}
+
+body.theme-dark .input-group-text {
+    background-color: #343a40;
+    color: #ffffff;
+    border-color: #404040;
 }
 
 body.theme-dark .btn-light {
@@ -146,6 +169,12 @@ body.theme-dark .alert {
     background-color: #2d2d2d;
     border-color: #404040;
     color: #e0e0e0;
+}
+
+body.theme-dark .page-link {
+    background-color: #2d2d2d;
+    border-color: #404040;
+    color: #ffffff;
 }
 
 body.theme-dark .list-group-item {
@@ -170,13 +199,16 @@ body.theme-dark .text-muted {
 
 /* Blue Scheme */
 body.color-blue .btn-primary {
-    background-color: var(--color-blue-primary);
-    border-color: var(--color-blue-primary);
+    background-color: var(--color-blue-primary) !important;
+    border-color: var(--color-blue-primary) !important;
 }
 
-body.color-blue .btn-primary:hover {
-    background-color: var(--color-blue-dark);
-    border-color: var(--color-blue-dark);
+body.color-blue .btn-primary:hover,
+body.color-blue .btn-primary:active,
+body.color-blue .btn-primary:focus {
+    background-color: var(--color-blue-dark) !important;
+    border-color: var(--color-blue-dark) !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
 }
 
 body.color-blue .btn-primary:focus {
@@ -186,22 +218,27 @@ body.color-blue .btn-primary:focus {
 body.color-blue .badge-primary,
 body.color-blue .bg-primary {
     background-color: var(--color-blue-primary) !important;
+    color: #ffffff;
 }
 
 body.color-blue .alert-primary {
     background-color: var(--color-blue-light);
     border-color: var(--color-blue-primary);
+    color: var(--color-blue-dark);
 }
 
 /* Green Scheme */
 body.color-green .btn-primary {
-    background-color: var(--color-green-primary);
-    border-color: var(--color-green-primary);
+    background-color: var(--color-green-primary) !important;
+    border-color: var(--color-green-primary) !important;
 }
 
-body.color-green .btn-primary:hover {
-    background-color: var(--color-green-dark);
-    border-color: var(--color-green-dark);
+body.color-green .btn-primary:hover,
+body.color-green .btn-primary:active,
+body.color-green .btn-primary:focus {
+    background-color: var(--color-green-dark) !important;
+    border-color: var(--color-green-dark) !important;
+    box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25) !important;
 }
 
 body.color-green .btn-primary:focus {
@@ -211,22 +248,27 @@ body.color-green .btn-primary:focus {
 body.color-green .badge-primary,
 body.color-green .bg-primary {
     background-color: var(--color-green-primary) !important;
+    color: #ffffff;
 }
 
 body.color-green .alert-primary {
     background-color: var(--color-green-light);
     border-color: var(--color-green-primary);
+    color: var(--color-green-dark);
 }
 
 /* Purple Scheme */
 body.color-purple .btn-primary {
-    background-color: var(--color-purple-primary);
-    border-color: var(--color-purple-primary);
+    background-color: var(--color-purple-primary) !important;
+    border-color: var(--color-purple-primary) !important;
 }
 
-body.color-purple .btn-primary:hover {
-    background-color: var(--color-purple-dark);
-    border-color: var(--color-purple-dark);
+body.color-purple .btn-primary:hover,
+body.color-purple .btn-primary:active,
+body.color-purple .btn-primary:focus {
+    background-color: var(--color-purple-dark) !important;
+    border-color: var(--color-purple-dark) !important;
+    box-shadow: 0 0 0 0.25rem rgba(111, 66, 193, 0.25) !important;
 }
 
 body.color-purple .btn-primary:focus {
@@ -236,22 +278,27 @@ body.color-purple .btn-primary:focus {
 body.color-purple .badge-primary,
 body.color-purple .bg-primary {
     background-color: var(--color-purple-primary) !important;
+    color: #ffffff;
 }
 
 body.color-purple .alert-primary {
     background-color: var(--color-purple-light);
     border-color: var(--color-purple-primary);
+    color: var(--color-purple-dark);
 }
 
 /* Red Scheme */
 body.color-red .btn-primary {
-    background-color: var(--color-red-primary);
-    border-color: var(--color-red-primary);
+    background-color: var(--color-red-primary) !important;
+    border-color: var(--color-red-primary) !important;
 }
 
-body.color-red .btn-primary:hover {
-    background-color: var(--color-red-dark);
-    border-color: var(--color-red-dark);
+body.color-red .btn-primary:hover,
+body.color-red .btn-primary:active,
+body.color-red .btn-primary:focus {
+    background-color: var(--color-red-dark) !important;
+    border-color: var(--color-red-dark) !important;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
 }
 
 body.color-red .btn-primary:focus {
@@ -261,22 +308,27 @@ body.color-red .btn-primary:focus {
 body.color-red .badge-primary,
 body.color-red .bg-primary {
     background-color: var(--color-red-primary) !important;
+    color: #ffffff;
 }
 
 body.color-red .alert-primary {
     background-color: var(--color-red-light);
     border-color: var(--color-red-primary);
+    color: var(--color-red-dark);
 }
 
 /* Orange Scheme */
 body.color-orange .btn-primary {
-    background-color: var(--color-orange-primary);
-    border-color: var(--color-orange-primary);
+    background-color: var(--color-orange-primary) !important;
+    border-color: var(--color-orange-primary) !important;
 }
 
-body.color-orange .btn-primary:hover {
-    background-color: var(--color-orange-dark);
-    border-color: var(--color-orange-dark);
+body.color-orange .btn-primary:hover,
+body.color-orange .btn-primary:active,
+body.color-orange .btn-primary:focus {
+    background-color: var(--color-orange-dark) !important;
+    border-color: var(--color-orange-dark) !important;
+    box-shadow: 0 0 0 0.25rem rgba(253, 126, 20, 0.25) !important;
 }
 
 body.color-orange .btn-primary:focus {
@@ -286,11 +338,13 @@ body.color-orange .btn-primary:focus {
 body.color-orange .badge-primary,
 body.color-orange .bg-primary {
     background-color: var(--color-orange-primary) !important;
+    color: #ffffff;
 }
 
 body.color-orange .alert-primary {
     background-color: var(--color-orange-light);
     border-color: var(--color-orange-primary);
+    color: var(--color-orange-dark);
 }
 
 /* ========================================
@@ -329,7 +383,8 @@ body {
 }
 
 body.theme-dark .table-hover tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #ffffff !important;
 }
 
 /* Color swatch for theme picker */
@@ -366,93 +421,6 @@ body.theme-dark .form-check-input:checked ~ .form-check-label .color-swatch {
 /* Modal adjustments */
 body.theme-dark .modal-content {
     background-color: #2d2d2d;
-    border-color: #404040;
-}
-
-body.theme-dark .modal-header,
-body.theme-dark .modal-footer {
-    border-color: #404040;
-}
-
-body.theme-dark .close {
-    color: #e0e0e0;
-}
-
-/* Breadcrumb */
-body.theme-dark .breadcrumb {
-    background-color: #2d2d2d;
-}
-
-/* Pagination */
-body.theme-dark .pagination .page-link {
-    background-color: #2d2d2d;
-    border-color: #404040;
-    color: #e0e0e0;
-}
-
-body.theme-dark .pagination .page-link:hover {
-    background-color: #3d3d3d;
-    border-color: #555;
-    color: #e0e0e0;
-}
-
-body.theme-dark .pagination .page-item.active .page-link {
-    background-color: var(--color-blue-primary);
-    border-color: var(--color-blue-primary);
-}
-
-/* Scrollbar (Webkit browsers) */
-body.theme-dark ::-webkit-scrollbar {
-    width: 12px;
-}
-
-body.theme-dark ::-webkit-scrollbar-track {
-    background: #1e1e1e;
-}
-
-body.theme-dark ::-webkit-scrollbar-thumb {
-    background: #404040;
-    border-radius: 6px;
-}
-
-body.theme-dark ::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-/* Input placeholders */
-body.theme-dark .form-control::placeholder {
-    color: #888;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .color-scheme-picker {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .form-check-inline {
-        display: block;
-        margin-bottom: 0.5rem;
-    }
-}
-
-/* Print Styles */
-@media print {
-    body {
-        background-color: #ffffff;
-        color: #000000;
-    }
-    
-    .navbar,
-    footer,
-    .btn,
-    .no-print {
-        display: none;
-    }
-    
-    .card {
-        box-shadow: none;
-        border: 1px solid #dee2e6;
-    }
+    border: 1px solid #404040;
+    color: #ffffff;
 }

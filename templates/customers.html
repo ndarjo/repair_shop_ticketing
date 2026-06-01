@@ -3,74 +3,42 @@
 {% block title %}Customers - Repair Shop{% endblock %}
 
 {% block content %}
-<div class="row mb-3">
-    <div class="col-md-12">
-        <h2>Customers</h2>
-        <a href="{{ url_for('customer.new_customer') }}" class="btn btn-primary">+ Add Customer</a>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Customer Directory</h2>
+    <a href="{{ url_for('customer.new_customer') }}" class="btn btn-primary">+ New Customer</a>
 </div>
 
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-body">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>City</th>
-                            <th>Tickets</th>
-                            <th>Joined</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for customer in customers.items %}
-                        <tr>
-                            <td>{{ customer.full_name }}</td>
-                            <td>{{ customer.phone }}</td>
-                            <td>{{ customer.email or 'N/A' }}</td>
-                            <td>{{ customer.city or 'N/A' }}</td>
-                            <td>{{ customer.tickets|length }}</td>
-                            <td>{{ customer.created_at.strftime('%Y-%m-%d') }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-
-                <!-- Pagination -->
-                <nav>
-                    <ul class="pagination">
-                        {% if customers.has_prev %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('customer.customers_list', page=customers.prev_num) }}">Previous</a>
-                        </li>
-                        {% endif %}
-
-                        {% for page_num in customers.iter_pages() %}
-                            {% if page_num %}
-                                {% if page_num == customers.page %}
-                                <li class="page-item active">
-                                    <span class="page-link">{{ page_num }}</span>
-                                </li>
-                                {% else %}
-                                <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('customer.customers_list', page=page_num) }}">{{ page_num }}</a>
-                                </li>
-                                {% endif %}
-                            {% endif %}
-                        {% endfor %}
-
-                        {% if customers.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('customer.customers_list', page=customers.next_num) }}">Next</a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            </div>
-        </div>
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Devices</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers.items %}
+                <tr>
+                    <td><strong>{{ customer.name }}</strong></td>
+                    <td>{{ customer.phone }}</td>
+                    <td><span class="badge bg-secondary">{{ customer.devices|length }}</span></td>
+                    <td>{{ customer.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <a href="{{ url_for('customer.view_customer', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary">View Profile</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer text-center">
+        {% if customers.has_prev %}<a href="{{ url_for('customer.customers_list', page=customers.prev_num) }}" class="btn btn-sm btn-secondary">Previous</a>{% endif %}
+        <span class="mx-3">Page {{ customers.page }} of {{ customers.pages }}</span>
+        {% if customers.has_next %}<a href="{{ url_for('customer.customers_list', page=customers.next_num) }}" class="btn btn-sm btn-secondary">Next</a>{% endif %}
     </div>
 </div>
 {% endblock %}

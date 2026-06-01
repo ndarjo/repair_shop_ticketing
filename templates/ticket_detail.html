@@ -1,302 +1,96 @@
 {% extends "base.html" %}
-
-{% block title %}{{ ticket.ticket_number }} - Repair Shop{% endblock %}
-
+{% block title %}Ticket {{ ticket.ticket_number }}{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <!-- Ticket Header -->
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h4>{{ ticket.ticket_number }}</h4>
-                {% if current_user.has_permission('edit_ticket') %}
-                    <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-warning btn-sm">Edit</a>
-                {% endif %}
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h5>Customer & Device</h5>
-                        <p>
-                            <strong>Customer:</strong> <a href="{{ url_for('customer.view_customer', customer_id=ticket.customer_id) }}">{{ ticket.customer.name }}</a><br>
-                            <strong>Phone:</strong> {{ ticket.customer.phone }}<br>
-                            <strong>Device:</strong> {{ ticket.device.brand }} {{ ticket.device.model }} ({{ ticket.device.device_type }})<br>
-                            <strong>Serial:</strong> {{ ticket.device.serial_number or 'N/A' }}
-                        </p>
-                    </div>
-                    <div class="col-md-6">
-                        <h5>Device Specifications</h5>
-                        <p>
-                            <strong>CPU:</strong> {{ ticket.device.cpu or 'N/A' }}<br>
-                            <strong>RAM:</strong> {{ ticket.device.ram or 'N/A' }}<br>
-                            <strong>Storage:</strong> {{ ticket.device.storage_type or 'N/A' }} - {{ ticket.device.storage_capacity or 'N/A' }}
-                        </p>
-                    </div>
-                </div>
-
-                <hr>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <h5>Ticket Information</h5>
-                        <p>
-                            <strong>Created:</strong> {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}<br>
-                            <strong>Items Included:</strong> {{ ticket.items_included }}<br>
-                            <strong>Priority:</strong> <span class="badge bg-{% if ticket.priority == 'Urgent' %}danger{% elif ticket.priority == 'High' %}warning{% elif ticket.priority == 'Medium' %}info{% else %}secondary{% endif %}">{{ ticket.priority }}</span>
-                        </p>
-                    </div>
-                    <div class="col-md-6">
-                        <h5>Current Status</h5>
-                        <p>
-                            <strong>Phase:</strong> <span class="badge bg-{% if ticket.current_phase == 'Finished' %}success{% elif ticket.current_phase == 'Open' %}danger{% elif ticket.current_phase == 'Repairing' %}warning{% else %}info{% endif %}">{{ ticket.current_phase }}</span><br>
-                            {% if ticket.assigned_to_user %}
-                                <strong>Assigned To:</strong> {{ ticket.assigned_to_user.full_name }}
-                            {% endif %}
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Problem Description -->
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5>Problem Description</h5>
-            </div>
-            <div class="card-body">
-                <p>{{ ticket.problem_description }}</p>
-            </div>
-        </div>
-
-        <!-- Phase Logs -->
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5>Repair Timeline</h5>
-                {% if current_user.has_permission('update_phase') and current_user.is_authenticated %}
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#phaseModal">+ Update Phase</button>
-                {% endif %}
-            </div>
-            <div class="card-body">
-                {% if ticket.phase_logs %}
-                    <div class="timeline">
-                        {% for log in ticket.phase_logs|sort(attribute='timestamp', reverse=True) %}
-                        <div class="timeline-item mb-4 pb-3 border-bottom">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="mb-1">
-                                        <span class="badge bg-primary">{{ log.phase }}</span>
-                                    </h6>
-                                    <p class="text-muted small mb-1">By <strong>{{ log.technician_user.full_name }}</strong></p>
-                                    <p class="text-muted small">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-                                </div>
-                            </div>
-                            <p class="mt-2">{{ log.commentary }}</p>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="text-muted">No phase updates yet.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Payments Section -->
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5>Payments</h5>
-            </div>
-            <div class="card-body">
-                {% if ticket.payments %}
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>Amount</th>
-                            <th>Method</th>
-                            <th>Date</th>
-                            <th>Recorded By</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for payment in ticket.payments %}
-                        <tr>
-                            <td>{{ payment.payment_type }}</td>
-                            <td>${{ payment.amount }}</td>
-                            <td>{{ payment.payment_method or 'N/A' }}</td>
-                            <td>{{ payment.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                            <td>{{ payment.recorded_by_user.full_name }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% endif %}
-
-                {% if current_user.has_permission('record_payment') %}
-                <form method="POST" action="{{ url_for('ticket.record_payment', ticket_id=ticket.id) }}">
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <input type="number" class="form-control" name="amount" placeholder="Amount" step="0.01" required>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <select class="form-control" name="payment_type" required>
-                                <option value="">Select Type</option>
-                                <option value="Down Payment">Down Payment</option>
-                                <option value="Full Payment">Full Payment</option>
-                                <option value="Additional Payment">Additional Payment</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <input type="text" class="form-control" name="payment_method" placeholder="Payment Method (Cash, Card, etc.)">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <button type="submit" class="btn btn-success btn-sm w-100">Record Payment</button>
-                        </div>
-                    </div>
-                </form>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Notes Section -->
-        <div class="card">
-            <div class="card-header">
-                <h5>Notes</h5>
-            </div>
-            <div class="card-body">
-                {% for note in ticket.notes %}
-                <div class="mb-3 pb-3 border-bottom">
-                    <small class="text-muted">{{ note.author.full_name }} - {{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
-                    <span class="badge bg-info">{{ note.note_type }}</span>
-                    <p class="mt-2">{{ note.content }}</p>
-                </div>
-                {% endfor %}
-
-                {% if current_user.has_permission('add_note') %}
-                <form method="POST" action="{{ url_for('ticket.add_note', ticket_id=ticket.id) }}">
-                    <div class="mb-3">
-                        <label for="note_type" class="form-label">Note Type</label>
-                        <select class="form-control" name="note_type">
-                            <option value="General">General</option>
-                            <option value="Down Payment">Down Payment</option>
-                            <option value="Full Payment">Full Payment</option>
-                            <option value="Device Picked Up">Device Picked Up</option>
-                            <option value="Technical Update">Technical Update</option>
-                            <option value="Customer Communication">Customer Communication</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <textarea class="form-control" name="content" rows="3" placeholder="Add a note..." required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-sm">Add Note</button>
-                </form>
-                {% endif %}
-            </div>
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Ticket: {{ ticket.ticket_number }}</h4>
+        <div>
+            {% if current_user.has_permission('update_phase') %}
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#updatePhaseModal">Update Phase</button>
+            {% endif %}
+            <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-warning">Edit Ticket</a>
+            <span class="badge bg-primary ms-2">{{ ticket.current_phase }}</span>
         </div>
     </div>
-
-    <!-- Right Sidebar -->
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5>Ticket Details</h5>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Customer:</strong> {{ ticket.customer.name }}</p>
+                <p><strong>Device:</strong> {{ ticket.device.display }}</p>
             </div>
-            <div class="card-body">
-                <p>
-                    <strong>Ticket #:</strong><br>
-                    {{ ticket.ticket_number }}
-                </p>
-                <p>
-                    <strong>Current Phase:</strong><br>
-                    <span class="badge bg-{% if ticket.current_phase == 'Finished' %}success{% elif ticket.current_phase == 'Open' %}danger{% elif ticket.current_phase == 'Repairing' %}warning{% else %}info{% endif %}">{{ ticket.current_phase }}</span>
-                </p>
-                <p>
-                    <strong>Priority:</strong><br>
-                    <span class="badge bg-{% if ticket.priority == 'Urgent' %}danger{% elif ticket.priority == 'High' %}warning{% elif ticket.priority == 'Medium' %}info{% else %}secondary{% endif %}">{{ ticket.priority }}</span>
-                </p>
-                <p>
-                    <strong>Assigned To:</strong><br>
-                    {{ ticket.assigned_to_user.full_name if ticket.assigned_to_user else 'Unassigned' }}
-                </p>
-                <p>
-                    <strong>Created:</strong><br>
-                    {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}
-                </p>
-                {% if ticket.completed_at %}
-                <p>
-                    <strong>Completed:</strong><br>
-                    {{ ticket.completed_at.strftime('%Y-%m-%d %H:%M') }}
-                </p>
-                {% endif %}
-                <p>
-                    <strong>Device Picked Up:</strong><br>
-                    {% if ticket.device_picked_up %}
-                        <span class="badge bg-success">{{ ticket.picked_up_date.strftime('%Y-%m-%d %H:%M') }}</span>
-                    {% else %}
-                        <span class="badge bg-warning">In Shop</span>
-                    {% endif %}
-                </p>
-                <p>
-                    <strong>Estimated Cost:</strong><br>
-                    ${{ ticket.estimated_cost or '0.00' }}
-                </p>
-                <p>
-                    <strong>Actual Cost:</strong><br>
-                    ${{ ticket.actual_cost or '0.00' }}
-                </p>
+            <div class="col-md-6">
+                <p><strong>Created:</strong> {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><strong>Technician:</strong> {{ ticket.assigned_to_user.full_name if ticket.assigned_to_user else 'Unassigned' }}</p>
+            </div>
+        </div>
+        <hr>
+        <h5>Problem Description</h5>
+        <p>{{ ticket.problem_description }}</p>
+        
+        <hr>
+        <div class="row">
+            <div class="col-md-12">
+                <h5>Phase History</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Technician</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in ticket.phase_logs|sort(attribute='changed_at', reverse=True) %}
+                            <tr>
+                                <td>{{ log.old_phase or 'Intake' }}</td>
+                                <td><span class="badge bg-info text-dark">{{ log.new_phase }}</span></td>
+                                <td>{{ log.technician_user.full_name }}</td>
+                                <td>{{ log.changed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal for Phase Update -->
-<div class="modal fade" id="phaseModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<!-- Update Phase Modal -->
+<div class="modal fade" id="updatePhaseModal" tabindex="-1">
+    <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Update Repair Phase</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST" action="{{ url_for('ticket.update_phase', ticket_id=ticket.id) }}">
+            <form action="{{ url_for('ticket.update_phase', ticket_id=ticket.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Ticket Phase</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="phase" class="form-label">Select Phase *</label>
-                        <select class="form-control" id="phase" name="phase" required>
-                            <option value="">Select Phase</option>
-                            {% for phase in ticket.PHASE_CHOICES %}
-                            <option value="{{ phase }}" {% if phase == ticket.current_phase %}disabled{% endif %}>{{ phase }}</option>
-                            {% endfor %}
+                        <label class="form-label">New Phase</label>
+                        <select name="new_phase" class="form-select" required>
+                            <option value="" disabled selected>-- Select Phase --</option>
+                            <option value="Open" {% if ticket.current_phase == 'Open' %}disabled{% endif %}>Open</option>
+                            <option value="Diagnostic" {% if ticket.current_phase == 'Diagnostic' %}disabled{% endif %}>Diagnostic</option>
+                            <option value="Waiting for Parts" {% if ticket.current_phase == 'Waiting for Parts' %}disabled{% endif %}>Waiting for Parts</option>
+                            <option value="Repairing" {% if ticket.current_phase == 'Repairing' %}disabled{% endif %}>Repairing</option>
+                            <option value="Finished" {% if ticket.current_phase == 'Finished' %}disabled{% endif %}>Finished</option>
+                            <option value="Cancelled" {% if ticket.current_phase == 'Cancelled' %}disabled{% endif %}>Cancelled</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="commentary" class="form-label">Commentary / Result of this Phase *</label>
-                        <textarea class="form-control" id="commentary" name="commentary" rows="5" placeholder="What was done in this phase? What was the result?" required></textarea>
+                        <label class="form-label">Technician Commentary (Optional)</label>
+                        <textarea name="commentary" class="form-control" rows="3" placeholder="Describe the work done or reason for phase change..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Update Phase</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-<style>
-.timeline-item {
-    padding-left: 20px;
-    border-left: 3px solid #007bff;
-    position: relative;
-}
-
-.timeline-item::before {
-    content: '';
-    position: absolute;
-    left: -9px;
-    top: 0;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: #007bff;
-}
-</style>
 {% endblock %}

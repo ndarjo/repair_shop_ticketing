@@ -21,7 +21,7 @@ A comprehensive Python Flask web application for managing repair shop operations
 - 💳 **Payment Tracking** - Down payments, full payments, and partial payments
 - 🛠️ **Common Problems** - Customizable quick-select problem descriptions
 - 📋 **Reports & Analytics** - Monthly statistics and revenue tracking
-- 📦 **Backup & Restore** - Local database backup and restoration
+- 📦 **System Backups** - Full SQLite database and JSON logical exports
 - 🌙 **Dark/Light Theme** - User preference for light and dark modes
 - 🎨 **Color Themes** - Multiple color schemes (Blue, Green, Purple, Red, Orange)
 - ⏰ **24-Hour Time Format** - Professional time display (no AM/PM)
@@ -87,9 +87,10 @@ repair-shop-REDACTED_PASSWORD/
 │   ├── login.html             # Login page
 │   ├── profile.html           # User profile & theme settings
 │   ├── dashboard.html         # Main dashboard
-│   ├── new_ticket.html        # Create new ticket
+│   ├── tickets_list.html      # Full repair ticket directory
+│   ├── ticket_form.html       # Ticket intake form with AJAX search
 │   ├── ticket_detail.html     # View ticket details
-│   ├── edit_ticket.html       # Edit ticket (deprecated - use phase update)
+│   ├── edit_ticket.html       # Edit repair details and assignment
 │   ├── new_customer.html      # Create new customer
 │   ├── customer_detail.html   # View customer details
 │   ├── customers.html         # Customer list
@@ -336,7 +337,7 @@ These appear as quick-select options when creating tickets.
 ### Theme Settings
 
 **User Preferences:**
-1. Click profile icon > **Profile**
+1. Click profile name > **Profile & Theme**
 2. Select **Theme** (Light/Dark)
 3. Select **Color Scheme** (Blue, Green, Purple, Red, Orange)
 4. Save changes
@@ -349,15 +350,11 @@ These appear as quick-select options when creating tickets.
 
 ### Backup & Restore
 
-**Create Backup:**
+**Generate Backup:**
 1. Go to **Admin > Backup**
-2. Click **"Create Backup"**
-3. Backup saved with timestamp
-
-**Download Backup:**
-1. Go to **Admin > Backup**
-2. Click **"Download"** on backup
-3. Saves as JSON file
+2. Click **"System Backups"**
+3. Click **"Download Backup"**
+4. The system generates a JSON file containing customer and ticket data for download.
 
 **Restore Backup:**
 - Download backup JSON

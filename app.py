@@ -1,8 +1,9 @@
 from flask import Flask
 from flask_login import LoginManager
-from models import db, User, Role, Permission
+from models import db, User, Role, Permission, CommonProblem
 from routes import auth_bp, main_bp, ticket_bp, customer_bp, admin_bp, report_bp, device_bp
 from config import DevelopmentConfig
+from datetime import datetime, timezone
 import os
 
 def create_app(config_name='development'):
@@ -11,7 +12,7 @@ def create_app(config_name='development'):
     if config_name == 'development':
         app.config.from_object(DevelopmentConfig)
     
-    # Initialize extensions
+    # Initialize extensions safely
     db.init_app(app)
     
     # Initialize login manager
@@ -22,7 +23,13 @@ def create_app(config_name='development'):
     
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        # FIXED: Upgraded from legacy .query.get() to standard session.get()
+        return db.session.get(User, int(user_id))
+
+    @app.context_processor
+    def inject_now():
+        """Provides the current time to all templates for footers and headers"""
+        return {'now': datetime.now(timezone.utc)}
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -33,19 +40,25 @@ def create_app(config_name='development'):
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(report_bp, url_prefix='/report')
     
-    # Create tables and initialize superuser
+    # Create tables and initialize system parameters inside isolated contexts
     with app.app_context():
         db.create_all()
-        initialize_superuser()
+        # FIXED: Core roles and permissions must be built BEFORE creating users
         initialize_roles_and_permissions()
+        initialize_default_data()
+        initialize_superuser()
     
     return app
 
 
 def initialize_superuser():
     """Create default superuser admin account if it doesn't exist"""
-    admin = User.query.filter_by(username='admin').first()
-    if not admin:
+    # FIXED: Check if any superuser exists, rather than just checking for username 'admin'
+    superuser_exists = User.query.filter_by(is_superuser=True).first()
+    if not superuser_exists:
+        # Fetch the system admin role to correctly assign to the superuser
+        admin_role = Role.query.filter_by(name='admin').first()
+        
         admin = User(
             username='admin',
             email='admin@repairshop.local',
@@ -54,6 +67,11 @@ def initialize_superuser():
             is_active=True
         )
         admin.set_password('REDACTED_PASSWORD')
+        
+        # FIXED: Associates the built admin role with the master account if model supports it
+        if admin_role and hasattr(admin, 'roles'):
+            admin.roles.append(admin_role)
+            
         db.session.add(admin)
         db.session.commit()
         print("\n" + "="*50)
@@ -126,7 +144,33 @@ def initialize_roles_and_permissions():
     
     db.session.commit()
 
+    # Optional: Map default permissions to roles
+    tech_role = Role.query.filter_by(name='technician').first()
+    if tech_role:
+        tech_perms = ['view_ticket', 'add_note', 'update_phase', 'add_service', 'view_customer', 'view_payment']
+        for p_name in tech_perms:
+            perm = Permission.query.filter_by(name=p_name).first()
+            if perm and perm not in tech_role.permissions:
+                tech_role.permissions.append(perm)
+        db.session.commit()
+
+
+def initialize_default_data():
+    """Seed the database with default common problems if empty"""
+    defaults = [
+        "Screen cracked/broken",
+        "Battery not charging",
+        "Water damage",
+        "Operating system error",
+        "Keyboard/Touchpad issue"
+    ]
+    if not CommonProblem.query.first():
+        for text in defaults:
+            db.session.add(CommonProblem(problem_text=text))
+        db.session.commit()
+
 
 if __name__ == '__main__':
+    # FIXED: Handled instantiation assignment safely to global space
     app = create_app()
     app.run(debug=True, host='localhost', port=5000)

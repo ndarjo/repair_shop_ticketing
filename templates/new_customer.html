@@ -1,32 +1,29 @@
 {% extends "base.html" %}
 
-{% block title %}Add Customer - Repair Shop{% endblock %}
+{% block title %}New Customer - Repair Shop{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-md-6 offset-md-3">
         <div class="card">
-            <div class="card-header">
-                <h4>Add New Customer</h4>
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Add New Customer</h4>
             </div>
             <div class="card-body">
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="name" class="form-label">Customer Name *</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" name="name" class="form-control" required autofocus>
                     </div>
                     <div class="mb-3">
-                        <label for="phone" class="form-label">Mobile Phone *</label>
-                        <input type="tel" class="form-control" id="phone" name="phone" required>
+                        <label class="form-label">Phone Number *</label>
+                        <input type="text" name="phone" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label for="address" class="form-label">Address *</label>
-                        <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
+                        <label class="form-label">Address</label>
+                        <textarea name="address" class="form-control" rows="3"></textarea>
                     </div>
-                    <div class="mb-3">
-                        <button type="submit" class="btn btn-primary">Add Customer</button>
-                        <a href="{{ url_for('customer.customers_list') }}" class="btn btn-secondary">Cancel</a>
-                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Create Customer</button>
                 </form>
             </div>
         </div>

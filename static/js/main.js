@@ -174,6 +174,20 @@ function initCommonProblems() {
 }
 
 /**
+ * Retrieves the CSRF token from a meta tag in the HTML.
+ * Assumes the token is available in <meta name="csrf-token" content="...">
+ * @returns {string} The CSRF token, or an empty string if not found.
+ */
+function getCsrfToken() {
+    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+    if (tokenMeta) {
+        return tokenMeta.getAttribute('content');
+    }
+    console.warn("CSRF token meta tag not found. AJAX POST requests might fail.");
+    return '';
+}
+
+/**
  * Initialize new customer modal
  */
 function initNewCustomerModal() {
@@ -189,18 +203,23 @@ function initNewCustomerModal() {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken() // Add CSRF token for security
                 }
             });
             
             if (response.ok) {
                 const data = await response.json();
+                // Assuming selectCustomer handles UI updates for success
                 selectCustomer(data.id, data.name);
-                const modal = bootstrap.Modal.getInstance(document.getElementById('newCustomerModal'));
+                const modalElement = document.getElementById('newCustomerModal');
+                const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
                 modal.hide();
                 form.reset();
             } else {
                 alert('Error creating customer');
+                const errorData = await response.json();
+                alert(`Error creating customer: ${errorData.error || response.statusText}`);
             }
         } catch (error) {
             console.error('Error:', error);
@@ -224,18 +243,23 @@ function initNewDeviceModal() {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken() // Add CSRF token for security
                 }
             });
             
             if (response.ok) {
                 const data = await response.json();
+                // Assuming selectDevice handles UI updates for success
                 selectDevice(data.id, data.display);
-                const modal = bootstrap.Modal.getInstance(document.getElementById('newDeviceModal'));
+                const modalElement = document.getElementById('newDeviceModal');
+                const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
                 modal.hide();
                 form.reset();
             } else {
                 alert('Error creating device');
+                const errorData = await response.json();
+                alert(`Error creating device: ${errorData.error || response.statusText}`);
             }
         } catch (error) {
             console.error('Error:', error);
@@ -244,91 +268,32 @@ function initNewDeviceModal() {
 }
 
 /**
- * Close dropdown menus when clicking outside
+ * Bind Theme Toggle inputs if present in the layout DOM
  */
-function initDropdownCloseOnClickOutside() {
-    document.addEventListener('click', function(event) {
-        const searchResults = document.getElementById('customer_results');
-        const deviceResults = document.getElementById('device_results');
-        
-        if (searchResults && !searchResults.contains(event.target) && event.target.id !== 'customer_search') {
-            searchResults.style.display = 'none';
-        }
-        
-        if (deviceResults && !deviceResults.contains(event.target) && event.target.id !== 'device_search') {
-            deviceResults.style.display = 'none';
-        }
+function initThemeToggles() {
+    document.querySelectorAll('[data-theme-control]').forEach(control => {
+        control.addEventListener('change', function() {
+            applyTheme(this.value);
+        });
+    });
+    
+    document.querySelectorAll('[data-color-control]').forEach(control => {
+        control.addEventListener('click', function(e) {
+            e.preventDefault();
+            applyColorScheme(this.dataset.colorControl);
+        });
     });
 }
 
-/**
- * Format time to 24-hour format
- */
-function formatTime(date) {
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-}
-
-/**
- * Initialize all JavaScript on page load
- */
-document.addEventListener('DOMContentLoaded', function() {
-    // Load saved theme
+// ========================================
+// CORE ENGINE INITIALIZATION
+// ========================================
+document.addEventListener('DOMContentLoaded', () => {
     loadSavedTheme();
-    
-    // Initialize autocomplete
+    initThemeToggles();
     initCustomerSearch();
     initDeviceSearch();
     initCommonProblems();
     initNewCustomerModal();
     initNewDeviceModal();
-    initDropdownCloseOnClickOutside();
-    
-    // Add smooth transitions
-    document.querySelectorAll('a, button').forEach(element => {
-        element.addEventListener('click', function() {
-            if (!this.classList.contains('no-smooth')) {
-                this.style.transition = 'all 0.2s ease';
-            }
-        });
-    });
 });
-
-/**
- * Utility: Format currency
- */
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-    }).format(amount);
-}
-
-/**
- * Utility: Format date
- */
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    });
-}
-
-/**
- * Utility: Confirm deletion
- */
-function confirmDelete(message = 'Are you sure you want to delete this item?') {
-    return confirm(message);
-}
-
-// Export functions for global use
-window.applyTheme = applyTheme;
-window.applyColorScheme = applyColorScheme;
-window.selectCustomer = selectCustomer;
-window.selectDevice = selectDevice;
-window.formatCurrency = formatCurrency;
-window.formatDate = formatDate;
-window.confirmDelete = confirmDelete;

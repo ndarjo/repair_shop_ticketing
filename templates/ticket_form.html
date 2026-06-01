@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Ticket{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">New Repair Ticket</h4>
+    </div>
+    <div class="card-body">
+        <form method="POST" id="ticketForm">
+            <div class="row g-3">
+                <!-- Customer Search Section -->
+                <div class="col-md-6 position-relative">
+                    <label class="form-label">Search Customer</label>
+                    <div class="input-group">
+                        <input type="text" id="customer_search" class="form-control" placeholder="Type name or phone..." autocomplete="off">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#newCustomerModal">New +</button>
+                    </div>
+                    <input type="hidden" name="customer_id" id="customer_id" required>
+                    <div id="customer_results" class="list-group position-absolute w-100 z-3 shadow" style="display: none;"></div>
+                </div>
+
+                <!-- Device Search Section -->
+                <div class="col-md-6 position-relative">
+                    <label class="form-label">Select Device</label>
+                    <div class="input-group">
+                        <input type="text" id="device_search" class="form-control" placeholder="Search customer's devices..." disabled autocomplete="off">
+                        <button type="button" id="new_device_btn" class="btn btn-outline-secondary" disabled data-bs-toggle="modal" data-bs-target="#newDeviceModal">New +</button>
+                    </div>
+                    <input type="hidden" name="device_id" id="device_id" required>
+                    <div id="device_results" class="list-group position-absolute w-100 z-3 shadow" style="display: none;"></div>
+                </div>
+
+                <div class="col-12 mt-4">
+                    <h6>Problem & Intake Details</h6>
+                    <hr>
+                </div>
+
+                <div class="col-md-12 mb-2">
+                    <label class="form-label">Common Problems (Quick Select)</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for problem in common_problems %}
+                            <button type="button" class="btn btn-sm btn-outline-info problem-quick-select" data-problem="{{ problem.problem_text }}">{{ problem.problem_text }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Problem Description</label>
+                    <textarea name="problem_description" id="problem_description" class="form-control" rows="3" required></textarea>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Items Included (Charger, Case, etc.)</label>
+                    <input type="text" name="items_included" class="form-control" placeholder="e.g., Original Charger, Leather Case">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Technician Assignment</label>
+                    <select name="assigned_to" class="form-select">
+                        <option value="">-- Unassigned --</option>
+                        {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Down Payment</label>
+                    <input type="number" step="0.01" name="down_payment_amount" class="form-control" value="0.00">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Date/Time In</label>
+                    <div class="input-group">
+                        <input type="date" name="created_date" class="form-control" value="{{ now_date }}">
+                        <input type="time" name="created_time" class="form-control" value="{{ now_time }}">
+                    </div>
+                </div>
+
+                <div class="col-12 text-end mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg px-5">Create Ticket</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modals for New Customer/Device -->
+<div class="modal fade" id="newCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Add New Customer</h5></div>
+            <div class="modal-body">
+                <form id="newCustomerForm">
+                    <input type="text" name="name" class="form-control mb-2" placeholder="Full Name" required>
+                    <input type="text" name="phone" class="form-control mb-2" placeholder="Phone Number" required>
+                    <textarea name="address" class="form-control" placeholder="Address (Optional)"></textarea>
+                </form>
+            </div>
+            <div class="modal-footer"><button id="saveCustomerBtn" class="btn btn-primary">Save Customer</button></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="newDeviceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Add New Device</h5></div>
+            <div class="modal-body">
+                <form id="newDeviceForm">
+                    <input type="hidden" name="customer_id" id="modal_device_customer_id">
+                    <input type="text" name="device_type" class="form-control mb-2" placeholder="Device Type (e.g. Laptop)" required>
+                    <input type="text" name="brand" class="form-control mb-2" placeholder="Brand" required>
+                    <input type="text" name="model_number" class="form-control mb-2" placeholder="Model Number">
+                </form>
+            </div>
+            <div class="modal-footer"><button id="saveDeviceBtn" class="btn btn-primary">Save Device</button></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

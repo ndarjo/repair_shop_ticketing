@@ -1,56 +1,25 @@
 {% extends "base.html" %}
-
-{% block title %}Manage Common Problems - Admin{% endblock %}
-
+{% block title %}Manage Common Problems{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <h1 class="mb-4">Manage Common Problems</h1>
-        <p class="text-muted">These problems appear as quick-select options when creating repair tickets.</p>
-        
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">Add New Problem</h5>
+<h3>Manage Common Problems</h3>
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="POST">
+            <div class="input-group">
+                <input type="text" name="problem_text" class="form-control" placeholder="New problem description..." required>
+                <button class="btn btn-primary" type="submit">Add Problem</button>
             </div>
-            <div class="card-body">
-                <form method="POST">
-                    <input type="hidden" name="action" value="add">
-                    <div class="input-group">
-                        <input type="text" class="form-control" name="problem_text" placeholder="E.g., Faulty harddrive, Screen not turning on" required>
-                        <button class="btn btn-primary" type="submit">Add</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        
-        {% if problems %}
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Current Problems</h5>
-            </div>
-            <div class="card-body">
-                <div class="list-group">
-                    {% for problem in problems %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-0">{{ problem.problem_text }}</h6>
-                            <small class="text-muted">Added: {{ problem.created_at.strftime('%Y-%m-%d') }}</small>
-                        </div>
-                        <form method="POST" style="display:inline;">
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="problem_id" value="{{ problem.id }}">
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this problem?')">Remove</button>
-                        </form>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% else %}
-        <div class="alert alert-info">
-            No common problems added yet. Add your first one above.
-        </div>
-        {% endif %}
+        </form>
     </div>
+</div>
+<div class="list-group">
+    {% for problem in problems %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            {{ problem.problem_text }}
+            {% if not problem.is_active %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+        </div>
+    {% else %}
+        <p class="text-center text-muted">No common problems defined yet.</p>
+    {% endfor %}
 </div>
 {% endblock %}
