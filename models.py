@@ -2,6 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+import json
 
 db = SQLAlchemy()
 
@@ -11,11 +12,12 @@ class User(UserMixin, db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    email = db.Column(db.String(120), nullable=True)  # Optional
     password_hash = db.Column(db.String(255), nullable=False)
     full_name = db.Column(db.String(120), nullable=False)
-    is_superuser = db.Column(db.Boolean, default=False)  # Super admin flag
+    is_superuser = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
+    theme_preference = db.Column(db.String(20), default='light')  # light or dark
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -51,7 +53,7 @@ class Role(db.Model):
     __tablename__ = 'roles'
     
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)  # admin, technician, receptionist, manager
+    name = db.Column(db.String(50), unique=True, nullable=False)
     description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -66,20 +68,19 @@ class Permission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text)
-    category = db.Column(db.String(50))  # tickets, customers, users, payments, reports
+    category = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
         return f'<Permission {self.name}>'
 
 
-# Association table for user roles
+# Association tables
 user_roles = db.Table('user_roles',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
     db.Column('role_id', db.Integer, db.ForeignKey('roles.id'))
 )
 
-# Association table for user permissions
 user_permissions = db.Table('user_permissions',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
     db.Column('permission_id', db.Integer, db.ForeignKey('permissions.id'))
@@ -93,7 +94,7 @@ class Customer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     phone = db.Column(db.String(20), nullable=False)
-    address = db.Column(db.Text, nullable=False)
+    address = db.Column(db.Text, nullable=True)  # Optional
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -105,19 +106,19 @@ class Customer(db.Model):
 
 
 class Device(db.Model):
-    """Device model - each customer can have multiple devices with detailed specifications"""
+    """Device model - each customer can have multiple devices"""
     __tablename__ = 'devices'
     
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
-    device_type = db.Column(db.String(100), nullable=False)  # Phone, Laptop, Tablet, Desktop, etc.
+    device_type = db.Column(db.String(100), nullable=False)
     brand = db.Column(db.String(80))
     model = db.Column(db.String(80))
     model_number = db.Column(db.String(100))
-    cpu = db.Column(db.String(100))  # Processor information
-    ram = db.Column(db.String(50))  # RAM specification (e.g., 8GB, 16GB)
-    storage_type = db.Column(db.String(50))  # HDD, SSD, or both
-    storage_capacity = db.Column(db.String(100))  # Storage capacity with unit (e.g., 256GB, 512GB SSD + 1TB HDD)
+    cpu = db.Column(db.String(100))
+    ram = db.Column(db.String(50))
+    storage_type = db.Column(db.String(50))
+    storage_capacity = db.Column(db.String(100))
     serial_number = db.Column(db.String(100))
     color = db.Column(db.String(50))
     notes = db.Column(db.Text)
@@ -128,6 +129,44 @@ class Device(db.Model):
     
     def __repr__(self):
         return f'<Device {self.brand} {self.model}>'
+
+
+class Service(db.Model):
+    """Service model - repair services that can be added to tickets"""
+    __tablename__ = 'services'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text)
+    price = db.Column(db.Float, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    ticket_services = db.relationship('TicketService', backref='service', lazy=True, cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<Service {self.name}>'
+
+
+class SparePart(db.Model):
+    """Spare part/hardware model - parts used in repairs"""
+    __tablename__ = 'spare_parts'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text)
+    cost = db.Column(db.Float, nullable=False)  # Cost to shop
+    selling_price = db.Column(db.Float, nullable=False)  # Price charged to customer
+    stock_quantity = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    invoice_items = db.relationship('InvoiceItem', backref='spare_part', lazy=True, cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<SparePart {self.name}>'
 
 
 class Ticket(db.Model):
@@ -156,29 +195,28 @@ class Ticket(db.Model):
     device_id = db.Column(db.Integer, db.ForeignKey('devices.id'), nullable=False)
     assigned_to = db.Column(db.Integer, db.ForeignKey('users.id'))
     
-    # Inclusions and problems
-    items_included = db.Column(db.Text, nullable=False)  # What customer brought with device (charger, cables, etc.)
-    problem_description = db.Column(db.Text, nullable=False)  # What problem device has
+    items_included = db.Column(db.Text, nullable=False)
+    problem_description = db.Column(db.Text, nullable=False)
     
-    # Phase tracking
-    current_phase = db.Column(db.String(20), default='Open', nullable=False)  # Current phase
+    current_phase = db.Column(db.String(20), default='Open', nullable=False)
     priority = db.Column(db.String(10), default='Medium', nullable=False)
     
-    device_picked_up = db.Column(db.Boolean, default=False)  # Track if device was picked up
-    picked_up_date = db.Column(db.DateTime)  # When device was picked up
+    device_picked_up = db.Column(db.Boolean, default=False)
+    picked_up_date = db.Column(db.DateTime)
     
     estimated_cost = db.Column(db.Float)
     actual_cost = db.Column(db.Float)
     
-    # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # When ticket was created
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    completed_at = db.Column(db.DateTime)  # When repair was finished
+    completed_at = db.Column(db.DateTime)
     
     # Relationships
     notes = db.relationship('Note', backref='ticket', lazy=True, cascade='all, delete-orphan')
     payments = db.relationship('Payment', backref='ticket', lazy=True, cascade='all, delete-orphan')
     phase_logs = db.relationship('PhaseLog', backref='ticket', lazy=True, cascade='all, delete-orphan')
+    ticket_services = db.relationship('TicketService', backref='ticket', lazy=True, cascade='all, delete-orphan')
+    invoice = db.relationship('Invoice', backref='ticket', uselist=False, lazy=True, cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Ticket {self.ticket_number}>'
@@ -188,16 +226,79 @@ class Ticket(db.Model):
         return Customer.query.get(self.customer_id)
 
 
+class TicketService(db.Model):
+    """Services added to a ticket"""
+    __tablename__ = 'ticket_services'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id'), nullable=False)
+    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=False)
+    quantity = db.Column(db.Integer, default=1)
+    price = db.Column(db.Float, nullable=False)
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<TicketService {self.service_id} for Ticket {self.ticket_id}>'
+
+
+class Invoice(db.Model):
+    """Invoice model - generated after repair completion"""
+    __tablename__ = 'invoices'
+    
+    INVOICE_STATUSES = ['Draft', 'Issued', 'Partially Paid', 'Paid', 'Cancelled']
+    
+    id = db.Column(db.Integer, primary_key=True)
+    invoice_number = db.Column(db.String(20), unique=True, nullable=False)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id'), nullable=False)
+    
+    subtotal = db.Column(db.Float, default=0)  # Services subtotal
+    spare_parts_total = db.Column(db.Float, default=0)  # Spare parts total
+    total_amount = db.Column(db.Float, default=0)  # Grand total
+    
+    down_payment = db.Column(db.Float, default=0)  # Down payment already received
+    full_payment_received = db.Column(db.Float, default=0)  # Full payment received
+    remaining_balance = db.Column(db.Float, default=0)  # Amount still owed
+    
+    status = db.Column(db.String(20), default='Draft')
+    issued_date = db.Column(db.DateTime, default=datetime.utcnow)
+    due_date = db.Column(db.DateTime)
+    paid_date = db.Column(db.DateTime)
+    
+    # Relationships
+    items = db.relationship('InvoiceItem', backref='invoice', lazy=True, cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<Invoice {self.invoice_number}>'
+
+
+class InvoiceItem(db.Model):
+    """Items in an invoice (spare parts/hardware)"""
+    __tablename__ = 'invoice_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('invoices.id'), nullable=False)
+    spare_part_id = db.Column(db.Integer, db.ForeignKey('spare_parts.id'), nullable=False)
+    
+    quantity = db.Column(db.Integer, default=1)
+    unit_price = db.Column(db.Float, nullable=False)
+    total_price = db.Column(db.Float, nullable=False)
+    
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<InvoiceItem {self.spare_part_id} in Invoice {self.invoice_id}>'
+
+
 class PhaseLog(db.Model):
-    """Log for tracking phase changes and their details"""
+    """Log for tracking phase changes"""
     __tablename__ = 'phase_logs'
     
     id = db.Column(db.Integer, primary_key=True)
     ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # Technician who made the change
-    phase = db.Column(db.String(50), nullable=False)  # Phase name
-    commentary = db.Column(db.Text)  # What was done in this phase
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)  # When this phase was logged
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    phase = db.Column(db.String(50), nullable=False)
+    commentary = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
         return f'<PhaseLog Ticket {self.ticket_id} - {self.phase}>'
@@ -219,7 +320,7 @@ class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    note_type = db.Column(db.String(50), default='General')  # Type of note
+    note_type = db.Column(db.String(50), default='General')
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -239,12 +340,27 @@ class Payment(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # Who recorded the payment
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    payment_type = db.Column(db.String(20), nullable=False)  # Down Payment, Full Payment
-    payment_method = db.Column(db.String(50))  # Cash, Card, Check, Online
+    payment_type = db.Column(db.String(20), nullable=False)
+    payment_method = db.Column(db.String(50))
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
         return f'<Payment {self.payment_type} for Ticket {self.ticket_id}>'
+
+
+class Backup(db.Model):
+    """Database backup for local restoration"""
+    __tablename__ = 'backups'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    backup_name = db.Column(db.String(120), nullable=False)
+    backup_data = db.Column(db.Text, nullable=False)  # JSON formatted backup
+    file_size = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    def __repr__(self):
+        return f'<Backup {self.backup_name}>'
