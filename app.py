@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_login import LoginManager
 from models import db, User, Role, Permission
-from routes import auth_bp, main_bp, ticket_bp, customer_bp, admin_bp
+from routes import auth_bp, main_bp, ticket_bp, customer_bp, admin_bp, report_bp, device_bp
 from config import DevelopmentConfig
 import os
 
@@ -29,7 +29,9 @@ def create_app(config_name='development'):
     app.register_blueprint(main_bp, url_prefix='/')
     app.register_blueprint(ticket_bp, url_prefix='/ticket')
     app.register_blueprint(customer_bp, url_prefix='/customer')
+    app.register_blueprint(device_bp, url_prefix='/device')
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(report_bp, url_prefix='/report')
     
     # Create tables and initialize superuser
     with app.app_context():
@@ -79,7 +81,7 @@ def initialize_roles_and_permissions():
     
     db.session.commit()
     
-    # Define permissions
+    # Define permissions grouped by category
     permissions_data = [
         # Ticket permissions
         ('create_ticket', 'Create new repair tickets', 'tickets'),
@@ -87,6 +89,9 @@ def initialize_roles_and_permissions():
         ('edit_ticket', 'Edit ticket information', 'tickets'),
         ('delete_ticket', 'Delete tickets', 'tickets'),
         ('add_note', 'Add notes to tickets', 'tickets'),
+        ('update_phase', 'Update ticket phase', 'tickets'),
+        ('add_service', 'Add services to tickets', 'tickets'),
+        ('create_invoice', 'Create invoices', 'tickets'),
         
         # Customer permissions
         ('create_customer', 'Create new customers', 'customers'),
@@ -94,6 +99,8 @@ def initialize_roles_and_permissions():
         ('edit_customer', 'Edit customer information', 'customers'),
         ('delete_customer', 'Delete customers', 'customers'),
         ('create_device', 'Add devices to customers', 'customers'),
+        ('edit_device', 'Edit device information', 'customers'),
+        ('delete_device', 'Delete devices', 'customers'),
         
         # Payment permissions
         ('record_payment', 'Record payments', 'payments'),
