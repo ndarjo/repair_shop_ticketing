@@ -321,7 +321,7 @@ def reports():
 
     monthly_stats = {
         'total_tickets': Ticket.query.count(),
-        'completed_tickets': Ticket.query.filter_by(current_phase='Finished').count(),
+        'completed_tickets': Ticket.query.filter_by(current_phase='Already Taken').count(),
         'total_revenue': float(gross_revenue) - float(hardware_cost) # Shows Net Profit
     }
     # Fetch recent tickets for the report table
@@ -424,6 +424,22 @@ def edit_part_admin(part_id):
     flash(f'Part "{part.name}" updated.', 'success')
     return redirect(url_for('admin.manage_parts'))
 
+@admin_bp.route('/parts/delete/<int:part_id>', methods=['POST'], endpoint='delete_part_admin')
+@login_required
+@require_permission('manage_services')
+def delete_part_admin(part_id):
+    """Permanently remove a spare part from the inventory catalog"""
+    part = db.session.get(SparePart, part_id)
+    if part:
+        try:
+            db.session.delete(part)
+            db.session.commit()
+            flash(f'Spare part "{part.name}" deleted successfully.', 'success')
+        except Exception:
+            db.session.rollback()
+            flash('Cannot delete part because it is linked to existing invoices. Try deactivating it instead.', 'error')
+    return redirect(url_for('admin.manage_parts'))
+
 @admin_bp.route('/services/add', methods=['POST'], endpoint='add_service_admin')
 @login_required
 @require_permission('manage_services')
@@ -460,6 +476,22 @@ def edit_service_admin(service_id):
     
     db.session.commit()
     flash(f'Service "{service.name}" updated.', 'success')
+    return redirect(url_for('admin.manage_services'))
+
+@admin_bp.route('/services/delete/<int:service_id>', methods=['POST'], endpoint='delete_service_admin')
+@login_required
+@require_permission('manage_services')
+def delete_service_admin(service_id):
+    """Permanently remove a service type from the catalog"""
+    service = db.session.get(Service, service_id)
+    if service:
+        try:
+            db.session.delete(service)
+            db.session.commit()
+            flash(f'Service "{service.name}" deleted successfully.', 'success')
+        except Exception:
+            db.session.rollback()
+            flash('Cannot delete service because it is linked to existing repairs. Try deactivating it instead.', 'error')
     return redirect(url_for('admin.manage_services'))
 
 @admin_bp.route('/users', endpoint='manage_users')

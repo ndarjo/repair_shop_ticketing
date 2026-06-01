@@ -37,6 +37,9 @@
                                 data-bs-target="#editServiceModal{{ service.id }}">
                             Edit
                         </button>
+                        <form action="{{ url_for('admin.delete_service_admin', service_id=service.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to permanently delete this service?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
                     </td>
                 </tr>
 
