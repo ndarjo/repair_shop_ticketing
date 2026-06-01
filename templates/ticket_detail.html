@@ -75,8 +75,8 @@
                                 <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price_charged) }}</td>
                                 <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts_total) }}</td>
                                 <td class="text-end">
-                                    {% if current_user.has_permission('add_service') and ticket.current_phase != 'Already Taken' %}
                                     {% if current_user.has_permission('add_service') and (ticket.current_phase != 'Already Taken' or current_user.is_superuser or current_user.has_role('manager')) %}
+                                    <form action="{{ url_for('ticket.remove_service', ticket_id=ticket.id, ts_id=ts.id) }}" method="POST" style="display:inline;">
                                         <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Remove service?')"><i class="fas fa-times"></i></button>
                                     </form>
                                     {% endif %}
