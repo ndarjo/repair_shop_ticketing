@@ -1,5 +1,5 @@
 from flask import Flask
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from models import db, User, Role, Permission, CommonProblem
 from routes import auth_bp, main_bp, ticket_bp, customer_bp, admin_bp, report_bp, device_bp
 from config import DevelopmentConfig
@@ -29,7 +29,16 @@ def create_app(config_name='development'):
     @app.context_processor
     def inject_now():
         """Provides the current time to all templates for footers and headers"""
-        return {'now': datetime.now(timezone.utc)}
+        
+        # Map currency codes to symbols
+        currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
+        symbol = '$'
+        decimals = 2
+        if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+            symbol = currency_map.get(current_user.currency, '$')
+            decimals = getattr(current_user, 'currency_decimals', 2)
+            
+        return {'now': datetime.now(timezone.utc), 'currency_symbol': symbol, 'currency_decimals': decimals}
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')

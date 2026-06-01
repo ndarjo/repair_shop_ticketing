@@ -16,10 +16,17 @@
                 <ul class="list-unstyled">
                     <li><strong>Type:</strong> {{ device.device_type }}</li>
                     <li><strong>Brand:</strong> {{ device.brand or 'N/A' }}</li>
+                    <li><strong>Model #:</strong> {{ device.model_number or 'N/A' }}</li>
+                    <li><strong>CPU:</strong> {{ device.cpu or 'N/A' }}</li>
+                    <li><strong>RAM:</strong> {{ device.ram or 'N/A' }}</li>
+                    <li><strong>Storage:</strong> {{ device.storage_capacity or '' }} {{ device.storage_type or '' }}</li>
                     <li><strong>Serial:</strong> {{ device.serial_number or 'N/A' }}</li>
                 </ul>
-                <div class="mt-3">
+                <div class="mt-3 d-flex gap-2">
                     <a href="{{ url_for('device.edit_device', device_id=device.id) }}" class="btn btn-sm btn-warning">Edit Device</a>
+                    <form method="POST" action="{{ url_for('device.delete_device', device_id=device.id) }}" onsubmit="return confirm('Delete this device and its history?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
                 </div>
             </div>
         </div>

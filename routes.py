@@ -118,10 +118,16 @@ def profile():
         elif action == 'change_theme':
             theme = request.form.get('theme')
             color = request.form.get('color_theme')
+            currency = request.form.get('currency')
+            currency_decimals = request.form.get('currency_decimals', type=int)
             if theme in ['light', 'dark']:
                 current_user.theme_preference = theme
             if color in ['blue', 'green', 'purple', 'red', 'orange']:
                 current_user.color_theme = color
+            if currency in ['USD', 'IDR', 'EUR', 'GBP']:
+                current_user.currency = currency
+            if currency_decimals is not None and 0 <= currency_decimals <= 4:
+                current_user.currency_decimals = currency_decimals
             db.session.commit()
             flash('Preferences updated successfully!', 'success')
         
@@ -359,6 +365,16 @@ def edit_user(user_id):
         user.full_name = request.form.get('full_name')
         user.email = request.form.get('email')
         user.is_active = 'is_active' in request.form
+        
+        # Handle password reset by superuser
+        new_password = request.form.get('password')
+        if new_password:
+            if len(new_password) < 6:
+                flash('New password must be at least 6 characters', 'error')
+                return render_template('admin/edit_user.html', user=user, roles=roles, permissions_by_category=permissions_by_category)
+            user.set_password(new_password)
+            flash(f"Password for {user.username} has been updated.", "info")
+
         user.roles = []
         for rid in request.form.getlist('roles'):
             role = db.session.get(Role, int(rid))
@@ -399,6 +415,18 @@ def manage_problems():
     problems = CommonProblem.query.all()
     return render_template('admin/manage_common_problems.html', problems=problems)
 
+@admin_bp.route('/problems/delete/<int:problem_id>', methods=['POST'])
+@login_required
+@require_superuser()
+def delete_problem(problem_id):
+    """Remove a common problem from the quick-select list"""
+    problem = db.session.get(CommonProblem, problem_id)
+    if problem:
+        db.session.delete(problem)
+        db.session.commit()
+        flash('Common problem deleted.', 'success')
+    return redirect(url_for('admin.manage_problems'))
+
 @admin_bp.route('/backup', methods=['GET', 'POST'])
 @login_required
 @require_superuser()
@@ -407,9 +435,26 @@ def backup():
         backup_type = request.form.get('backup_type')
         if backup_type == 'json_data':
             data = {
-                'customers': [{'id': c.id, 'name': c.name, 'phone': c.phone, 'address': c.address, 'created_at': c.created_at.isoformat()} for c in Customer.query.all()],
-                'tickets': [{'id': t.id, 'ticket_number': t.ticket_number, 'customer_id': t.customer_id, 'device_id': t.device_id, 'problem_description': t.problem_description, 'current_phase': t.current_phase, 'created_at': t.created_at.isoformat()} for t in Ticket.query.all()]
-                # You can add more tables here as needed for your logical backup
+                'customers': [{
+                    'id': c.id, 'name': c.name, 'phone': c.phone, 'address': c.address, 
+                    'created_at': c.created_at.isoformat() if c.created_at else None
+                } for c in Customer.query.all()],
+                'devices': [{
+                    'id': d.id, 'customer_id': d.customer_id, 'device_type': d.device_type, 
+                    'brand': d.brand, 'model_number': d.model_number, 'serial_number': d.serial_number,
+                    'cpu': d.cpu, 'ram': d.ram, 'storage_type': d.storage_type, 
+                    'storage_capacity': d.storage_capacity, 'color': d.color, 'notes': d.notes,
+                    'created_at': d.created_at.isoformat() if d.created_at else None
+                } for d in Device.query.all()],
+                'tickets': [{
+                    'id': t.id, 'ticket_number': t.ticket_number, 'customer_id': t.customer_id, 
+                    'device_id': t.device_id, 'assigned_to': t.assigned_to, 
+                    'problem_description': t.problem_description, 'items_included': t.items_included,
+                    'current_phase': t.current_phase, 'estimated_cost': str(t.estimated_cost),
+                    'actual_cost': str(t.actual_cost), 'device_picked_up': t.device_picked_up,
+                    'picked_up_date': t.picked_up_date.isoformat() if t.picked_up_date else None,
+                    'created_at': t.created_at.isoformat() if t.created_at else None
+                } for t in Ticket.query.all()]
             }
             output = io.BytesIO(json.dumps(data, indent=4, default=str).encode('utf-8')) # default=str handles datetime objects
             return send_file(output, mimetype='application/json', as_attachment=True, 
@@ -424,6 +469,56 @@ def backup():
                 return redirect(url_for('admin.backup'))
     return render_template('admin/backup.html')
 
+@admin_bp.route('/restore', methods=['POST'])
+@login_required
+@require_superuser()
+def restore():
+    """Restore database from an uploaded .db or .json file"""
+    if 'backup_file' not in request.files:
+        flash('No file selected', 'error')
+        return redirect(url_for('admin.backup'))
+    
+    file = request.files['backup_file']
+    if file.filename == '':
+        flash('No file selected', 'error')
+        return redirect(url_for('admin.backup'))
+
+    if file and file.filename.lower().endswith('.db'):
+        try:
+            db_path = db.engine.url.database
+            # Close connections to allow file overwrite
+            db.session.remove()
+            db.engine.dispose()
+            
+            # Overwrite the database file
+            file.save(db_path)
+            
+            flash('System restored successfully from .db file. Please log in again.', 'success')
+            logout_user()
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            flash(f'Error restoring database: {str(e)}', 'error')
+            
+    elif file and file.filename.lower().endswith('.json'):
+        try:
+            # Logical restore (Append missing records)
+            data = json.load(file)
+            count = 0
+            for c_data in data.get('customers', []):
+                if not Customer.query.filter_by(phone=c_data['phone']).first():
+                    new_customer = Customer(name=c_data['name'], phone=c_data['phone'], address=c_data.get('address'))
+                    db.session.add(new_customer)
+                    count += 1
+            db.session.commit()
+            flash(f'Import completed. Added {count} new customers from JSON.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error importing JSON data: {str(e)}', 'error')
+    else:
+        flash('Invalid file format. Please upload a .db or .json file.', 'error')
+        
+    return redirect(url_for('admin.backup'))
+
 @ticket_bp.route('/view/<int:ticket_id>')
 @login_required
 @require_permission('view_ticket')
@@ -433,6 +528,48 @@ def ticket_detail(ticket_id):
         flash('Ticket not found', 'error')
         return redirect(url_for('main.dashboard'))
     return render_template('ticket_detail.html', ticket=ticket)
+
+@ticket_bp.route('/record_payment/<int:ticket_id>', methods=['POST'])
+@login_required
+@require_permission('record_payment')
+def record_payment(ticket_id):
+    """Route to record manual payments against a ticket"""
+    ticket = db.session.get(Ticket, ticket_id)
+    if not ticket:
+        flash('Ticket not found', 'error')
+        return redirect(url_for('main.dashboard'))
+
+    amount = request.form.get('amount', type=float)
+    method = request.form.get('payment_method', 'Cash')
+    reference = request.form.get('reference', '')
+
+    if amount is None or amount <= 0:
+        flash('Please enter a valid payment amount.', 'error')
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
+
+    payment = Payment(
+        ticket_id=ticket.id,
+        user_id=current_user.id,
+        amount=amount,
+        payment_method=method,
+        transaction_reference=reference,
+        paid_at=datetime.now(timezone.utc)
+    )
+    db.session.add(payment)
+
+    # Create an automated note for the payment
+    note = Note(
+        ticket_id=ticket.id,
+        user_id=current_user.id,
+        note_type='Payment Received',
+        content=f"Payment received: {amount}. Method: {method}. Ref: {reference}",
+        is_internal=True
+    )
+    db.session.add(note)
+
+    db.session.commit()
+    flash(f'Payment of {amount} recorded successfully.', 'success')
+    return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
 @ticket_bp.route('/edit/<int:ticket_id>', methods=['GET', 'POST'])
 @login_required
@@ -494,6 +631,7 @@ def update_phase(ticket_id):
         note = Note(
             ticket_id=ticket.id,
             user_id=current_user.id,
+            note_type='Phase Update',
             content=f"Phase update to {new_phase}: {commentary}",
             is_internal=True
         )
@@ -553,7 +691,11 @@ def new_device():
                 device_type=device_type,
                 brand=brand,
                 model_number=request.form.get('model_number'),
-                serial_number=request.form.get('serial_number'),
+                cpu=request.form.get('cpu'),
+                ram=request.form.get('ram'),
+                storage_type=request.form.get('storage_type'),
+                storage_capacity=request.form.get('storage_capacity'),
+                color=request.form.get('color'),
                 notes=request.form.get('notes')
             )
             db.session.add(device)
@@ -685,7 +827,10 @@ def new_device_ajax():
         device_type=device_type,
         brand=brand,
         model_number=request.form.get('model_number'),
-        serial_number=request.form.get('serial_number'),
+        cpu=request.form.get('cpu'),
+        ram=request.form.get('ram'),
+        storage_type=request.form.get('storage_type'),
+        storage_capacity=request.form.get('storage_capacity'),
         notes=request.form.get('notes')
     )
     db.session.add(device)

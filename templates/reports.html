@@ -41,7 +41,7 @@
         <div class="card text-white bg-info">
             <div class="card-body">
                 <h5 class="card-title">Total Revenue</h5>
-                <h2 class="card-text">${{ "%.2f"|format(monthly_stats.total_revenue) }}</h2>
+                <h2 class="card-text">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, monthly_stats.total_revenue) }}</h2>
             </div>
         </div>
     </div>

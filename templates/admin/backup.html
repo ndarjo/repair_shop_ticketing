@@ -33,8 +33,16 @@
         </div>
 
         <div class="card">
-            <div class="card-header"><h5>Restore from Backup (Coming Soon)</h5></div>
-            <div class="card-body"><p class="text-muted">Functionality to upload and restore backups will be implemented in a future update.</p></div>
+            <div class="card-header"><h5>Restore from Backup</h5></div>
+            <div class="card-body">
+                <p class="text-muted">Upload a <strong>.db</strong> file for a full system restore or a <strong>.json</strong> file to import data records.</p>
+                <form action="{{ url_for('admin.restore') }}" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <input class="form-control" type="file" name="backup_file" accept=".json,.db" required>
+                    </div>
+                    <button type="submit" class="btn btn-warning" onclick="return confirm('WARNING: Restoring from a .db file will overwrite all current data. Are you sure?');">Upload & Restore</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>

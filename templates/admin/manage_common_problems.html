@@ -15,8 +15,13 @@
 <div class="list-group">
     {% for problem in problems %}
         <div class="list-group-item d-flex justify-content-between align-items-center">
-            {{ problem.problem_text }}
-            {% if not problem.is_active %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+            <div>
+                {{ problem.problem_text }}
+                {% if not problem.is_active %}<span class="badge bg-secondary ms-2">Inactive</span>{% endif %}
+            </div>
+            <form method="POST" action="{{ url_for('admin.delete_problem', problem_id=problem.id) }}" onsubmit="return confirm('Are you sure you want to delete this problem?');" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
         </div>
     {% else %}
         <p class="text-center text-muted">No common problems defined yet.</p>

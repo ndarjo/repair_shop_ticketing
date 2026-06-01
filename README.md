@@ -21,10 +21,11 @@ A comprehensive Python Flask web application for managing repair shop operations
 - 💳 **Payment Tracking** - Down payments, full payments, and partial payments
 - 🛠️ **Common Problems** - Customizable quick-select problem descriptions
 - 📋 **Reports & Analytics** - Monthly statistics and revenue tracking
-- 📦 **System Backups** - Full SQLite database and JSON logical exports
+- 📦 **Data Management** - Full SQLite (.db) backups and JSON logical data migration
+- 📥 **Restore Functionality** - Restore system state from file uploads
 - 🌙 **Dark/Light Theme** - User preference for light and dark modes
 - 🎨 **Color Themes** - Multiple color schemes (Blue, Green, Purple, Red, Orange)
-- ⏰ **24-Hour Time Format** - Professional time display (no AM/PM)
+- 💱 **Regional Settings** - Configurable currency symbols and decimal precision
 - 🔐 **Permission-Based Access** - Granular permissions grouped by category
 
 ## 📋 Prerequisites
@@ -88,14 +89,16 @@ repair-shop-REDACTED_PASSWORD/
 │   ├── profile.html           # User profile & theme settings
 │   ├── dashboard.html         # Main dashboard
 │   ├── tickets_list.html      # Full repair ticket directory
-│   ├── ticket_form.html       # Ticket intake form with AJAX search
+│   ├── tickets_list.html      # Full repair ticket directory
+│   ├── ticket_form.html       # Ticket intake form with interactive search
 │   ├── ticket_detail.html     # View ticket details
 │   ├── edit_ticket.html       # Edit repair details and assignment
 │   ├── new_customer.html      # Create new customer
-│   ├── customer_detail.html   # View customer details
+│   ├── customer_detail.html   # Customer profile with device list
 │   ├── customers.html         # Customer list
-│   ├── devices.html           # Dedicated devices tab
+│   ├── devices.html           # Device inventory with hardware specs
 │   ├── new_device.html        # Add device for customer
+│   ├── device_detail.html     # Device repair history and technical specs
 │   ├── edit_device.html       # Edit device details
 │   ├── invoice.html           # View invoice
 │   ├── reports.html           # Reports & analytics
@@ -356,9 +359,10 @@ These appear as quick-select options when creating tickets.
 3. Click **"Download Backup"**
 4. The system generates a JSON file containing customer and ticket data for download.
 
-**Restore Backup:**
-- Download backup JSON
-- Use in new system installation
+**Restore Data:**
+1. Go to **Admin > Backup**
+2. Upload a **.db** file for a full overwrite (requires re-login)
+3. OR upload a **.json** file to merge customer records into the current database.
 
 ### Reports & Analytics
 

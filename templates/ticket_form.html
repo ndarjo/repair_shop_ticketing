@@ -18,7 +18,7 @@
                         <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#newCustomerModal">New +</button>
                     </div>
                     <input type="hidden" name="customer_id" id="customer_id" required>
-                    <div id="customer_results" class="list-group position-absolute w-100 z-3 shadow" style="display: none;"></div>
+                    <div id="customer_results" class="list-group position-absolute w-100 z-3 shadow mt-1" style="display: none; max-height: 250px; overflow-y: auto;"></div>
                 </div>
 
                 <!-- Device Search Section -->
@@ -29,7 +29,7 @@
                         <button type="button" id="new_device_btn" class="btn btn-outline-secondary" disabled data-bs-toggle="modal" data-bs-target="#newDeviceModal">New +</button>
                     </div>
                     <input type="hidden" name="device_id" id="device_id" required>
-                    <div id="device_results" class="list-group position-absolute w-100 z-3 shadow" style="display: none;"></div>
+                    <div id="device_results" class="list-group position-absolute w-100 z-3 shadow mt-1" style="display: none; max-height: 250px; overflow-y: auto;"></div>
                 </div>
 
                 <div class="col-12 mt-4">
@@ -68,7 +68,10 @@
 
                 <div class="col-md-4">
                     <label class="form-label">Down Payment</label>
-                    <input type="number" step="0.01" name="down_payment_amount" class="form-control" value="0.00">
+                    <div class="input-group">
+                        <span class="input-group-text">{{ currency_symbol }}</span>
+                        <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="down_payment_amount" class="form-control" value="{{ '%.*f'|format(currency_decimals, 0.0) }}">
+                    </div>
                 </div>
 
                 <div class="col-md-4">
@@ -105,18 +108,62 @@
 </div>
 
 <div class="modal fade" id="newDeviceModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header"><h5>Add New Device</h5></div>
+            <div class="modal-header"><h5>Add New Device for Customer</h5></div>
             <div class="modal-body">
                 <form id="newDeviceForm">
                     <input type="hidden" name="customer_id" id="modal_device_customer_id">
-                    <input type="text" name="device_type" class="form-control mb-2" placeholder="Device Type (e.g. Laptop)" required>
-                    <input type="text" name="brand" class="form-control mb-2" placeholder="Brand" required>
-                    <input type="text" name="model_number" class="form-control mb-2" placeholder="Model Number">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Device Type *</label>
+                            <select name="device_type" class="form-select" required>
+                                <option value="">-- Select --</option>
+                                <option value="Phone">Phone</option>
+                                <option value="Laptop">Laptop</option>
+                                <option value="Tablet">Tablet</option>
+                                <option value="Desktop">Desktop</option>
+                                <option value="Monitor">Monitor</option>
+                                <option value="Printer">Printer</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Brand *</label>
+                            <input type="text" name="brand" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Model Number</label>
+                            <input type="text" name="model_number" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">CPU/Processor</label>
+                            <input type="text" name="cpu" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">RAM</label>
+                            <input type="text" name="ram" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Storage Type</label>
+                            <select name="storage_type" class="form-select">
+                                <option value="">-- Select --</option>
+                                <option value="HDD">HDD</option>
+                                <option value="SSD">SSD</option>
+                                <option value="Mixed">Mixed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Storage Capacity</label>
+                            <input type="text" name="storage_capacity" class="form-control" placeholder="e.g. 512GB">
+                        </div>
+                    </div>
                 </form>
             </div>
-            <div class="modal-footer"><button id="saveDeviceBtn" class="btn btn-primary">Save Device</button></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="saveDeviceBtn" class="btn btn-primary">Save Device</button>
+            </div>
         </div>
     </div>
 </div>

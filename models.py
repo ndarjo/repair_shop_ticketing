@@ -35,6 +35,8 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)
     theme_preference = db.Column(db.String(20), default='light')
     color_theme = db.Column(db.String(50), default='blue')
+    currency = db.Column(db.String(10), default='USD')
+    currency_decimals = db.Column(db.Integer, default=2)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Relationships
@@ -251,6 +253,7 @@ class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    note_type = db.Column(db.String(50), default='General') # e.g., 'General', 'Phase Update', 'Payment Received'
     content = db.Column(db.Text, nullable=False)
     is_internal = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

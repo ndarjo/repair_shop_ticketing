@@ -13,7 +13,10 @@
                 <form method="POST">
                     <div class="row g-3">
                         <div class="col-md-12">
-                            <label class="form-label">Owner (Customer) *</label>
+                            <div class="d-flex justify-content-between">
+                                <label class="form-label">Owner (Customer) *</label>
+                                <a href="{{ url_for('customer.new_customer') }}" class="btn btn-link btn-sm p-0">Add New Customer</a>
+                            </div>
                             <select name="customer_id" class="form-select" required>
                                 <option value="">-- Select Customer --</option>
                                 {% for customer in customers %}
@@ -23,22 +26,57 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Device Type *</label>
-                            <input type="text" name="device_type" class="form-control" placeholder="e.g. Laptop, Phone" required>
+                            <select name="device_type" class="form-select" required>
+                                <option value="">-- Select --</option>
+                                <option value="Phone">Phone</option>
+                                <option value="Laptop">Laptop</option>
+                                <option value="Tablet">Tablet</option>
+                                <option value="Desktop">Desktop</option>
+                                <option value="Monitor">Monitor</option>
+                                <option value="Printer">Printer</option>
+                                <option value="Other">Other</option>
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Brand *</label>
                             <input type="text" name="brand" class="form-control" placeholder="e.g. Apple, Dell" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Serial Number</label>
-                            <input type="text" name="serial_number" class="form-control">
+                            <label class="form-label">Model Number</label>
+                            <input type="text" name="model_number" class="form-control" placeholder="e.g. A2633">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">CPU/Processor</label>
+                            <input type="text" name="cpu" class="form-control" placeholder="e.g. Core i7">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">RAM</label>
+                            <input type="text" name="ram" class="form-control" placeholder="e.g. 16GB">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Storage Type</label>
+                            <select name="storage_type" class="form-select">
+                                <option value="">-- Select --</option>
+                                <option value="HDD">HDD</option>
+                                <option value="SSD">SSD</option>
+                                <option value="Mixed">Mixed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Storage Capacity</label>
+                            <input type="text" name="storage_capacity" class="form-control" placeholder="e.g. 512GB">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Color</label>
+                            <input type="text" name="color" class="form-control" placeholder="e.g. Space Gray">
                         </div>
                         <div class="col-12">
                             <label class="form-label">Notes</label>
                             <textarea name="notes" class="form-control" rows="2"></textarea>
                         </div>
-                        <div class="col-12 mt-4">
-                            <button type="submit" class="btn btn-primary w-100">Add Device</button>
+                        <div class="col-12 mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1">Add Device</button>
+                            <a href="{{ url_for('main.devices_list') }}" class="btn btn-secondary px-4">Back</a>
                         </div>
                     </div>
                 </form>

@@ -9,7 +9,7 @@
             <h1>Invoice</h1>
             <div>
                 <a href="{{ url_for('ticket.download_invoice_pdf', ticket_id=ticket.id) }}" class="btn btn-primary">📥 Download PDF</a>
-                <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-secondary">Back to Ticket</a>
+                <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-secondary">Back to Ticket</a>
             </div>
         </div>
         
@@ -73,8 +73,8 @@
                         <tr>
                             <td>{{ ts.service.name }}</td>
                             <td class="text-end">{{ ts.quantity }}</td>
-                            <td class="text-end">${{ "%.2f"|format(ts.price) }}</td>
-                            <td class="text-end">${{ "%.2f"|format(ts.price * ts.quantity) }}</td>
+                            <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price) }}</td>
+                            <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price * ts.quantity) }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -98,8 +98,8 @@
                         <tr>
                             <td>{{ item.spare_part.name }}</td>
                             <td class="text-end">{{ item.quantity }}</td>
-                            <td class="text-end">${{ "%.2f"|format(item.unit_price) }}</td>
-                            <td class="text-end">${{ "%.2f"|format(item.total_price) }}</td>
+                            <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price) }}</td>
+                            <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price) }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -112,27 +112,27 @@
                         <table class="table table-sm">
                             <tr>
                                 <td><strong>Services Subtotal:</strong></td>
-                                <td class="text-end"><strong>${{ "%.2f"|format(invoice.subtotal) }}</strong></td>
+                                <td class="text-end"><strong>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.subtotal) }}</strong></td>
                             </tr>
                             <tr>
                                 <td><strong>Spare Parts Total:</strong></td>
-                                <td class="text-end"><strong>${{ "%.2f"|format(invoice.spare_parts_total) }}</strong></td>
+                                <td class="text-end"><strong>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.spare_parts_total) }}</strong></td>
                             </tr>
                             <tr class="table-active">
                                 <td><strong>Grand Total:</strong></td>
-                                <td class="text-end"><strong style="font-size:1.2em;">${{ "%.2f"|format(invoice.total_amount) }}</strong></td>
+                                <td class="text-end"><strong style="font-size:1.2em;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.total_amount) }}</strong></td>
                             </tr>
                             <tr class="table-info">
                                 <td><strong>Down Payment:</strong></td>
-                                <td class="text-end"><strong>${{ "%.2f"|format(invoice.down_payment) }}</strong></td>
+                                <td class="text-end"><strong>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.down_payment) }}</strong></td>
                             </tr>
                             <tr class="table-success">
                                 <td><strong>Amount Paid:</strong></td>
-                                <td class="text-end"><strong>${{ "%.2f"|format(invoice.full_payment_received) }}</strong></td>
+                                <td class="text-end"><strong>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.full_payment_received) }}</strong></td>
                             </tr>
                             <tr class="table-warning">
                                 <td><strong>Remaining Balance:</strong></td>
-                                <td class="text-end"><strong>${{ "%.2f"|format(invoice.remaining_balance) }}</strong></td>
+                                <td class="text-end"><strong>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.remaining_balance) }}</strong></td>
                             </tr>
                         </table>
                     </div>
