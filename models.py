@@ -293,9 +293,39 @@ class Invoice(db.Model):
     payments = db.relationship('Payment', backref='invoice', lazy=True)
 
     def calculate_total(self):
-        """Recalculate total amount from items"""
-        self.total_amount = sum(item.total_price for item in self.items)
+        """Recalculate total amount from items and services"""
+        self.total_amount = self.subtotal + self.spare_parts_total
         return self.total_amount
+
+    @property
+    def subtotal(self):
+        """Total from services attached to the ticket"""
+        if not self.ticket: return 0.0
+        return sum(ts.price_charged * ts.quantity for ts in self.ticket.ticket_services)
+
+    @property
+    def spare_parts_total(self):
+        """Total from spare parts items on this invoice"""
+        return sum(item.total_price for item in self.items)
+
+    @property
+    def down_payment(self):
+        """Amount of the first payment recorded for the ticket"""
+        if not self.ticket: return 0.0
+        from sqlalchemy import asc
+        first_payment = Payment.query.filter_by(ticket_id=self.ticket_id).order_by(asc(Payment.paid_at)).first()
+        return first_payment.amount if first_payment else 0.0
+
+    @property
+    def full_payment_received(self):
+        """Total payments received for this ticket"""
+        if not self.ticket: return 0.0
+        return sum(p.amount for p in self.ticket.payments)
+
+    @property
+    def remaining_balance(self):
+        """Balance due (negative indicates change/credit)"""
+        return self.total_amount - self.full_payment_received
 
 class Payment(db.Model):
     """Financial tracking logs for invoicing transactions"""

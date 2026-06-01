@@ -8,6 +8,11 @@
         <h4 class="mb-0">Edit Repair Ticket: {{ ticket.ticket_number }}</h4>
     </div>
     <div class="card-body">
+        {% if ticket.current_phase == 'Already Taken' %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i> <strong>Note:</strong> This ticket is archived (Already Taken). You are editing it with administrative privileges.
+        </div>
+        {% endif %}
         <form method="POST">
             <div class="row g-3">
                 <div class="col-md-6">

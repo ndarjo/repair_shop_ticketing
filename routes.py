@@ -734,7 +734,7 @@ def ticket_detail(ticket_id):
 def add_service(ticket_id):
     """Attach a standardized service to the ticket"""
     ticket = db.session.get(Ticket, ticket_id)
-    if ticket and ticket.current_phase == 'Already Taken':
+    if ticket and ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     service_id = request.form.get('service_id')
@@ -759,7 +759,7 @@ def add_service(ticket_id):
 def remove_service(ticket_id, ts_id):
     """Remove a service entry from the ticket"""
     ticket = db.session.get(Ticket, ticket_id)
-    if ticket and ticket.current_phase == 'Already Taken':
+    if ticket and ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     ts = db.session.get(TicketService, ts_id)
@@ -775,7 +775,7 @@ def remove_service(ticket_id, ts_id):
 def add_part(ticket_id):
     """Record a spare part replacement (manages draft invoice automatically)"""
     ticket = db.session.get(Ticket, ticket_id)
-    if ticket and ticket.current_phase == 'Already Taken':
+    if ticket and ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     part_id = request.form.get('part_id')
@@ -835,7 +835,7 @@ def add_part(ticket_id):
 def remove_part(ticket_id, item_id):
     """Remove a spare part from the ticket and recalculate invoice total"""
     ticket = db.session.get(Ticket, ticket_id)
-    if ticket and ticket.current_phase == 'Already Taken':
+    if ticket and ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     item = db.session.get(InvoiceItem, item_id)
@@ -858,7 +858,7 @@ def record_payment(ticket_id):
         flash('Ticket not found', 'error')
         return redirect(url_for('main.dashboard'))
 
-    if ticket.current_phase == 'Already Taken':
+    if ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
         flash('This ticket is locked and cannot be modified.', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
@@ -909,7 +909,7 @@ def edit_ticket(ticket_id):
         flash('Ticket not found', 'error')
         return redirect(url_for('main.dashboard'))
 
-    if ticket.current_phase == 'Already Taken':
+    if ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
         flash('This ticket is locked and cannot be modified.', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
         
@@ -953,7 +953,7 @@ def update_phase(ticket_id):
         flash('Ticket not found', 'error')
         return redirect(url_for('main.dashboard'))
 
-    if ticket.current_phase == 'Already Taken':
+    if ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
         flash('This ticket is locked and cannot be modified.', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 

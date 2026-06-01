@@ -5,7 +5,7 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h4 class="mb-0">Ticket: {{ ticket.ticket_number }}</h4>
         <div>
-            {% if ticket.current_phase == 'Already Taken' %}
+            {% if ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')) %}
                 <span class="badge bg-dark text-light"><i class="fas fa-lock me-1"></i> Ticket Locked</span>
                 {% if current_user.has_permission('delete_ticket') %}
                 <form action="{{ url_for('ticket.delete_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('ERASE TICKET: Are you sure? This will remove all history and records for this job.');">
@@ -46,7 +46,7 @@
             <div class="col-md-8">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h5>Services & Materials</h5>
-                    {% if current_user.has_permission('add_service') and ticket.current_phase != 'Already Taken' %}
+                    {% if current_user.has_permission('add_service') and (ticket.current_phase != 'Already Taken' or current_user.is_superuser or current_user.has_role('manager')) %}
                     <div>
                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">+ Add Service</button>
                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPartModal">+ Add Part</button>
@@ -76,7 +76,7 @@
                                 <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts_total) }}</td>
                                 <td class="text-end">
                                     {% if current_user.has_permission('add_service') and ticket.current_phase != 'Already Taken' %}
-                                    <form action="{{ url_for('ticket.remove_service', ticket_id=ticket.id, ts_id=ts.id) }}" method="POST" style="display:inline;">
+                                    {% if current_user.has_permission('add_service') and (ticket.current_phase != 'Already Taken' or current_user.is_superuser or current_user.has_role('manager')) %}
                                         <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Remove service?')"><i class="fas fa-times"></i></button>
                                     </form>
                                     {% endif %}
@@ -93,7 +93,7 @@
                                     <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price) }}</td>
                                     <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price) }}</td>
                                     <td class="text-end">
-                                        {% if current_user.has_permission('add_service') and ticket.current_phase != 'Already Taken' %}
+                                        {% if current_user.has_permission('add_service') and (ticket.current_phase != 'Already Taken' or current_user.is_superuser or current_user.has_role('manager')) %}
                                         <form action="{{ url_for('ticket.remove_part', ticket_id=ticket.id, item_id=item.id) }}" method="POST" style="display:inline;">
                                             <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Remove this part from costs?')"><i class="fas fa-times"></i></button>
                                         </form>
@@ -135,8 +135,13 @@
                             <span>- {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, total_paid) }}</span>
                         </div>
                         <div class="d-flex justify-content-between border-top pt-2 fw-bold text-{{ 'success' if balance <= 0 else 'danger' }}">
-                            <span>Balance Due:</span>
-                            <span style="font-size: 1.2rem;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, balance) }}</span>
+                            {% if balance < 0 %}
+                                <span>Change Due:</span>
+                                <span style="font-size: 1.2rem;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, balance|abs) }}</span>
+                            {% else %}
+                                <span>Balance Due:</span>
+                                <span style="font-size: 1.2rem;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, balance) }}</span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

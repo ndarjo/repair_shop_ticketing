@@ -131,8 +131,13 @@
                                 <td class="text-end"><strong>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.full_payment_received) }}</strong></td>
                             </tr>
                             <tr class="table-warning">
-                                <td><strong>Remaining Balance:</strong></td>
-                                <td class="text-end"><strong>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.remaining_balance) }}</strong></td>
+                                {% if invoice.remaining_balance < 0 %}
+                                    <td><strong>Change Due:</strong></td>
+                                    <td class="text-end"><strong>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.remaining_balance|abs) }}</strong></td>
+                                {% else %}
+                                    <td><strong>Remaining Balance:</strong></td>
+                                    <td class="text-end"><strong>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.remaining_balance) }}</strong></td>
+                                {% endif %}
                             </tr>
                         </table>
                     </div>
