@@ -118,16 +118,20 @@ def profile():
         elif action == 'change_theme':
             theme = request.form.get('theme')
             color = request.form.get('color_theme')
-            currency = request.form.get('currency')
-            currency_decimals = request.form.get('currency_decimals', type=int)
             if theme in ['light', 'dark']:
                 current_user.theme_preference = theme
             if color in ['blue', 'green', 'purple', 'red', 'orange']:
                 current_user.color_theme = color
-            if currency in ['USD', 'IDR', 'EUR', 'GBP']:
-                current_user.currency = currency
-            if currency_decimals is not None and 0 <= currency_decimals <= 4:
-                current_user.currency_decimals = currency_decimals
+
+            # Restrict currency settings to superuser or manager
+            if current_user.is_superuser or current_user.has_role('manager'):
+                currency = request.form.get('currency')
+                currency_decimals = request.form.get('currency_decimals', type=int)
+                if currency in ['USD', 'IDR', 'EUR', 'GBP']:
+                    current_user.currency = currency
+                if currency_decimals is not None and 0 <= currency_decimals <= 4:
+                    current_user.currency_decimals = currency_decimals
+
             db.session.commit()
             flash('Preferences updated successfully!', 'success')
         
@@ -143,7 +147,8 @@ def profile():
 def dashboard():
     page = request.args.get('page', 1, type=int)
     
-    query = Ticket.query.order_by(desc(Ticket.created_at))
+    # FIXED: Filter out tickets that have already been picked up by customers
+    query = Ticket.query.filter(Ticket.current_phase != 'Already Taken').order_by(desc(Ticket.created_at))
     tickets = query.paginate(page=page, per_page=10)
     
     # Single aggregate query for status counts
@@ -170,10 +175,19 @@ def dashboard():
 @require_permission('view_ticket')
 def tickets_list():
     """Dedicated page for all tickets with full pagination"""
+    view = request.args.get('view', 'active')
     page = request.args.get('page', 1, type=int)
-    query = Ticket.query.order_by(desc(Ticket.created_at))
+    
+    if view == 'history':
+        # Show only picked up devices
+        query = Ticket.query.filter_by(current_phase='Already Taken')
+    else:
+        # Show everything currently in the shop
+        query = Ticket.query.filter(Ticket.current_phase != 'Already Taken')
+        
+    query = query.order_by(desc(Ticket.created_at))
     tickets = query.paginate(page=page, per_page=20)
-    return render_template('tickets_list.html', tickets=tickets)
+    return render_template('tickets_list.html', tickets=tickets, current_view=view)
 
 @ticket_bp.route('/new', methods=['GET', 'POST'])
 @login_required
@@ -297,22 +311,156 @@ def devices_list():
 @require_permission('view_reports')
 def reports():
     """Route for the Reports link in base.html"""
+    # Calculate Total Revenue (Gross)
+    gross_revenue = db.session.query(func.sum(Payment.amount)).scalar() or 0.0
+    
+    # Calculate Total Hardware Cost
+    hardware_cost = db.session.query(
+        func.sum(SparePart.cost * InvoiceItem.quantity)
+    ).join(InvoiceItem, SparePart.id == InvoiceItem.spare_part_id).scalar() or 0.0
+
     monthly_stats = {
         'total_tickets': Ticket.query.count(),
         'completed_tickets': Ticket.query.filter_by(current_phase='Finished').count(),
-        'total_revenue': db.session.query(func.sum(Payment.amount)).scalar() or 0.0
+        'total_revenue': float(gross_revenue) - float(hardware_cost) # Shows Net Profit
     }
     # Fetch recent tickets for the report table
     recent_tickets = Ticket.query.order_by(desc(Ticket.created_at)).limit(5).all()
     return render_template('reports.html', monthly_stats=monthly_stats, recent_tickets=recent_tickets)
 
+@report_bp.route('/finance')
+@login_required
+@require_permission('view_reports')
+def finance_report():
+    """Detailed financial report showing Net Profit and Payment History"""
+    # Total money paid by customers
+    total_revenue = db.session.query(func.sum(Payment.amount)).scalar() or 0.0
+    
+    # Total wholesale cost of all hardware replacements used
+    total_hardware_cost = db.session.query(
+        func.sum(SparePart.cost * InvoiceItem.quantity)
+    ).join(InvoiceItem, SparePart.id == InvoiceItem.spare_part_id).scalar() or 0.0
+    
+    net_profit = float(total_revenue) - float(total_hardware_cost)
+    
+    # Detailed payment history by customer
+    payment_history = db.session.query(Payment, Ticket, Customer).join(
+        Ticket, Payment.ticket_id == Ticket.id
+    ).join(
+        Customer, Ticket.customer_id == Customer.id
+    ).order_by(desc(Payment.paid_at)).all()
+    
+    return render_template('finance_report.html', 
+                           total_revenue=total_revenue,
+                           total_hardware_cost=total_hardware_cost,
+                           net_profit=net_profit,
+                           payment_history=payment_history)
+
 @admin_bp.route('/', endpoint='dashboard')
 @admin_bp.route('/dashboard', endpoint='dashboard')
 @login_required
-@require_superuser()
 def admin_dashboard():
     """Admin control panel requested by base.html dropdown"""
+    if not (current_user.is_superuser or current_user.has_role('manager')):
+        flash('You do not have permission to access the admin panel.', 'error')
+        return redirect(url_for('main.dashboard'))
     return render_template('admin/dashboard.html')
+
+@admin_bp.route('/services', endpoint='manage_services')
+@login_required
+@require_permission('manage_services')
+def manage_services():
+    """Manage repair services and pricing"""
+    services = Service.query.all()
+    return render_template('admin/manage_services.html', services=services)
+
+@admin_bp.route('/parts', endpoint='manage_parts')
+@login_required
+@require_permission('manage_services')
+def manage_parts():
+    """Manage spare parts inventory and pricing"""
+    parts = SparePart.query.all()
+    return render_template('admin/manage_parts.html', parts=parts)
+
+@admin_bp.route('/parts/add', methods=['POST'], endpoint='add_part_admin')
+@login_required
+@require_permission('manage_services')
+def add_part_admin():
+    """Add a new spare part to inventory catalog"""
+    name = request.form.get('name')
+    description = request.form.get('description')
+    cost = request.form.get('cost', type=float)
+    selling_price = request.form.get('selling_price', type=float)
+    stock = request.form.get('stock_quantity', 0, type=int)
+    
+    if not name or selling_price is None:
+        flash('Part name and selling price are required.', 'error')
+    else:
+        part = SparePart(name=name, description=description, cost=cost or 0.0, 
+                         selling_price=selling_price, stock_quantity=stock)
+        db.session.add(part)
+        db.session.commit()
+        flash(f'Spare part "{name}" added to inventory.', 'success')
+    return redirect(url_for('admin.manage_parts'))
+
+@admin_bp.route('/parts/edit/<int:part_id>', methods=['POST'], endpoint='edit_part_admin')
+@login_required
+@require_permission('manage_services')
+def edit_part_admin(part_id):
+    """Update existing spare part details and global pricing"""
+    part = db.session.get(SparePart, part_id)
+    if not part:
+        flash('Part not found.', 'error')
+        return redirect(url_for('admin.manage_parts'))
+        
+    part.name = request.form.get('name')
+    part.description = request.form.get('description')
+    part.cost = request.form.get('cost', type=float)
+    part.selling_price = request.form.get('selling_price', type=float)
+    part.stock_quantity = request.form.get('stock_quantity', type=int)
+    part.is_active = 'is_active' in request.form
+    
+    db.session.commit()
+    flash(f'Part "{part.name}" updated.', 'success')
+    return redirect(url_for('admin.manage_parts'))
+
+@admin_bp.route('/services/add', methods=['POST'], endpoint='add_service_admin')
+@login_required
+@require_permission('manage_services')
+def add_service_admin():
+    """Create a new repair service type"""
+    name = request.form.get('name')
+    description = request.form.get('description')
+    price = request.form.get('price', type=float)
+    
+    if not name or price is None:
+        flash('Service name and price are required.', 'error')
+    else:
+        service = Service(name=name, description=description, price=price)
+        db.session.add(service)
+        db.session.commit()
+        flash(f'Service "{name}" created successfully.', 'success')
+    
+    return redirect(url_for('admin.manage_services'))
+
+@admin_bp.route('/services/edit/<int:service_id>', methods=['POST'], endpoint='edit_service_admin')
+@login_required
+@require_permission('manage_services')
+def edit_service_admin(service_id):
+    """Update existing repair service details and pricing"""
+    service = db.session.get(Service, service_id)
+    if not service:
+        flash('Service not found.', 'error')
+        return redirect(url_for('admin.manage_services'))
+        
+    service.name = request.form.get('name')
+    service.description = request.form.get('description')
+    service.price = request.form.get('price', type=float)
+    service.is_active = 'is_active' in request.form
+    
+    db.session.commit()
+    flash(f'Service "{service.name}" updated.', 'success')
+    return redirect(url_for('admin.manage_services'))
 
 @admin_bp.route('/users', endpoint='manage_users')
 @login_required
@@ -527,7 +675,104 @@ def ticket_detail(ticket_id):
     if not ticket:
         flash('Ticket not found', 'error')
         return redirect(url_for('main.dashboard'))
-    return render_template('ticket_detail.html', ticket=ticket)
+    
+    # FIXED: Added context for services and spare parts management
+    services = Service.query.filter_by(is_active=True).all()
+    spare_parts = SparePart.query.filter_by(is_active=True).all()
+    
+    return render_template('ticket_detail.html', 
+                           ticket=ticket, 
+                           services=services, 
+                           spare_parts=spare_parts)
+
+@ticket_bp.route('/add_service/<int:ticket_id>', methods=['POST'])
+@login_required
+@require_permission('add_service')
+def add_service(ticket_id):
+    """Attach a standardized service to the ticket"""
+    service_id = request.form.get('service_id')
+    quantity = request.form.get('quantity', 1, type=int)
+    
+    service = db.session.get(Service, service_id)
+    if service:
+        ts = TicketService(
+            ticket_id=ticket_id,
+            service_id=service_id,
+            quantity=quantity,
+            price_charged=service.price
+        )
+        db.session.add(ts)
+        db.session.commit()
+        flash(f'Service "{service.name}" added.', 'success')
+    return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
+
+@ticket_bp.route('/remove_service/<int:ticket_id>/<int:ts_id>', methods=['POST'])
+@login_required
+@require_permission('add_service')
+def remove_service(ticket_id, ts_id):
+    """Remove a service entry from the ticket"""
+    ts = db.session.get(TicketService, ts_id)
+    if ts:
+        db.session.delete(ts)
+        db.session.commit()
+        flash('Service removed.', 'success')
+    return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
+
+@ticket_bp.route('/add_part/<int:ticket_id>', methods=['POST'])
+@login_required
+@require_permission('add_service')
+def add_part(ticket_id):
+    """Record a spare part replacement (manages draft invoice automatically)"""
+    part_id = request.form.get('part_id')
+    manual_name = request.form.get('manual_name')
+    quantity = request.form.get('quantity', 1, type=int)
+    price = request.form.get('price', type=float)
+    
+    description = ""
+    item_price = 0.0
+    spare_part_id = None
+
+    if part_id:
+        part = db.session.get(SparePart, part_id)
+        if part:
+            description = part.name
+            item_price = price if price is not None else float(part.selling_price)
+            spare_part_id = part.id
+    elif manual_name:
+        description = manual_name
+        if price is None:
+            flash('Price is required for manual parts.', 'error')
+            return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
+        item_price = price
+
+    if description:
+        # Ensure a draft invoice exists to hold the part costs
+        invoice = Invoice.query.filter_by(ticket_id=ticket_id).first()
+        if not invoice:
+            invoice = Invoice(
+                invoice_number=f"INV-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
+                ticket_id=ticket_id,
+                status='Draft'
+            )
+            db.session.add(invoice)
+            db.session.flush()
+
+        item = InvoiceItem(
+            invoice_id=invoice.id,
+            spare_part_id=spare_part_id,
+            description=description,
+            quantity=quantity,
+            unit_price=item_price,
+            total_price=item_price * quantity
+        )
+        db.session.add(item)
+        invoice.calculate_total()
+        db.session.commit()
+        flash(f'Part "{description}" added to costs.', 'success')
+    else:
+        flash('Please select a part or enter a description.', 'error')
+        
+    return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
 @ticket_bp.route('/record_payment/<int:ticket_id>', methods=['POST'])
 @login_required
@@ -557,12 +802,17 @@ def record_payment(ticket_id):
     )
     db.session.add(payment)
 
+    # Fetch global symbol for the automated note content
+    shop_admin = User.query.filter_by(is_superuser=True).first()
+    currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
+    symbol = currency_map.get(shop_admin.currency, '$') if shop_admin else '$'
+
     # Create an automated note for the payment
     note = Note(
         ticket_id=ticket.id,
         user_id=current_user.id,
         note_type='Payment Received',
-        content=f"Payment received: {amount}. Method: {method}. Ref: {reference}",
+        content=f"Payment received: {symbol}{amount}. Method: {method}. Ref: {reference}",
         is_internal=True
     )
     db.session.add(note)
@@ -599,7 +849,6 @@ def edit_ticket(ticket_id):
 
 @ticket_bp.route('/update_phase/<int:ticket_id>', methods=['POST'])
 @login_required
-@require_permission('update_phase')
 def update_phase(ticket_id):
     """Route to advance the repair ticket through its lifecycle"""
     ticket = db.session.get(Ticket, ticket_id)
@@ -614,8 +863,25 @@ def update_phase(ticket_id):
         flash('Please select a valid phase', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
+    # Dynamic permission check based on target phase
+    required_perm = 'update_phase'
+    if new_phase == 'Fully Paid':
+        required_perm = 'mark_as_paid'
+    elif new_phase == 'Already Taken':
+        required_perm = 'mark_as_taken'
+        
+    if not current_user.has_permission(required_perm):
+        flash(f'You do not have the required permission ({required_perm}) to move a ticket to "{new_phase}".', 'error')
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
+
+
     old_phase = ticket.current_phase
     ticket.current_phase = new_phase
+
+    # Automatically set pickup flags if phase is "Already Taken"
+    if new_phase == 'Already Taken':
+        ticket.device_picked_up = True
+        ticket.picked_up_date = datetime.now(timezone.utc)
 
     # Create audit log
     log = PhaseLog(
@@ -745,6 +1011,14 @@ def delete_device(device_id):
         flash('Device deleted successfully.', 'success')
         return redirect(url_for('customer.view_customer', customer_id=customer_id))
     return redirect(url_for('main.devices_list'))
+
+@ticket_bp.route('/download_invoice/<int:ticket_id>')
+@login_required
+@require_permission('create_invoice')
+def download_invoice_pdf(ticket_id):
+    """Placeholder for PDF generation logic (Future Feature)"""
+    flash('PDF generation is currently being implemented. Please use the on-screen invoice view.', 'info')
+    return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
 @device_bp.route('/view/<int:device_id>')
 @login_required

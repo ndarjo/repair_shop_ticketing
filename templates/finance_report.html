@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Financial Report - Repair Shop{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Financial Analytics</h2>
+    <a href="{{ url_for('report.reports') }}" class="btn btn-secondary">Back to Reports</a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h6 class="text-uppercase small">Total Revenue</h6>
+                <h2 class="mb-0">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, total_revenue) }}</h2>
+                <p class="mb-0 small opacity-75">Gross payments received</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h6 class="text-uppercase small">Hardware Costs</h6>
+                <h2 class="mb-0">- {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, total_hardware_cost) }}</h2>
+                <p class="mb-0 small opacity-75">Wholesale cost of spare parts</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h6 class="text-uppercase small">Net Profit</h6>
+                <h2 class="mb-0">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, net_profit) }}</h2>
+                <p class="mb-0 small opacity-75">Revenue minus material expenses</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Customer Payment History</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Customer</th>
+                    <th>Ticket #</th>
+                    <th>Method</th>
+                    <th>Reference</th>
+                    <th class="text-end">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment, ticket, customer in payment_history %}
+                <tr>
+                    <td><small>{{ payment.paid_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
+                    <td>
+                        <div class="fw-bold">{{ customer.name }}</div>
+                        <small class="text-muted">{{ customer.phone }}</small>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="badge bg-info text-dark text-decoration-none">
+                            {{ ticket.ticket_number }}
+                        </a>
+                    </td>
+                    <td>{{ payment.payment_method }}</td>
+                    <td><small class="text-muted">{{ payment.transaction_reference or '-' }}</small></td>
+                    <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, payment.amount) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No payment records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -39,6 +39,17 @@
                                 </select>
                             </div>
 
+                            {% if current_user.is_superuser or current_user.has_role('manager') %}
+                            <div class="mb-3">
+                                <label for="currency" class="form-label">Currency</label>
+                                <select class="form-control" id="currency" name="currency">
+                                    <option value="USD" {% if current_user.currency == 'USD' %}selected{% endif %}>US Dollar ($)</option>
+                                    <option value="IDR" {% if current_user.currency == 'IDR' %}selected{% endif %}>Indonesian Rupiah (Rp)</option>
+                                    <option value="EUR" {% if current_user.currency == 'EUR' %}selected{% endif %}>Euro (€)</option>
+                                    <option value="GBP" {% if current_user.currency == 'GBP' %}selected{% endif %}>British Pound (£)</option>
+                                </select>
+                            </div>
+
                             <div class="mb-3">
                                 <label for="currency_decimals" class="form-label">Currency Decimals</label>
                                 <select class="form-control" id="currency_decimals" name="currency_decimals">
@@ -47,6 +58,7 @@
                                     <option value="3" {% if current_user.currency_decimals == 3 %}selected{% endif %}>3</option>
                                 </select>
                             </div>
+                            {% endif %}
                             
                             <div class="mb-3">
                                 <label for="color_theme" class="form-label">Color Scheme</label>

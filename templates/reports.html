@@ -3,14 +3,17 @@
 {% block title %}Reports & Analytics - Repair Shop{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Reports & Analytics</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">Reports & Analytics</h1>
+    <a href="{{ url_for('report.finance_report') }}" class="btn btn-outline-primary fw-bold">💰 Detailed Finance Report</a>
+</div>
 
 <!-- Monthly Statistics -->
 <div class="row mb-4">
     <div class="col-md-3">
         <div class="card text-white bg-primary">
             <div class="card-body">
-                <h5 class="card-title">Total Tickets (This Month)</h5>
+                <h5 class="card-title">Total Tickets</h5>
                 <h2 class="card-text">{{ monthly_stats.total_tickets }}</h2>
             </div>
         </div>
@@ -40,7 +43,7 @@
     <div class="col-md-3">
         <div class="card text-white bg-info">
             <div class="card-body">
-                <h5 class="card-title">Total Revenue</h5>
+                <h5 class="card-title">Net Profit</h5>
                 <h2 class="card-text">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, monthly_stats.total_revenue) }}</h2>
             </div>
         </div>
@@ -62,7 +65,7 @@
                             <tr>
                                 <th>Ticket #</th>
                                 <th>Customer</th>
-                                <th>Device</th>
+                                <th>Device (Brand/Model)</th>
                                 <th>Phase</th>
                                 <th>Created</th>
                                 <th>Actions</th>
@@ -73,9 +76,9 @@
                             <tr>
                                 <td><strong>{{ ticket.ticket_number }}</strong></td>
                                 <td>{{ ticket.customer.name }}</td>
-                                <td>{{ ticket.device.brand }} {{ ticket.device.model }}</td>
+                                <td>{{ ticket.device.brand }} {{ ticket.device.model_number }}</td>
                                 <td>
-                                    <span class="badge bg-{% if ticket.current_phase == 'Finished' %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
+                                    <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
                                         {{ ticket.current_phase }}
                                     </span>
                                 </td>

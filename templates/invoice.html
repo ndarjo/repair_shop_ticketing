@@ -51,8 +51,8 @@
                 <hr>
                 
                 <!-- Device Info -->
-                <div class="alert alert-light">
-                    <strong>Device:</strong> {{ ticket.device.brand }} {{ ticket.device.model }} ({{ ticket.device.device_type }})
+                <div class="alert alert-light text-dark">
+                    <strong>Device:</strong> {{ ticket.device.brand }} {{ ticket.device.model_number }} ({{ ticket.device.device_type }})
                     <br><strong>Problem:</strong> {{ ticket.problem_description }}
                 </div>
                 
@@ -73,8 +73,8 @@
                         <tr>
                             <td>{{ ts.service.name }}</td>
                             <td class="text-end">{{ ts.quantity }}</td>
-                            <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price) }}</td>
-                            <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price * ts.quantity) }}</td>
+                            <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price_charged) }}</td>
+                            <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price_charged * ts.quantity) }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

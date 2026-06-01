@@ -221,6 +221,9 @@ class TicketService(db.Model):
     quantity = db.Column(db.Integer, default=1)
     price_charged = db.Column(db.Numeric(10, 2), nullable=False)
 
+    # Relationship to access service details from the bridge table
+    service = db.relationship('Service', backref='ticket_usage', lazy=True)
+
 
 class SparePart(db.Model):
     """Spare part inventory tracking model"""

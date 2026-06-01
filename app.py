@@ -32,11 +32,13 @@ def create_app(config_name='development'):
         
         # Map currency codes to symbols
         currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
-        symbol = '$'
-        decimals = 2
-        if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
-            symbol = currency_map.get(current_user.currency, '$')
-            decimals = getattr(current_user, 'currency_decimals', 2)
+        
+        # FIXED: Deriving global shop settings from the primary Superuser/Admin account.
+        # This ensures Technicians and Receptionists see the currency set by the Shop Manager.
+        shop_admin = User.query.filter_by(is_superuser=True).first()
+        
+        symbol = currency_map.get(shop_admin.currency, '$') if shop_admin else '$'
+        decimals = shop_admin.currency_decimals if shop_admin else 2
             
         return {'now': datetime.now(timezone.utc), 'currency_symbol': symbol, 'currency_decimals': decimals}
     
@@ -118,6 +120,8 @@ def initialize_roles_and_permissions():
         ('add_note', 'Add notes to tickets', 'tickets'),
         ('update_phase', 'Update ticket phase', 'tickets'),
         ('add_service', 'Add services to tickets', 'tickets'),
+        ('mark_as_paid', 'Mark tickets as fully paid', 'tickets'),
+        ('mark_as_taken', 'Mark devices as collected by customer', 'tickets'),
         ('create_invoice', 'Create invoices', 'tickets'),
         
         # Customer permissions
@@ -144,6 +148,9 @@ def initialize_roles_and_permissions():
         # Report permissions
         ('view_reports', 'View reports and analytics', 'reports'),
         ('export_data', 'Export data', 'reports'),
+
+        # Admin/Service permissions
+        ('manage_services', 'Manage repair services and pricing', 'admin'),
     ]
     
     for perm_name, description, category in permissions_data:
@@ -156,11 +163,31 @@ def initialize_roles_and_permissions():
     # Optional: Map default permissions to roles
     tech_role = Role.query.filter_by(name='technician').first()
     if tech_role:
-        tech_perms = ['view_ticket', 'add_note', 'update_phase', 'add_service', 'view_customer', 'view_payment']
+        tech_perms = ['view_ticket', 'add_note', 'update_phase', 'add_service', 'view_customer', 'view_payment', 'mark_as_taken']
         for p_name in tech_perms:
             perm = Permission.query.filter_by(name=p_name).first()
             if perm and perm not in tech_role.permissions:
                 tech_role.permissions.append(perm)
+        db.session.commit()
+
+    # Receptionist permissions
+    reception_role = Role.query.filter_by(name='receptionist').first()
+    if reception_role:
+        reception_perms = ['create_ticket', 'create_customer', 'view_customer', 'view_ticket', 'record_payment', 'mark_as_paid']
+        for p_name in reception_perms:
+            perm = Permission.query.filter_by(name=p_name).first()
+            if perm and perm not in reception_role.permissions:
+                reception_role.permissions.append(perm)
+        db.session.commit()
+
+    # Manager permissions
+    manager_role = Role.query.filter_by(name='manager').first()
+    if manager_role:
+        manager_perms = ['view_reports', 'manage_services', 'view_ticket', 'view_customer', 'record_payment', 'mark_as_paid', 'mark_as_taken', 'update_phase']
+        for p_name in manager_perms:
+            perm = Permission.query.filter_by(name=p_name).first()
+            if perm and perm not in manager_role.permissions:
+                manager_role.permissions.append(perm)
         db.session.commit()
 
 

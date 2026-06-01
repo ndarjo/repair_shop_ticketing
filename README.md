@@ -1,35 +1,24 @@
 # Repair Shop Ticketing System
 
-A comprehensive Python Flask web application for managing repair shop operations with advanced features including ticket management, invoicing, service pricing, device tracking, and multi-theme support.
+A professional Flask-based management platform designed for modern repair shops. Track repairs, manage hardware inventory, calculate real-time profitability, and customize the interface to fit your region and style.
 
 ## ✨ Features
 
 ### Core Features
-- 👤 **User Authentication & Authorization** with role-based access control
-- 🎟️ **Repair Ticket Management** (Create, Read, Update, Phase Tracking)
-- 👥 **Customer Management** with contact information
-- 📱 **Device Tracking** - Track multiple devices per customer
-- 👨‍🔧 **Technician Assignment** to tickets
-- 📝 **Notes & Updates** tracking with timestamps
-- 📊 **Dashboard** with comprehensive statistics
-- 🔄 **Phase Management** - Open, Diagnostic, Waiting for Parts, Repairing, Finished, Cancelled
+- 🎟️ **Lifecycle Tracking** - Manage repairs from intake to pickup with 8 distinct phases.
+- 👥 **CRM & Inventory** - Comprehensive customer profiles and detailed hardware specification tracking.
+- 📈 **Financial Analytics** - Real-time **Net Profit** calculation (Gross Revenue minus Wholesale Hardware Costs).
+- 🔐 **Granular RBAC** - Role-Based Access Control (Admin, Manager, Technician, Receptionist).
+- 💱 **Regional Settings** - Configurable currency symbols (Rp, $, €, £) and decimal precision.
 
 ### Advanced Features
-- 💰 **Service Pricing** - Add and manage repair services with prices
-- 🔧 **Spare Parts Management** - Track replaced hardware and parts
-- 📄 **Invoice Generation** - Auto-generate professional PDF invoices
-- 💳 **Payment Tracking** - Down payments, full payments, and partial payments
-- 🛠️ **Common Problems** - Customizable quick-select problem descriptions
-- 📋 **Reports & Analytics** - Monthly statistics and revenue tracking
-- 📦 **Data Management** - Full SQLite (.db) backups and JSON logical data migration
-- 📥 **Restore Functionality** - Restore system state from file uploads
-- 🌙 **Dark/Light Theme** - User preference for light and dark modes
-- 🎨 **Color Themes** - Multiple color schemes (Blue, Green, Purple, Red, Orange)
-- 💱 **Regional Settings** - Configurable currency symbols and decimal precision
-- 🔐 **Permission-Based Access** - Granular permissions grouped by category
+- 🔧 **Inventory Management** - Catalog services and spare parts with wholesale vs. retail pricing.
+- 💳 **Payment Tracking** - Log down payments, partials, and final balances with an automated audit trail.
+- 📦 **System Maintenance** - One-click full database backups (.db) and logical data migration (.json).
+- 🎨 **Personalization** - Persistent Light/Dark modes and five distinct color themes per user.
+- 🛠️ **Smart Intake** - Quick-select "Common Problems" and interactive AJAX customer/device searching.
 
 ## 📋 Prerequisites
-
 - Python 3.8 or higher
 - pip (Python package manager)
 - Git (optional)
@@ -40,26 +29,9 @@ A comprehensive Python Flask web application for managing repair shop operations
 ```bash
 git clone https://github.com/ndarjo/repair-shop-REDACTED_PASSWORD.git
 cd repair-shop-REDACTED_PASSWORD
-```
-
-### 2. Create Virtual Environment
-```bash
-# Windows
 python -m venv venv
-venv\Scripts\activate
-
-# macOS/Linux
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-```bash
+source venv/bin/activate  # venv\Scripts\activate on Windows
 pip install -r requirements.txt
-```
-
-### 4. Run Application
-```bash
 python app.py
 ```
 
@@ -87,8 +59,7 @@ repair-shop-REDACTED_PASSWORD/
 │   ├── base.html              # Base template with navigation
 │   ├── login.html             # Login page
 │   ├── profile.html           # User profile & theme settings
-│   ├── dashboard.html         # Main dashboard
-│   ├── tickets_list.html      # Full repair ticket directory
+│   ├── dashboard.html         # Main dashboard with active tickets
 │   ├── tickets_list.html      # Full repair ticket directory
 │   ├── ticket_form.html       # Ticket intake form with interactive search
 │   ├── ticket_detail.html     # View ticket details
@@ -100,6 +71,7 @@ repair-shop-REDACTED_PASSWORD/
 │   ├── new_device.html        # Add device for customer
 │   ├── device_detail.html     # Device repair history and technical specs
 │   ├── edit_device.html       # Edit device details
+│   ├── finance_report.html    # Detailed financial analytics
 │   ├── invoice.html           # View invoice
 │   ├── reports.html           # Reports & analytics
 │   ├── admin/
@@ -145,9 +117,9 @@ repair-shop-REDACTED_PASSWORD/
 
 ### Device
 - Device type (Phone, Laptop, Tablet, etc.)
-- Brand, Model, Model number
+- Brand, Model Number
 - CPU, RAM, Storage type & capacity
-- Serial number, Color
+- Color
 - Notes
 - Customer reference
 - Multiple tickets relationship
@@ -255,6 +227,8 @@ repair-shop-REDACTED_PASSWORD/
    - **Waiting for Parts** - Waiting for components
    - **Repairing** - Currently fixing
    - **Finished** - Ready for pickup
+   - **Fully Paid** - Payment settled (device still in shop)
+   - **Already Taken** - Device collected by customer
    - **Cancelled** - Job cancelled
 4. Add optional commentary
 5. Save changes
@@ -298,8 +272,7 @@ repair-shop-REDACTED_PASSWORD/
 ### Recording Payments
 
 1. Open ticket
-2. Scroll to **"Payments"** section
-3. Click **"Record Payment"**
+2. Click **"Record Payment"** button
 4. Enter:
    - Amount
    - Type (Down Payment, Full Payment, Additional Payment)
@@ -359,10 +332,12 @@ These appear as quick-select options when creating tickets.
 3. Click **"Download Backup"**
 4. The system generates a JSON file containing customer and ticket data for download.
 
-**Restore Data:**
+**Restore Data (Admin Only):**
 1. Go to **Admin > Backup**
 2. Upload a **.db** file for a full overwrite (requires re-login)
 3. OR upload a **.json** file to merge customer records into the current database.
+4. Click **"Upload & Restore"**
+
 
 ### Reports & Analytics
 
@@ -372,6 +347,8 @@ These appear as quick-select options when creating tickets.
    - Total tickets
    - Completed tickets
    - Total revenue
+   - **Net Profit** (calculated as Gross Payments - Hardware Costs)
+5. Access **"Detailed Finance Report"** for payment history and full profit breakdown.
 3. See recent ticket activity
 
 ## 🔐 User Roles & Permissions
@@ -379,7 +356,10 @@ These appear as quick-select options when creating tickets.
 ### Admin
 - Full system access
 - Manage users and permissions
+- Manage service catalog and pricing
+- Manage spare parts inventory
 - Create/edit common problems
+- Reset user passwords
 - Create and download backups
 
 ### Technician
@@ -387,6 +367,7 @@ These appear as quick-select options when creating tickets.
 - Update ticket phases
 - Add services to tickets
 - Record payments
+- Add/remove spare parts to tickets
 - View customer/device information
 
 ### Receptionist
@@ -394,9 +375,11 @@ These appear as quick-select options when creating tickets.
 - Create tickets
 - Record payments
 - View reports
+- View reports
 
 ### Manager
 - All access except user management
+- Configure shop currency and decimal precision
 - Create and download backups
 - View all reports
 - Manage common problems
@@ -471,7 +454,7 @@ For issues, questions, or feature requests:
 ## 🎯 Roadmap
 
 Planned features:
-- Email notifications for ticket updates
+- **PDF Invoice Generation** (currently placeholder)
 - SMS reminders for device pickup
 - Multi-language support
 - Advanced analytics and charting
