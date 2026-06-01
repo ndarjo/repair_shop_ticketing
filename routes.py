@@ -351,11 +351,21 @@ def finance_report():
         Customer, Ticket.customer_id == Customer.id
     ).order_by(desc(Payment.paid_at)).all()
     
+    # Detailed material usage (Standard Parts + Manual Items)
+    material_usage = db.session.query(InvoiceItem, Ticket, Customer).join(
+        Invoice, InvoiceItem.invoice_id == Invoice.id
+    ).join(
+        Ticket, Invoice.ticket_id == Ticket.id
+    ).join(
+        Customer, Ticket.customer_id == Customer.id
+    ).order_by(desc(InvoiceItem.id)).all()
+
     return render_template('finance_report.html', 
                            total_revenue=total_revenue,
                            total_hardware_cost=total_hardware_cost,
                            net_profit=net_profit,
-                           payment_history=payment_history)
+                           payment_history=payment_history,
+                           material_usage=material_usage)
 
 @admin_bp.route('/', endpoint='dashboard')
 @admin_bp.route('/dashboard', endpoint='dashboard')
@@ -723,6 +733,10 @@ def ticket_detail(ticket_id):
 @require_permission('add_service')
 def add_service(ticket_id):
     """Attach a standardized service to the ticket"""
+    ticket = db.session.get(Ticket, ticket_id)
+    if ticket and ticket.current_phase == 'Already Taken':
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
+
     service_id = request.form.get('service_id')
     quantity = request.form.get('quantity', 1, type=int)
     
@@ -744,6 +758,10 @@ def add_service(ticket_id):
 @require_permission('add_service')
 def remove_service(ticket_id, ts_id):
     """Remove a service entry from the ticket"""
+    ticket = db.session.get(Ticket, ticket_id)
+    if ticket and ticket.current_phase == 'Already Taken':
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
+
     ts = db.session.get(TicketService, ts_id)
     if ts:
         db.session.delete(ts)
@@ -756,6 +774,10 @@ def remove_service(ticket_id, ts_id):
 @require_permission('add_service')
 def add_part(ticket_id):
     """Record a spare part replacement (manages draft invoice automatically)"""
+    ticket = db.session.get(Ticket, ticket_id)
+    if ticket and ticket.current_phase == 'Already Taken':
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
+
     part_id = request.form.get('part_id')
     manual_name = request.form.get('manual_name')
     quantity = request.form.get('quantity', 1, type=int)
@@ -812,6 +834,10 @@ def add_part(ticket_id):
 @require_permission('add_service')
 def remove_part(ticket_id, item_id):
     """Remove a spare part from the ticket and recalculate invoice total"""
+    ticket = db.session.get(Ticket, ticket_id)
+    if ticket and ticket.current_phase == 'Already Taken':
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
+
     item = db.session.get(InvoiceItem, item_id)
     if item:
         invoice = item.invoice
@@ -831,6 +857,10 @@ def record_payment(ticket_id):
     if not ticket:
         flash('Ticket not found', 'error')
         return redirect(url_for('main.dashboard'))
+
+    if ticket.current_phase == 'Already Taken':
+        flash('This ticket is locked and cannot be modified.', 'error')
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
     amount = request.form.get('amount', type=float)
     method = request.form.get('payment_method', 'Cash')
@@ -878,6 +908,10 @@ def edit_ticket(ticket_id):
     if not ticket:
         flash('Ticket not found', 'error')
         return redirect(url_for('main.dashboard'))
+
+    if ticket.current_phase == 'Already Taken':
+        flash('This ticket is locked and cannot be modified.', 'error')
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
         
     users = User.query.filter(User.roles.any(Role.name == 'technician')).all()
     
@@ -895,6 +929,21 @@ def edit_ticket(ticket_id):
         
     return render_template('edit_ticket.html', ticket=ticket, users=users)
 
+@ticket_bp.route('/delete/<int:ticket_id>', methods=['POST'])
+@login_required
+@require_permission('delete_ticket')
+def delete_ticket(ticket_id):
+    """Permanently erase a ticket and its associated logs/notes"""
+    ticket = db.session.get(Ticket, ticket_id)
+    if not ticket:
+        flash('Ticket not found', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    db.session.delete(ticket)
+    db.session.commit()
+    flash(f'Ticket {ticket.ticket_number} has been permanently erased.', 'success')
+    return redirect(url_for('main.dashboard'))
+
 @ticket_bp.route('/update_phase/<int:ticket_id>', methods=['POST'])
 @login_required
 def update_phase(ticket_id):
@@ -903,6 +952,10 @@ def update_phase(ticket_id):
     if not ticket:
         flash('Ticket not found', 'error')
         return redirect(url_for('main.dashboard'))
+
+    if ticket.current_phase == 'Already Taken':
+        flash('This ticket is locked and cannot be modified.', 'error')
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
     new_phase = request.form.get('new_phase')
     commentary = request.form.get('commentary', '')

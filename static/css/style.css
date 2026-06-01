@@ -166,6 +166,12 @@ body.theme-dark .alert-light .text-dark {
     color: #ffffff !important;
 }
 
+body.theme-dark .table-info {
+    --bs-table-bg: #032830 !important;
+    --bs-table-color: #ffffff !important;
+    --bs-table-border-color: #08424d !important;
+}
+
 body.theme-dark .btn-light {
     background-color: #404040;
     border-color: #404040;

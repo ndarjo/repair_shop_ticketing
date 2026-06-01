@@ -80,4 +80,51 @@
         </table>
     </div>
 </div>
+
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-info text-dark d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Material Usage & Hardware Tracking</h5>
+        <small class="fw-bold">Includes Inventory & Manual Items</small>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Item Description</th>
+                    <th>Type</th>
+                    <th>Customer</th>
+                    <th>Ticket #</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-end">Unit Price</th>
+                    <th class="text-end">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item, ticket, customer in material_usage %}
+                <tr>
+                    <td><strong>{{ item.description }}</strong></td>
+                    <td>
+                        {% if item.spare_part_id %}
+                            <span class="badge bg-secondary">Inventory</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Manual Entry</span>
+                        {% endif %}
+                    </td>
+                    <td><small>{{ customer.name }}</small></td>
+                    <td>
+                        <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="small text-decoration-none">
+                            {{ ticket.ticket_number }}
+                        </a>
+                    </td>
+                    <td class="text-center">{{ item.quantity }}</td>
+                    <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price) }}</td>
+                    <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price) }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No materials recorded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}
