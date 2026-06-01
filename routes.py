@@ -204,11 +204,11 @@ def new_ticket():
     now_time = now.strftime('%H:%M')
     
     if request.method == 'POST':
-        customer_id = request.form.get('customer_id')
-        device_id = request.form.get('device_id')
+        customer_id = request.form.get('customer_id', type=int)
+        device_id = request.form.get('device_id', type=int)
         items_included = request.form.get('items_included', '')
         problem_description = request.form.get('problem_description', '')
-        assigned_to = request.form.get('assigned_to')
+        assigned_to = request.form.get('assigned_to', type=int)
         created_date = request.form.get('created_date')
         created_time = request.form.get('created_time')
         
@@ -866,8 +866,8 @@ def record_payment(ticket_id):
     method = request.form.get('payment_method', 'Cash')
     reference = request.form.get('reference', '')
 
-    if amount is None or amount <= 0:
-        flash('Please enter a valid payment amount.', 'error')
+    if amount is None or amount == 0:
+        flash('Please enter a valid non-zero payment amount.', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
     payment = Payment(
@@ -886,11 +886,14 @@ def record_payment(ticket_id):
     symbol = currency_map.get(shop_admin.currency, '$') if shop_admin else '$'
 
     # Create an automated note for the payment
+    note_type = 'Payment Received' if amount > 0 else 'Change Given / Refund'
+    note_content = f"{note_type}: {symbol}{abs(amount)}. Method: {method}. Ref: {reference}"
+
     note = Note(
         ticket_id=ticket.id,
         user_id=current_user.id,
-        note_type='Payment Received',
-        content=f"Payment received: {symbol}{amount}. Method: {method}. Ref: {reference}",
+        note_type=note_type,
+        content=note_content,
         is_internal=True
     )
     db.session.add(note)
@@ -1178,7 +1181,7 @@ def search_devices(customer_id):
     device_query = Device.query.filter_by(customer_id=customer_id)
     if query:
         device_query = device_query.filter(
-            or_(Device.brand.ilike(f'%{query}%'), Device.model.ilike(f'%{query}%'), Device.device_type.ilike(f'%{query}%'))
+            or_(Device.brand.ilike(f'%{query}%'), Device.model_number.ilike(f'%{query}%'), Device.device_type.ilike(f'%{query}%'))
         )
     devices = device_query.limit(10).all()
 
