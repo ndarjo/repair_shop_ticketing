@@ -1,60 +1,96 @@
 {% extends "base.html" %}
 
-{% block title %}Edit User - Repair Shop{% endblock %}
+{% block title %}Edit User - Admin{% endblock %}
 
 {% block content %}
 <div class="row">
-    <div class="col-md-8 offset-md-2">
+    <div class="col-md-10 offset-md-1">
+        <h1 class="mb-4">Edit User: {{ user.full_name }}</h1>
+        
         <div class="card">
-            <div class="card-header">
-                <h4>Edit User: {{ user.username }}</h4>
-            </div>
             <div class="card-body">
                 <form method="POST">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="full_name" class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name }}">
+                    <!-- Basic Info -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Basic Information</h5>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="full_name" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">Email (Optional)</label>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if user.is_active %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_active">
+                                        Active (user can log in)
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-check-label">
-                            <input class="form-check-input" type="checkbox" name="is_active" {% if user.is_active %}checked{% endif %}>
-                            Account Active
-                        </label>
-                    </div>
-
-                    <h5 class="mt-4 mb-3">Assign Roles</h5>
-                    <div class="mb-3">
-                        {% for role in roles %}
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="role_{{ role.id }}" name="roles" value="{{ role.id }}" {% if role in user.role %}checked{% endif %}>
-                            <label class="form-check-label" for="role_{{ role.id }}">
-                                {{ role.name }} - {{ role.description }}
-                            </label>
+                    
+                    <!-- Roles -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Roles</h5>
                         </div>
-                        {% endfor %}
-                    </div>
-
-                    <h5 class="mt-4 mb-3">Assign Permissions</h5>
-                    <div class="mb-3">
-                        {% for permission in all_permissions %}
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="perm_{{ permission.id }}" name="permissions" value="{{ permission.id }}" {% if permission in user.permissions %}checked{% endif %}>
-                            <label class="form-check-label" for="perm_{{ permission.id }}">
-                                {{ permission.name }}
-                                <small class="text-muted">({{ permission.category }})</small>
-                            </label>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for role in roles %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="role_{{ role.id }}" name="roles" value="{{ role.id }}" {% if user.role.filter_by(id=role.id).first() %}checked{% endif %}>
+                                        <label class="form-check-label" for="role_{{ role.id }}">
+                                            <strong>{{ role.name }}</strong><br>
+                                            <small class="text-muted">{{ role.description }}</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
-                        {% endfor %}
                     </div>
-
-                    <div class="mb-3">
+                    
+                    <!-- Permissions by Category -->
+                    {% for category, permissions in permissions_by_category.items() %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ category|title }} Permissions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        {% for perm in permissions %}
+                                        <tr>
+                                            <td style="width: 100%">
+                                                <strong>{{ perm.name }}</strong><br>
+                                                <small class="text-muted">{{ perm.description }}</small>
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="perm_{{ perm.id }}" name="permissions" value="{{ perm.id }}" {% if user.permissions.filter_by(id=perm.id).first() %}checked{% endif %}>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- Submit Buttons -->
+                    <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">Save Changes</button>
                         <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">Cancel</a>
                     </div>

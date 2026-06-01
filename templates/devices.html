@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}All Devices - Repair Shop{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">All Devices</h1>
+        
+        <a href="{{ url_for('device.new_device') }}" class="btn btn-primary mb-3">+ Add New Device</a>
+        
+        {% if devices.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Device</th>
+                        <th>Type</th>
+                        <th>Customer</th>
+                        <th>Specifications</th>
+                        <th>Serial Number</th>
+                        <th>Added</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for device in devices.items %}
+                    <tr>
+                        <td><strong>{{ device.brand }} {{ device.model }}</strong></td>
+                        <td>{{ device.device_type }}</td>
+                        <td><a href="{{ url_for('customer.view_customer', customer_id=device.customer_id) }}">{{ device.customer.name }}</a></td>
+                        <td>
+                            {% if device.ram or device.storage_capacity %}
+                            <small class="text-muted">
+                                {% if device.ram %}{{ device.ram }}{% endif %}
+                                {% if device.ram and device.storage_capacity %} / {% endif %}
+                                {% if device.storage_capacity %}{{ device.storage_capacity }}{% endif %}
+                            </small>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ device.serial_number or '-' }}</code></td>
+                        <td><small class="text-muted">{{ device.created_at.strftime('%Y-%m-%d') }}</small></td>
+                        <td>
+                            <a href="{{ url_for('device.edit_device', device_id=device.id) }}" class="btn btn-sm btn-warning">Edit</a>
+                            <form method="POST" action="{{ url_for('device.delete_device', device_id=device.id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this device?')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if devices.pages > 1 %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if devices.has_prev %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('main.devices_list', page=devices.prev_num) }}">Previous</a></li>
+                {% endif %}
+                
+                {% for page_num in devices.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == devices.page %}
+                        <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                        {% else %}
+                        <li class="page-item"><a class="page-link" href="{{ url_for('main.devices_list', page=page_num) }}">{{ page_num }}</a></li>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if devices.has_next %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('main.devices_list', page=devices.next_num) }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-info">
+            No devices found. <a href="{{ url_for('device.new_device') }}">Add your first device</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

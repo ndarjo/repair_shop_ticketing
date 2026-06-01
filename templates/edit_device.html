@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Device - Repair Shop{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1 class="mb-4">Edit Device</h1>
+        
+        <div class="alert alert-info">
+            <strong>Customer:</strong> {{ device.customer.name }} ({{ device.customer.phone }})
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="device_type" class="form-label">Device Type *</label>
+                            <select class="form-control" id="device_type" name="device_type" required>
+                                <option value="">-- Select --</option>
+                                <option value="Phone" {% if device.device_type == 'Phone' %}selected{% endif %}>Phone</option>
+                                <option value="Laptop" {% if device.device_type == 'Laptop' %}selected{% endif %}>Laptop</option>
+                                <option value="Tablet" {% if device.device_type == 'Tablet' %}selected{% endif %}>Tablet</option>
+                                <option value="Desktop" {% if device.device_type == 'Desktop' %}selected{% endif %}>Desktop</option>
+                                <option value="Monitor" {% if device.device_type == 'Monitor' %}selected{% endif %}>Monitor</option>
+                                <option value="Printer" {% if device.device_type == 'Printer' %}selected{% endif %}>Printer</option>
+                                <option value="Other" {% if device.device_type == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="brand" class="form-label">Brand *</label>
+                            <input type="text" class="form-control" id="brand" name="brand" value="{{ device.brand }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="model" class="form-label">Model *</label>
+                            <input type="text" class="form-control" id="model" name="model" value="{{ device.model }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="model_number" class="form-label">Model Number</label>
+                            <input type="text" class="form-control" id="model_number" name="model_number" value="{{ device.model_number or '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cpu" class="form-label">CPU/Processor</label>
+                            <input type="text" class="form-control" id="cpu" name="cpu" value="{{ device.cpu or '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ram" class="form-label">RAM</label>
+                            <input type="text" class="form-control" id="ram" name="ram" value="{{ device.ram or '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="storage_type" class="form-label">Storage Type</label>
+                            <select class="form-control" id="storage_type" name="storage_type">
+                                <option value="">-- Select --</option>
+                                <option value="HDD" {% if device.storage_type == 'HDD' %}selected{% endif %}>HDD</option>
+                                <option value="SSD" {% if device.storage_type == 'SSD' %}selected{% endif %}>SSD</option>
+                                <option value="Mixed" {% if device.storage_type == 'Mixed' %}selected{% endif %}>Mixed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="storage_capacity" class="form-label">Storage Capacity</label>
+                            <input type="text" class="form-control" id="storage_capacity" name="storage_capacity" value="{{ device.storage_capacity or '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="serial_number" class="form-label">Serial Number</label>
+                            <input type="text" class="form-control" id="serial_number" name="serial_number" value="{{ device.serial_number or '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="color" class="form-label">Color</label>
+                            <input type="text" class="form-control" id="color" name="color" value="{{ device.color or '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3">{{ device.notes or '' }}</textarea>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a href="{{ url_for('customer.view_customer', customer_id=device.customer_id) }}" class="btn btn-secondary">Cancel</a>
+                        <form method="POST" action="{{ url_for('device.delete_device', device_id=device.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this device?')">Delete Device</button>
+                        </form>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

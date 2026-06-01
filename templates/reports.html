@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Analytics - Repair Shop{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Reports & Analytics</h1>
+
+<!-- Monthly Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Total Tickets (This Month)</h5>
+                <h2 class="card-text">{{ monthly_stats.total_tickets }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Completed Tickets</h5>
+                <h2 class="card-text">{{ monthly_stats.completed_tickets }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Completion Rate</h5>
+                <h2 class="card-text">
+                    {% if monthly_stats.total_tickets > 0 %}
+                        {{ "%.0f"|format((monthly_stats.completed_tickets / monthly_stats.total_tickets) * 100) }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title">Total Revenue</h5>
+                <h2 class="card-text">${{ "%.2f"|format(monthly_stats.total_revenue) }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Tickets -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Tickets</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_tickets %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ticket #</th>
+                                <th>Customer</th>
+                                <th>Device</th>
+                                <th>Phase</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in recent_tickets %}
+                            <tr>
+                                <td><strong>{{ ticket.ticket_number }}</strong></td>
+                                <td>{{ ticket.customer.name }}</td>
+                                <td>{{ ticket.device.brand }} {{ ticket.device.model }}</td>
+                                <td>
+                                    <span class="badge bg-{% if ticket.current_phase == 'Finished' %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
+                                        {{ ticket.current_phase }}
+                                    </span>
+                                </td>
+                                <td><small>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
+                                <td>
+                                    <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-primary">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No tickets found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

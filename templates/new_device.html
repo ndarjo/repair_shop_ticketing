@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Add Device - Repair Shop{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1 class="mb-4">Add New Device</h1>
+        
+        {% if customer %}
+        <div class="alert alert-info">
+            <strong>Customer:</strong> {{ customer.name }} ({{ customer.phone }})
+        </div>
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="customer_id" value="{{ customer_id }}">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="device_type" class="form-label">Device Type *</label>
+                            <select class="form-control" id="device_type" name="device_type" required>
+                                <option value="">-- Select --</option>
+                                <option>Phone</option>
+                                <option>Laptop</option>
+                                <option>Tablet</option>
+                                <option>Desktop</option>
+                                <option>Monitor</option>
+                                <option>Printer</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="brand" class="form-label">Brand *</label>
+                            <input type="text" class="form-control" id="brand" name="brand" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="model" class="form-label">Model *</label>
+                            <input type="text" class="form-control" id="model" name="model" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="model_number" class="form-label">Model Number</label>
+                            <input type="text" class="form-control" id="model_number" name="model_number">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cpu" class="form-label">CPU/Processor</label>
+                            <input type="text" class="form-control" id="cpu" name="cpu" placeholder="E.g., Intel i7">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="ram" class="form-label">RAM</label>
+                            <input type="text" class="form-control" id="ram" name="ram" placeholder="E.g., 8GB">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="storage_type" class="form-label">Storage Type</label>
+                            <select class="form-control" id="storage_type" name="storage_type">
+                                <option value="">-- Select --</option>
+                                <option>HDD</option>
+                                <option>SSD</option>
+                                <option>Mixed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="storage_capacity" class="form-label">Storage Capacity</label>
+                            <input type="text" class="form-control" id="storage_capacity" name="storage_capacity" placeholder="E.g., 256GB SSD">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="serial_number" class="form-label">Serial Number</label>
+                            <input type="text" class="form-control" id="serial_number" name="serial_number">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="color" class="form-label">Color</label>
+                            <input type="text" class="form-control" id="color" name="color">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Add Device</button>
+                        {% if customer %}
+                        <a href="{{ url_for('customer.view_customer', customer_id=customer_id) }}" class="btn btn-secondary">Cancel</a>
+                        {% else %}
+                        <a href="{{ url_for('main.devices_list') }}" class="btn btn-secondary">Cancel</a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
