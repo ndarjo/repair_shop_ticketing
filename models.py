@@ -18,6 +18,7 @@ class User(UserMixin, db.Model):
     is_superuser = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
     theme_preference = db.Column(db.String(20), default='light')  # light or dark
+    color_theme = db.Column(db.String(50), default='blue')  # blue, green, purple, red, orange
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -169,6 +170,19 @@ class SparePart(db.Model):
         return f'<SparePart {self.name}>'
 
 
+class CommonProblem(db.Model):
+    """Common problems for quick selection when creating tickets"""
+    __tablename__ = 'common_problems'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    problem_text = db.Column(db.String(255), nullable=False, unique=True)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<CommonProblem {self.problem_text}>'
+
+
 class Ticket(db.Model):
     """Repair ticket model"""
     __tablename__ = 'tickets'
@@ -182,13 +196,6 @@ class Ticket(db.Model):
         'Cancelled'
     ]
     
-    PRIORITY_CHOICES = [
-        'Low',
-        'Medium',
-        'High',
-        'Urgent'
-    ]
-    
     id = db.Column(db.Integer, primary_key=True)
     ticket_number = db.Column(db.String(20), unique=True, nullable=False)
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
@@ -199,7 +206,6 @@ class Ticket(db.Model):
     problem_description = db.Column(db.Text, nullable=False)
     
     current_phase = db.Column(db.String(20), default='Open', nullable=False)
-    priority = db.Column(db.String(10), default='Medium', nullable=False)
     
     device_picked_up = db.Column(db.Boolean, default=False)
     picked_up_date = db.Column(db.DateTime)
