@@ -199,6 +199,31 @@ class Ticket(db.Model):
             if not Ticket.query.filter_by(ticket_number=ticket_number).first():
                 return ticket_number
 
+    @property
+    def services_total(self):
+        """Calculates the total value of all services on this ticket"""
+        return sum((ts.price_charged * ts.quantity for ts in self.ticket_services), Decimal('0.00'))
+
+    @property
+    def parts_total(self):
+        """Calculates the total value of all parts across all associated invoices"""
+        return sum((item.total_price for inv in self.invoices for item in inv.items), Decimal('0.00'))
+
+    @property
+    def grand_total(self):
+        """Sum of services and parts"""
+        return self.services_total + self.parts_total
+
+    @property
+    def total_paid(self):
+        """Sum of all payments recorded for this ticket"""
+        return sum((p.amount for p in self.payments), Decimal('0.00'))
+
+    @property
+    def balance_due(self):
+        """Remaining amount to be paid"""
+        return self.grand_total - self.total_paid
+
 
 class Service(db.Model):
     """Service model"""

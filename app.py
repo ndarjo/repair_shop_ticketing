@@ -184,7 +184,7 @@ def initialize_roles_and_permissions():
     # Manager permissions
     manager_role = Role.query.filter_by(name='manager').first()
     if manager_role:
-        manager_perms = ['view_reports', 'manage_services', 'view_ticket', 'view_customer', 'record_payment', 'mark_as_paid', 'mark_as_taken', 'update_phase', 'archive_ticket']
+        manager_perms = ['view_reports', 'manage_services', 'view_ticket', 'view_customer', 'record_payment', 'mark_as_paid', 'mark_as_taken', 'update_phase', 'archive_ticket', 'create_invoice']
         for p_name in manager_perms:
             perm = Permission.query.filter_by(name=p_name).first()
             if perm and perm not in manager_role.permissions:

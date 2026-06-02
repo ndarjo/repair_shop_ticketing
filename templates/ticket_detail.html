@@ -1,19 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Ticket {{ ticket.ticket_number }}{% endblock %}
 {% block content %}
-{# Pre-calculate financials for both UI and JS synchronization #}
-{% set ns = namespace(services_subtotal=0, parts_subtotal=0) %}
-{% for ts in ticket.ticket_services %}
-    {% set ns.services_subtotal = ns.services_subtotal + (ts.price_charged * ts.quantity) %}
-{% endfor %}
-{% for inv in ticket.invoices %}
-    {% for item in inv.items %}
-        {% set ns.parts_subtotal = ns.parts_subtotal + item.total_price %}
-    {% endfor %}
-{% endfor %}
-{% set grand_total = ns.services_subtotal + ns.parts_subtotal %}
-{% set total_paid = ticket.payments|sum(attribute='amount') %}
-{% set balance = grand_total - total_paid %}
 
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
@@ -29,6 +16,25 @@
                 <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">Record Payment</button>
                 {% endif %}
                 <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-warning">Edit Ticket</a>
+            {% endif %}
+
+            {% if current_user.has_permission('create_invoice') and ticket.current_phase != 'Already Taken' %}
+                {% set active_invoice = ticket.invoices[0] if ticket.invoices else None %}
+                <div class="btn-group ms-1">
+                    {% if not active_invoice %}
+                        <form action="{{ url_for('ticket.create_invoice', ticket_id=ticket.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-info text-white">Create Invoice</button>
+                        </form>
+                    {% elif active_invoice.status == 'Draft' %}
+                        <form action="{{ url_for('ticket.create_invoice', ticket_id=ticket.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-info text-white">Finalize Invoice</button>
+                        </form>
+                    {% else %}
+                        <a href="{{ url_for('ticket.view_invoice', invoice_id=active_invoice.id) }}" class="btn btn-sm btn-outline-info">
+                            <i class="bi bi-eye me-1"></i> View Invoice
+                        </a>
+                    {% endif %}
+                </div>
             {% endif %}
 
             {% if ticket.current_phase == 'Already Taken' and not ticket.is_archived and current_user.has_permission('archive_ticket') %}
@@ -134,27 +140,27 @@
                         <h6 class="text-uppercase text-muted small fw-bold">Financial Summary</h6>
                         <div class="d-flex justify-content-between mb-1">
                             <span>Services:</span>
-                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ns.services_subtotal) }}</span>
+                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.services_total) }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-1">
                             <span>Materials:</span>
-                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ns.parts_subtotal) }}</span>
+                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.parts_total) }}</span>
                         </div>
                         <div class="d-flex justify-content-between border-top pt-2 mb-1 fw-bold">
                             <span>Grand Total:</span>
-                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, grand_total) }}</span>
+                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.grand_total) }}</span>
                         </div>
                         <div class="d-flex justify-content-between text-success mb-1">
                             <span>Paid:</span>
-                            <span>- {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, total_paid) }}</span>
+                            <span>- {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.total_paid) }}</span>
                         </div>
-                        <div class="d-flex justify-content-between border-top pt-2 fw-bold text-{{ 'success' if balance <= 0 else 'danger' }}">
-                            {% if balance < 0 %}
+                        <div class="d-flex justify-content-between border-top pt-2 fw-bold text-{{ 'success' if ticket.balance_due <= 0 else 'danger' }}">
+                            {% if ticket.balance_due < 0 %}
                                 <span>Change Due:</span>
-                                <span style="font-size: 1.2rem;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, balance|abs) }}</span>
+                                <span style="font-size: 1.2rem;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.balance_due|abs) }}</span>
                             {% else %}
                                 <span>Balance Due:</span>
-                                <span style="font-size: 1.2rem;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, balance) }}</span>
+                                <span style="font-size: 1.2rem;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.balance_due) }}</span>
                             {% endif %}
                         </div>
                     </div>
@@ -295,14 +301,14 @@
         <div class="modal-content">
             <form action="{{ url_for('ticket.record_payment', ticket_id=ticket.id) }}" method="POST">
                 <div class="modal-header">
-                    <h5 class="modal-title">{{ 'Return Change / Refund' if balance < 0 else 'Record Payment' }}</h5>
+                    <h5 class="modal-title">{{ 'Return Change / Refund' if ticket.balance_due < 0 else 'Record Payment' }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-{{ 'danger' if balance < 0 else 'secondary' }} py-2 mb-3">
+                    <div class="alert alert-{{ 'danger' if ticket.balance_due < 0 else 'secondary' }} py-2 mb-3">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span>{{ 'Overpayment / Change Due' if balance < 0 else 'Outstanding Balance' }}:</span>
-                            <span class="fw-bold fs-5">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, balance|abs) }}</span>
+                            <span>{{ 'Overpayment / Change Due' if ticket.balance_due < 0 else 'Outstanding Balance' }}:</span>
+                            <span class="fw-bold fs-5">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.balance_due|abs) }}</span>
                         </div>
                     </div>
 
@@ -312,13 +318,13 @@
                             <span class="input-group-text">{{ currency_symbol }}</span>
                             <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" 
                                    name="amount" id="paymentAmount" class="form-control" required placeholder="0.00"
-                                   value="{{ "%.*f"|format(currency_decimals, balance) if balance > 0 else '' }}">
+                                   value="{{ "%.*f"|format(currency_decimals, ticket.balance_due) if ticket.balance_due > 0 else '' }}">
                             <button type="button" class="btn btn-outline-secondary" id="fillBalanceBtn">
-                                {{ 'Return All' if balance < 0 else 'Pay Full' }}
+                                {{ 'Return All' if ticket.balance_due < 0 else 'Pay Full' }}
                             </button>
                         </div>
-                        {% if balance < 0 %}
-                        <small class="text-danger">Enter <strong>{{ "%.*f"|format(currency_decimals, balance) }}</strong> to record that the change was handed back to the customer.</small>
+                        {% if ticket.balance_due < 0 %}
+                        <small class="text-danger">Enter <strong>{{ "%.*f"|format(currency_decimals, ticket.balance_due) }}</strong> to record that the change was handed back to the customer.</small>
                         {% endif %}
                     </div>
 
@@ -355,8 +361,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-{{ 'danger' if balance < 0 else 'success' }}">
-                        {{ 'Record Return' if balance < 0 else 'Record Payment' }}
+                    <button type="submit" class="btn btn-{{ 'danger' if ticket.balance_due < 0 else 'success' }}">
+                        {{ 'Record Return' if ticket.balance_due < 0 else 'Record Payment' }}
                     </button>
                 </div>
             </form>
@@ -451,7 +457,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const fillBalanceBtn = document.getElementById('fillBalanceBtn');
     
     // Synchronized value from backend/template calculation
-    const currentBalance = parseFloat("{{ balance|default(0)|float }}");
+    const currentBalance = parseFloat("{{ ticket.balance_due|default(0)|float }}");
 
     if (fillBalanceBtn) {
         fillBalanceBtn.addEventListener('click', () => {

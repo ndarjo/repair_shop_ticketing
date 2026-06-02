@@ -959,6 +959,45 @@ def remove_part(ticket_id, item_id):
         flash('Spare part removed.', 'success')
     return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
+@ticket_bp.route('/create_invoice/<int:ticket_id>', methods=['POST'])
+@login_required
+@require_permission('create_invoice')
+def create_invoice(ticket_id):
+    """Finalize the draft invoice or create a new one for the ticket"""
+    ticket = db.session.get(Ticket, ticket_id)
+    if not ticket:
+        flash('Ticket not found', 'error')
+        return redirect(url_for('main.dashboard'))
+
+    invoice = Invoice.query.filter_by(ticket_id=ticket_id).first()
+    
+    if not invoice:
+        invoice = Invoice(
+            invoice_number=f"INV-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
+            ticket_id=ticket_id,
+            status='Unpaid'
+        )
+        db.session.add(invoice)
+    else:
+        if invoice.status == 'Draft':
+            invoice.status = 'Unpaid'
+    
+    invoice.calculate_total()
+    db.session.commit()
+    flash(f'Invoice {invoice.invoice_number} created successfully.', 'success')
+    return redirect(url_for('ticket.view_invoice', invoice_id=invoice.id))
+
+@ticket_bp.route('/invoice/<int:invoice_id>')
+@login_required
+@require_permission('view_ticket')
+def view_invoice(invoice_id):
+    """View the generated invoice details"""
+    invoice = db.session.get(Invoice, invoice_id)
+    if not invoice:
+        flash('Invoice not found', 'error')
+        return redirect(url_for('main.dashboard'))
+    return render_template('invoice.html', invoice=invoice)
+
 @ticket_bp.route('/record_payment/<int:ticket_id>', methods=['POST'])
 @login_required
 @require_permission('record_payment')
