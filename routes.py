@@ -149,7 +149,7 @@ def dashboard():
     page = request.args.get('page', 1, type=int)
     
     # FIXED: Filter out tickets that have already been picked up by customers
-    query = Ticket.query.filter(Ticket.current_phase != 'Already Taken').order_by(desc(Ticket.created_at))
+    query = Ticket.query.filter(Ticket.current_phase != 'Already Taken', Ticket.is_archived == False).order_by(desc(Ticket.created_at))
     tickets = query.paginate(page=page, per_page=10)
     
     # Single aggregate query for status counts
@@ -159,7 +159,7 @@ def dashboard():
     phase_map = dict(phase_counts)
 
     stats = {
-        'total_tickets': Ticket.query.count(),
+        'total_tickets': Ticket.query.filter(Ticket.current_phase != 'Already Taken', Ticket.is_archived == False).count(),
         'open_tickets': phase_map.get('Open', 0),
         'diagnostic': phase_map.get('Diagnostic', 0),
         'repairing': phase_map.get('Repairing', 0),
@@ -181,10 +181,10 @@ def tickets_list():
     
     if view == 'history':
         # Show only picked up devices
-        query = Ticket.query.filter_by(current_phase='Already Taken')
+        query = Ticket.query.filter_by(current_phase='Already Taken', is_archived=False)
     else:
         # Show everything currently in the shop
-        query = Ticket.query.filter(Ticket.current_phase != 'Already Taken')
+        query = Ticket.query.filter(Ticket.current_phase != 'Already Taken', Ticket.is_archived == False)
         
     query = query.order_by(desc(Ticket.created_at))
     tickets = query.paginate(page=page, per_page=20)
@@ -213,7 +213,7 @@ def new_ticket():
         created_time = request.form.get('created_time')
         
         # Financial fields from form
-        down_payment = max(0, request.form.get('down_payment_amount', 0, type=float))
+        down_payment = Decimal(request.form.get('down_payment_amount', '0') or '0')
         payment_method = request.form.get('payment_method')
         
         if not device_id:
@@ -315,10 +315,12 @@ def reports():
     selected_month = request.args.get('month') # Format: YYYY-MM
 
     # Calculate Total Revenue (Gross)
-    rev_q = db.session.query(func.sum(Payment.amount))
+    rev_q = db.session.query(func.sum(Payment.amount)).join(
+        Ticket, Payment.ticket_id == Ticket.id
+    ).join(Customer, Ticket.customer_id == Customer.id)
     if selected_month:
         rev_q = rev_q.filter(func.strftime('%Y-%m', Payment.paid_at) == selected_month)
-    gross_revenue = rev_q.scalar() or 0.0
+    gross_revenue = rev_q.scalar() or Decimal('0.00')
     
     # Calculate Total Hardware Cost
     cost_q = db.session.query(
@@ -328,14 +330,14 @@ def reports():
         cost_q = cost_q.join(Invoice, InvoiceItem.invoice_id == Invoice.id).filter(
             func.strftime('%Y-%m', Invoice.created_at) == selected_month
         )
-    hardware_cost = cost_q.scalar() or 0.0
+    hardware_cost = cost_q.scalar() or Decimal('0.00')
 
     monthly_stats = {
-        'total_tickets': Ticket.query.count(),
-        'completed_tickets': Ticket.query.filter_by(current_phase='Already Taken').count(),
-        'gross_revenue': float(gross_revenue),
-        'hardware_cost': float(hardware_cost),
-        'total_revenue': float(gross_revenue) - float(hardware_cost), # Shows Net Profit for dashboard cards
+        'total_tickets': Ticket.query.filter_by(is_archived=False).count(),
+        'completed_tickets': Ticket.query.filter_by(current_phase='Already Taken', is_archived=False).count(),
+        'gross_revenue': gross_revenue,
+        'hardware_cost': hardware_cost,
+        'net_profit': gross_revenue - hardware_cost,
         'selected_month': selected_month
     }
 
@@ -363,10 +365,12 @@ def finance_report():
     selected_month = request.args.get('month') # Expecting YYYY-MM
 
     # Total money paid by customers
-    rev_q = db.session.query(func.sum(Payment.amount))
+    rev_q = db.session.query(func.sum(Payment.amount)).join(
+        Ticket, Payment.ticket_id == Ticket.id
+    ).join(Customer, Ticket.customer_id == Customer.id)
     if selected_month:
         rev_q = rev_q.filter(func.strftime('%Y-%m', Payment.paid_at) == selected_month)
-    total_revenue = rev_q.scalar() or 0.0
+    total_revenue = rev_q.scalar() or Decimal('0.00')
     
     # Total wholesale cost of all hardware replacements used
     cost_q = db.session.query(
@@ -376,9 +380,9 @@ def finance_report():
         cost_q = cost_q.join(Invoice, InvoiceItem.invoice_id == Invoice.id).filter(
             func.strftime('%Y-%m', Invoice.created_at) == selected_month
         )
-    total_hardware_cost = cost_q.scalar() or 0.0
+    total_hardware_cost = cost_q.scalar() or Decimal('0.00')
     
-    net_profit = float(total_revenue) - float(total_hardware_cost)
+    net_profit = total_revenue - total_hardware_cost
     
     # Detailed payment history by customer
     ph_q = db.session.query(Payment, Ticket, Customer).join(
@@ -409,11 +413,13 @@ def finance_report():
     rev_results = db.session.query(
         func.strftime('%Y-%m', Payment.paid_at).label('month'),
         func.sum(Payment.amount)
-    ).group_by('month').all()
+    ).join(Ticket, Payment.ticket_id == Ticket.id)\
+     .join(Customer, Ticket.customer_id == Customer.id)\
+     .group_by('month').all()
 
     for month, total in rev_results:
         if month:
-            monthly_data[month] = {'revenue': float(total), 'costs': 0.0, 'profit': float(total)}
+            monthly_data[month] = {'revenue': Decimal(str(total)), 'costs': Decimal('0.00'), 'profit': Decimal(str(total))}
 
     # Aggregate Hardware Costs by Month (based on Invoice date)
     cost_results = db.session.query(
@@ -425,8 +431,8 @@ def finance_report():
     for month, total in cost_results:
         if month:
             if month not in monthly_data:
-                monthly_data[month] = {'revenue': 0.0, 'costs': 0.0, 'profit': 0.0}
-            monthly_data[month]['costs'] = float(total)
+                monthly_data[month] = {'revenue': Decimal('0.00'), 'costs': Decimal('0.00'), 'profit': Decimal('0.00')}
+            monthly_data[month]['costs'] = Decimal(str(total))
             monthly_data[month]['profit'] = monthly_data[month]['revenue'] - monthly_data[month]['costs']
 
     # Sort months descending for the report
@@ -476,8 +482,8 @@ def add_part_admin():
     """Add a new spare part to inventory catalog"""
     name = request.form.get('name')
     description = request.form.get('description')
-    cost = request.form.get('cost', type=float)
-    selling_price = request.form.get('selling_price', type=float)
+    cost = Decimal(request.form.get('cost') or '0')
+    selling_price = Decimal(request.form.get('selling_price') or '0')
     stock = request.form.get('stock_quantity', 0, type=int)
     
     if not name or selling_price is None:
@@ -502,8 +508,8 @@ def edit_part_admin(part_id):
         
     part.name = request.form.get('name')
     part.description = request.form.get('description')
-    part.cost = request.form.get('cost', type=float)
-    part.selling_price = request.form.get('selling_price', type=float)
+    part.cost = Decimal(request.form.get('cost') or '0')
+    part.selling_price = Decimal(request.form.get('selling_price') or '0')
     part.stock_quantity = request.form.get('stock_quantity', type=int)
     part.is_active = 'is_active' in request.form
     
@@ -534,7 +540,7 @@ def add_service_admin():
     """Create a new repair service type"""
     name = request.form.get('name')
     description = request.form.get('description')
-    price = request.form.get('price', type=float)
+    price = Decimal(request.form.get('price') or '0')
     
     if not name or price is None:
         flash('Service name and price are required.', 'error')
@@ -558,7 +564,7 @@ def edit_service_admin(service_id):
         
     service.name = request.form.get('name')
     service.description = request.form.get('description')
-    service.price = request.form.get('price', type=float)
+    service.price = Decimal(request.form.get('price') or '0')
     service.is_active = 'is_active' in request.form
     
     db.session.commit()
@@ -810,7 +816,8 @@ def ticket_detail(ticket_id):
 def add_service(ticket_id):
     """Attach a standardized service to the ticket"""
     ticket = db.session.get(Ticket, ticket_id)
-    if ticket and ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
+    if ticket and ticket.current_phase == 'Already Taken':
+        flash('This ticket is locked and cannot be modified.', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     # Ensure a draft invoice exists to hold the charges
@@ -848,7 +855,8 @@ def add_service(ticket_id):
 def remove_service(ticket_id, ts_id):
     """Remove a service entry from the ticket"""
     ticket = db.session.get(Ticket, ticket_id)
-    if ticket and ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
+    if ticket and ticket.current_phase == 'Already Taken':
+        flash('This ticket is locked and cannot be modified.', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     ts = db.session.get(TicketService, ts_id)
@@ -868,32 +876,38 @@ def remove_service(ticket_id, ts_id):
 def add_part(ticket_id):
     """Record a spare part replacement (manages draft invoice automatically)"""
     ticket = db.session.get(Ticket, ticket_id)
-    if ticket and ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
+    if ticket and ticket.current_phase == 'Already Taken':
+        flash('This ticket is locked and cannot be modified.', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     part_id = request.form.get('part_id')
     manual_name = request.form.get('manual_name')
     quantity = request.form.get('quantity', 1, type=int)
-    price = request.form.get('price', type=float)
+    price_val = request.form.get('price', '').strip()
     
     description = ""
-    item_price = 0.0
-    item_cost = 0.0
+    item_price = Decimal('0.00')
+    item_cost = Decimal('0.00')
     spare_part_id = None
 
-    if part_id:
-        part = db.session.get(SparePart, part_id)
-        if part:
-            description = part.name
-            item_price = Decimal(str(price)) if price is not None else part.selling_price
-            item_cost = part.cost
-            spare_part_id = part.id
-    elif manual_name:
-        description = manual_name
-        if price is None:
-            flash('Price is required for manual parts.', 'error')
-            return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
-        item_price = Decimal(str(price))
+    try:
+        if part_id:
+            part = db.session.get(SparePart, part_id)
+            if part:
+                description = part.name
+                # Use manually entered price if provided; otherwise fallback to catalog price
+                item_price = Decimal(price_val) if price_val else part.selling_price
+                item_cost = part.cost
+                spare_part_id = part.id
+        elif manual_name:
+            description = manual_name
+            if not price_val:
+                flash('Price is required for manual parts.', 'error')
+                return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
+            item_price = Decimal(price_val)
+    except Exception:
+        flash('Invalid price format entered. Please use numbers only.', 'error')
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     if description:
         # Ensure a draft invoice exists to hold the part costs
@@ -931,7 +945,8 @@ def add_part(ticket_id):
 def remove_part(ticket_id, item_id):
     """Remove a spare part from the ticket and recalculate invoice total"""
     ticket = db.session.get(Ticket, ticket_id)
-    if ticket and ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
+    if ticket and ticket.current_phase == 'Already Taken':
+        flash('This ticket is locked and cannot be modified.', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     item = db.session.get(InvoiceItem, item_id)
@@ -954,15 +969,15 @@ def record_payment(ticket_id):
         flash('Ticket not found', 'error')
         return redirect(url_for('main.dashboard'))
 
-    if ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
+    if ticket.current_phase == 'Already Taken':
         flash('This ticket is locked and cannot be modified.', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
-    amount = request.form.get('amount', type=float)
+    amount = Decimal(request.form.get('amount', '0') or '0')
     method = request.form.get('payment_method', 'Cash')
     reference = request.form.get('reference', '')
 
-    if amount is None or amount == 0:
+    if amount == 0:
         flash('Please enter a valid non-zero payment amount.', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
@@ -1018,7 +1033,7 @@ def edit_ticket(ticket_id):
         flash('Ticket not found', 'error')
         return redirect(url_for('main.dashboard'))
 
-    if ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
+    if ticket.current_phase == 'Already Taken':
         flash('This ticket is locked and cannot be modified.', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
         
@@ -1037,6 +1052,25 @@ def edit_ticket(ticket_id):
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
         
     return render_template('edit_ticket.html', ticket=ticket, users=users)
+
+@ticket_bp.route('/archive/<int:ticket_id>', methods=['POST'])
+@login_required
+@require_permission('archive_ticket')
+def archive_ticket(ticket_id):
+    """Move a completed ticket to archive to keep active records clean"""
+    ticket = db.session.get(Ticket, ticket_id)
+    if not ticket:
+        flash('Ticket not found', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    if ticket.current_phase != 'Already Taken':
+        flash('Only tickets that are already collected (Already Taken) can be archived.', 'error')
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
+    
+    ticket.is_archived = True
+    db.session.commit()
+    flash(f'Ticket {ticket.ticket_number} has been archived.', 'success')
+    return redirect(url_for('ticket.tickets_list', view='history'))
 
 @ticket_bp.route('/delete/<int:ticket_id>', methods=['POST'])
 @login_required
@@ -1062,7 +1096,7 @@ def update_phase(ticket_id):
         flash('Ticket not found', 'error')
         return redirect(url_for('main.dashboard'))
 
-    if ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
+    if ticket.current_phase == 'Already Taken':
         flash('This ticket is locked and cannot be modified.', 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 

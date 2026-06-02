@@ -122,6 +122,7 @@ def initialize_roles_and_permissions():
         ('add_service', 'Add services to tickets', 'tickets'),
         ('mark_as_paid', 'Mark tickets as fully paid', 'tickets'),
         ('mark_as_taken', 'Mark devices as collected by customer', 'tickets'),
+        ('archive_ticket', 'Archive completed repair tickets', 'tickets'),
         ('create_invoice', 'Create invoices', 'tickets'),
         
         # Customer permissions
@@ -183,7 +184,7 @@ def initialize_roles_and_permissions():
     # Manager permissions
     manager_role = Role.query.filter_by(name='manager').first()
     if manager_role:
-        manager_perms = ['view_reports', 'manage_services', 'view_ticket', 'view_customer', 'record_payment', 'mark_as_paid', 'mark_as_taken', 'update_phase']
+        manager_perms = ['view_reports', 'manage_services', 'view_ticket', 'view_customer', 'record_payment', 'mark_as_paid', 'mark_as_taken', 'update_phase', 'archive_ticket']
         for p_name in manager_perms:
             perm = Permission.query.filter_by(name=p_name).first()
             if perm and perm not in manager_role.permissions:

@@ -48,6 +48,7 @@
                     </thead>
                     <tbody>
                         {% for ticket in device.tickets|sort(attribute='created_at', reverse=True) %}
+                        {% if not ticket.is_archived %}
                         <tr>
                             <td><strong>{{ ticket.ticket_number }}</strong></td>
                             <td><span class="badge bg-primary">{{ ticket.current_phase }}</span></td>
@@ -56,6 +57,7 @@
                                 <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">View</a>
                             </td>
                         </tr>
+                        {% endif %}
                         {% else %}
                         <tr>
                             <td colspan="4" class="text-center text-muted py-4">No repair history found for this device.</td>

@@ -19,13 +19,8 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h4 class="mb-0">Ticket: {{ ticket.ticket_number }}</h4>
         <div>
-            {% if ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')) %}
+            {% if ticket.current_phase == 'Already Taken' %}
                 <span class="badge bg-dark text-light"><i class="fas fa-lock me-1"></i> Ticket Locked</span>
-                {% if current_user.has_permission('delete_ticket') %}
-                <form action="{{ url_for('ticket.delete_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('ERASE TICKET: Are you sure? This will remove all history and records for this job.');">
-                    <button type="submit" class="btn btn-sm btn-outline-danger ms-2">Erase Ticket</button>
-                </form>
-                {% endif %}
             {% else %}
                 {% if current_user.has_permission('update_phase') or current_user.has_permission('mark_as_paid') or current_user.has_permission('mark_as_taken') %}
                 <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#updatePhaseModal">Update Phase</button>
@@ -34,6 +29,18 @@
                 <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">Record Payment</button>
                 {% endif %}
                 <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-warning">Edit Ticket</a>
+            {% endif %}
+
+            {% if ticket.current_phase == 'Already Taken' and not ticket.is_archived and current_user.has_permission('archive_ticket') %}
+            <form action="{{ url_for('ticket.archive_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Archive this ticket? It will be removed from history lists but kept for financial reports.');">
+                <button type="submit" class="btn btn-sm btn-outline-secondary ms-2"><i class="fas fa-archive me-1"></i> Archive Ticket</button>
+            </form>
+            {% endif %}
+
+            {% if current_user.has_permission('delete_ticket') %}
+            <form action="{{ url_for('ticket.delete_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('ERASE TICKET: Are you sure? This will remove all history and records for this job.');">
+                <button type="submit" class="btn btn-sm btn-outline-danger ms-2">Erase Ticket</button>
+            </form>
             {% endif %}
             <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %} ms-2">
                 {{ ticket.current_phase }}
@@ -60,7 +67,7 @@
             <div class="col-md-8">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h5>Services & Materials</h5>
-                    {% if current_user.has_permission('add_service') and (ticket.current_phase != 'Already Taken' or current_user.is_superuser or current_user.has_role('manager')) %}
+                    {% if current_user.has_permission('add_service') and ticket.current_phase != 'Already Taken' %}
                     <div>
                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">+ Add Service</button>
                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPartModal">+ Add Part</button>
@@ -87,7 +94,7 @@
                                 <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price_charged) }}</td>
                                 <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts_total) }}</td>
                                 <td class="text-end">
-                                    {% if current_user.has_permission('add_service') and (ticket.current_phase != 'Already Taken' or current_user.is_superuser or current_user.has_role('manager')) %}
+                                    {% if current_user.has_permission('add_service') and ticket.current_phase != 'Already Taken' %}
                                     <form action="{{ url_for('ticket.remove_service', ticket_id=ticket.id, ts_id=ts.id) }}" method="POST" style="display:inline;">
                                         <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Remove service?')"><i class="fas fa-times"></i></button>
                                     </form>
@@ -104,7 +111,7 @@
                                     <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price) }}</td>
                                     <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price) }}</td>
                                     <td class="text-end">
-                                        {% if current_user.has_permission('add_service') and (ticket.current_phase != 'Already Taken' or current_user.is_superuser or current_user.has_role('manager')) %}
+                                        {% if current_user.has_permission('add_service') and ticket.current_phase != 'Already Taken' %}
                                         <form action="{{ url_for('ticket.remove_part', ticket_id=ticket.id, item_id=item.id) }}" method="POST" style="display:inline;">
                                             <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Remove this part from costs?')"><i class="fas fa-times"></i></button>
                                         </form>

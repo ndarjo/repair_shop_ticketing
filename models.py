@@ -2,6 +2,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
+import uuid
+from decimal import Decimal
 
 db = SQLAlchemy()
 
@@ -175,10 +177,11 @@ class Ticket(db.Model):
     problem_description = db.Column(db.Text, nullable=False)
     current_phase = db.Column(db.String(40), default='Open', nullable=False)
     
+    is_archived = db.Column(db.Boolean, default=False)
     device_picked_up = db.Column(db.Boolean, default=False)
     picked_up_date = db.Column(db.DateTime)
-    estimated_cost = db.Column(db.Numeric(10, 2), default=0.0)
-    actual_cost = db.Column(db.Numeric(10, 2), default=0.0)
+    estimated_cost = db.Column(db.Numeric(10, 2), default=Decimal('0.00'))
+    actual_cost = db.Column(db.Numeric(10, 2), default=Decimal('0.00'))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # FIXED: Restored truncated cascading children connections down below
@@ -282,7 +285,7 @@ class Invoice(db.Model):
     # FIXED: Added db.ForeignKey constraint linking this column directly to the tickets table
     ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id', ondelete='CASCADE'), nullable=False)
     
-    total_amount = db.Column(db.Numeric(10, 2), nullable=False, default=0.0)
+    total_amount = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
     status = db.Column(db.String(20), default='Unpaid') # Unpaid, Partial, Paid
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
@@ -298,27 +301,27 @@ class Invoice(db.Model):
     @property
     def subtotal(self):
         """Total from services attached to the ticket"""
-        if not self.ticket: return 0.0
-        return sum(ts.price_charged * ts.quantity for ts in self.ticket.ticket_services)
+        if not self.ticket: return Decimal('0.00')
+        return sum((ts.price_charged * ts.quantity for ts in self.ticket.ticket_services), Decimal('0.00'))
 
     @property
     def spare_parts_total(self):
         """Total from spare parts items on this invoice"""
-        return sum(item.total_price for item in self.items)
+        return sum((item.total_price for item in self.items), Decimal('0.00'))
 
     @property
     def down_payment(self):
         """Amount of the first payment recorded for the ticket"""
-        if not self.ticket: return 0.0
+        if not self.ticket: return Decimal('0.00')
         from sqlalchemy import asc
         first_payment = Payment.query.filter_by(ticket_id=self.ticket_id).order_by(asc(Payment.paid_at)).first()
-        return first_payment.amount if first_payment else 0.0
+        return first_payment.amount if first_payment else Decimal('0.00')
 
     @property
     def full_payment_received(self):
         """Total payments received for this ticket"""
-        if not self.ticket: return 0.0
-        return sum(p.amount for p in self.ticket.payments)
+        if not self.ticket: return Decimal('0.00')
+        return sum((p.amount for p in self.ticket.payments), Decimal('0.00'))
 
     @property
     def remaining_balance(self):
@@ -344,6 +347,6 @@ class InvoiceItem(db.Model):
     spare_part_id = db.Column(db.Integer, db.ForeignKey('spare_parts.id'), nullable=True)
     description = db.Column(db.String(255), nullable=False)
     quantity = db.Column(db.Integer, default=1)
-    cost_price = db.Column(db.Numeric(10, 2), nullable=False, default=0.0)
-    unit_price = db.Column(db.Numeric(10, 2), nullable=False, default=0.0)
-    total_price = db.Column(db.Numeric(10, 2), nullable=False, default=0.0)
+    cost_price = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
+    unit_price = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
+    total_price = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
