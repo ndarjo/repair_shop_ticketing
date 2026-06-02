@@ -312,60 +312,136 @@ def devices_list():
 @require_permission('view_reports')
 def reports():
     """Route for the Reports link in base.html"""
+    selected_month = request.args.get('month') # Format: YYYY-MM
+
     # Calculate Total Revenue (Gross)
-    gross_revenue = db.session.query(func.sum(Payment.amount)).scalar() or 0.0
+    rev_q = db.session.query(func.sum(Payment.amount))
+    if selected_month:
+        rev_q = rev_q.filter(func.strftime('%Y-%m', Payment.paid_at) == selected_month)
+    gross_revenue = rev_q.scalar() or 0.0
     
     # Calculate Total Hardware Cost
-    hardware_cost = db.session.query(
-        func.sum(SparePart.cost * InvoiceItem.quantity)
-    ).join(InvoiceItem, SparePart.id == InvoiceItem.spare_part_id).scalar() or 0.0
+    cost_q = db.session.query(
+        func.sum(InvoiceItem.cost_price * InvoiceItem.quantity)
+    )
+    if selected_month:
+        cost_q = cost_q.join(Invoice, InvoiceItem.invoice_id == Invoice.id).filter(
+            func.strftime('%Y-%m', Invoice.created_at) == selected_month
+        )
+    hardware_cost = cost_q.scalar() or 0.0
 
     monthly_stats = {
         'total_tickets': Ticket.query.count(),
         'completed_tickets': Ticket.query.filter_by(current_phase='Already Taken').count(),
-        'total_revenue': float(gross_revenue) - float(hardware_cost) # Shows Net Profit
+        'gross_revenue': float(gross_revenue),
+        'hardware_cost': float(hardware_cost),
+        'total_revenue': float(gross_revenue) - float(hardware_cost), # Shows Net Profit for dashboard cards
+        'selected_month': selected_month
     }
+
+    # Get available months from payments and invoices for filtering
+    months_p = db.session.query(func.strftime('%Y-%m', Payment.paid_at)).distinct().all()
+    months_i = db.session.query(func.strftime('%Y-%m', Invoice.created_at)).distinct().all()
+    available_months = sorted(list(set([m[0] for m in (months_p + months_i) if m[0]])), reverse=True)
+
     # Fetch recent tickets for the report table
-    recent_tickets = Ticket.query.order_by(desc(Ticket.created_at)).limit(5).all()
-    return render_template('reports.html', monthly_stats=monthly_stats, recent_tickets=recent_tickets)
+    recent_tickets_q = Ticket.query
+    if selected_month:
+        recent_tickets_q = recent_tickets_q.filter(func.strftime('%Y-%m', Ticket.created_at) == selected_month)
+    recent_tickets = recent_tickets_q.order_by(desc(Ticket.created_at)).limit(5).all()
+
+    return render_template('reports.html', 
+                           monthly_stats=monthly_stats, 
+                           recent_tickets=recent_tickets,
+                           available_months=available_months)
 
 @report_bp.route('/finance')
 @login_required
 @require_permission('view_reports')
 def finance_report():
     """Detailed financial report showing Net Profit and Payment History"""
+    selected_month = request.args.get('month') # Expecting YYYY-MM
+
     # Total money paid by customers
-    total_revenue = db.session.query(func.sum(Payment.amount)).scalar() or 0.0
+    rev_q = db.session.query(func.sum(Payment.amount))
+    if selected_month:
+        rev_q = rev_q.filter(func.strftime('%Y-%m', Payment.paid_at) == selected_month)
+    total_revenue = rev_q.scalar() or 0.0
     
     # Total wholesale cost of all hardware replacements used
-    total_hardware_cost = db.session.query(
-        func.sum(SparePart.cost * InvoiceItem.quantity)
-    ).join(InvoiceItem, SparePart.id == InvoiceItem.spare_part_id).scalar() or 0.0
+    cost_q = db.session.query(
+        func.sum(InvoiceItem.cost_price * InvoiceItem.quantity)
+    )
+    if selected_month:
+        cost_q = cost_q.join(Invoice, InvoiceItem.invoice_id == Invoice.id).filter(
+            func.strftime('%Y-%m', Invoice.created_at) == selected_month
+        )
+    total_hardware_cost = cost_q.scalar() or 0.0
     
     net_profit = float(total_revenue) - float(total_hardware_cost)
     
     # Detailed payment history by customer
-    payment_history = db.session.query(Payment, Ticket, Customer).join(
+    ph_q = db.session.query(Payment, Ticket, Customer).join(
         Ticket, Payment.ticket_id == Ticket.id
     ).join(
         Customer, Ticket.customer_id == Customer.id
-    ).order_by(desc(Payment.paid_at)).all()
+    )
+    if selected_month:
+        ph_q = ph_q.filter(func.strftime('%Y-%m', Payment.paid_at) == selected_month)
+    payment_history = ph_q.order_by(desc(Payment.paid_at)).all()
     
     # Detailed material usage (Standard Parts + Manual Items)
-    material_usage = db.session.query(InvoiceItem, Ticket, Customer).join(
+    mu_q = db.session.query(InvoiceItem, Ticket, Customer).join(
         Invoice, InvoiceItem.invoice_id == Invoice.id
     ).join(
         Ticket, Invoice.ticket_id == Ticket.id
     ).join(
         Customer, Ticket.customer_id == Customer.id
-    ).order_by(desc(InvoiceItem.id)).all()
+    )
+    if selected_month:
+        mu_q = mu_q.filter(func.strftime('%Y-%m', Invoice.created_at) == selected_month)
+    material_usage = mu_q.order_by(desc(InvoiceItem.id)).all()
+
+    # Monthly breakdown for financial analysis
+    monthly_data = {}
+    
+    # Aggregate Revenue by Month
+    rev_results = db.session.query(
+        func.strftime('%Y-%m', Payment.paid_at).label('month'),
+        func.sum(Payment.amount)
+    ).group_by('month').all()
+
+    for month, total in rev_results:
+        if month:
+            monthly_data[month] = {'revenue': float(total), 'costs': 0.0, 'profit': float(total)}
+
+    # Aggregate Hardware Costs by Month (based on Invoice date)
+    cost_results = db.session.query(
+        func.strftime('%Y-%m', Invoice.created_at).label('month'),
+        func.sum(InvoiceItem.cost_price * InvoiceItem.quantity)
+    ).join(Invoice, InvoiceItem.invoice_id == Invoice.id)\
+     .group_by('month').all()
+
+    for month, total in cost_results:
+        if month:
+            if month not in monthly_data:
+                monthly_data[month] = {'revenue': 0.0, 'costs': 0.0, 'profit': 0.0}
+            monthly_data[month]['costs'] = float(total)
+            monthly_data[month]['profit'] = monthly_data[month]['revenue'] - monthly_data[month]['costs']
+
+    # Sort months descending for the report
+    monthly_analysis = sorted([{'month': k, **v} for k, v in monthly_data.items()], 
+                              key=lambda x: x['month'], reverse=True)
 
     return render_template('finance_report.html', 
                            total_revenue=total_revenue,
                            total_hardware_cost=total_hardware_cost,
                            net_profit=net_profit,
                            payment_history=payment_history,
-                           material_usage=material_usage)
+                           material_usage=material_usage,
+                           monthly_analysis=monthly_analysis,
+                           selected_month=selected_month,
+                           available_months=[m['month'] for m in monthly_analysis])
 
 @admin_bp.route('/', endpoint='dashboard')
 @admin_bp.route('/dashboard', endpoint='dashboard')
@@ -737,6 +813,17 @@ def add_service(ticket_id):
     if ticket and ticket.current_phase == 'Already Taken' and not (current_user.is_superuser or current_user.has_role('manager')):
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
+    # Ensure a draft invoice exists to hold the charges
+    invoice = Invoice.query.filter_by(ticket_id=ticket_id).first()
+    if not invoice:
+        invoice = Invoice(
+            invoice_number=f"INV-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
+            ticket_id=ticket_id,
+            status='Draft'
+        )
+        db.session.add(invoice)
+        db.session.flush()
+
     service_id = request.form.get('service_id')
     quantity = request.form.get('quantity', 1, type=int)
     
@@ -749,6 +836,8 @@ def add_service(ticket_id):
             price_charged=service.price
         )
         db.session.add(ts)
+        db.session.flush()
+        invoice.calculate_total()
         db.session.commit()
         flash(f'Service "{service.name}" added.', 'success')
     return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
@@ -764,7 +853,11 @@ def remove_service(ticket_id, ts_id):
 
     ts = db.session.get(TicketService, ts_id)
     if ts:
+        invoice = Invoice.query.filter_by(ticket_id=ticket_id).first()
         db.session.delete(ts)
+        db.session.flush()
+        if invoice:
+            invoice.calculate_total()
         db.session.commit()
         flash('Service removed.', 'success')
     return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
@@ -785,6 +878,7 @@ def add_part(ticket_id):
     
     description = ""
     item_price = 0.0
+    item_cost = 0.0
     spare_part_id = None
 
     if part_id:
@@ -792,6 +886,7 @@ def add_part(ticket_id):
         if part:
             description = part.name
             item_price = Decimal(str(price)) if price is not None else part.selling_price
+            item_cost = part.cost
             spare_part_id = part.id
     elif manual_name:
         description = manual_name
@@ -817,6 +912,7 @@ def add_part(ticket_id):
             spare_part_id=spare_part_id,
             description=description,
             quantity=quantity,
+            cost_price=item_cost,
             unit_price=item_price,
             total_price=item_price * quantity
         )
@@ -879,6 +975,16 @@ def record_payment(ticket_id):
         paid_at=datetime.now(timezone.utc)
     )
     db.session.add(payment)
+    db.session.flush()
+
+    # Synchronize Invoice status with the new payment balance
+    invoice = Invoice.query.filter_by(ticket_id=ticket.id).first()
+    if invoice:
+        balance = invoice.remaining_balance
+        if balance <= 0:
+            invoice.status = 'Paid'
+        elif balance < invoice.total_amount:
+            invoice.status = 'Partial'
 
     # Fetch global symbol for the automated note content
     shop_admin = User.query.filter_by(is_superuser=True).first()
@@ -1138,6 +1244,7 @@ def device_detail(device_id):
 # ==================== CUSTOMER AJAX ROUTERS (COMPLETING MAIN.JS MATCH) ====================
 @customer_bp.route('/search', methods=['GET'])
 @login_required
+@require_permission('view_customer')
 def search_customers():
     """Asynchronous search endpoint requested by main.js customer_search input"""
     query = request.args.get('q', '').strip()
@@ -1173,6 +1280,7 @@ def new_customer_ajax():
 # ==================== DEVICE AJAX ROUTERS (COMPLETING MAIN.JS MATCH) ====================
 @device_bp.route('/search/<int:customer_id>', methods=['GET'])
 @login_required
+@require_permission('view_customer')
 def search_devices(customer_id):
     """Asynchronous search endpoint checking customer context profiles"""
     query = request.args.get('q', '').strip()
@@ -1205,6 +1313,8 @@ def new_device_ajax():
         device_type=device_type,
         brand=brand,
         model_number=request.form.get('model_number'),
+        serial_number=request.form.get('serial_number'),
+        color=request.form.get('color'),
         cpu=request.form.get('cpu'),
         ram=request.form.get('ram'),
         storage_type=request.form.get('storage_type'),

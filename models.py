@@ -2,7 +2,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
-import json
 
 db = SQLAlchemy()
 
@@ -192,7 +191,6 @@ class Ticket(db.Model):
     @staticmethod
     def generate_unique_number():
         """Generates a unique ticket number with collision check"""
-        import uuid
         while True:
             ticket_number = f"TKT-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
             if not Ticket.query.filter_by(ticket_number=ticket_number).first():
@@ -346,5 +344,6 @@ class InvoiceItem(db.Model):
     spare_part_id = db.Column(db.Integer, db.ForeignKey('spare_parts.id'), nullable=True)
     description = db.Column(db.String(255), nullable=False)
     quantity = db.Column(db.Integer, default=1)
+    cost_price = db.Column(db.Numeric(10, 2), nullable=False, default=0.0)
     unit_price = db.Column(db.Numeric(10, 2), nullable=False, default=0.0)
     total_price = db.Column(db.Numeric(10, 2), nullable=False, default=0.0)
