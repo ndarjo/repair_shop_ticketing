@@ -14,10 +14,20 @@
         <div class="card-body p-4">
             <div class="row mb-4">
                 <div class="col-md-6">
-                    <h6 class="text-uppercase text-muted small fw-bold">Invoice From:</h6>
-                    <h5 class="mb-1">Repair Shop Ticketing</h5>
-                    <p class="text-muted small">System Generated Invoice</p>
-                    
+                    <div class="d-flex align-items-center mb-3">
+                        {% if shop_info and shop_info.logo_path %}
+                            <img src="{{ url_for('static', filename='uploads/logos/' + shop_info.logo_path) }}" alt="Logo" height="50" class="me-3">
+                        {% endif %}
+                        <div>
+                            <h6 class="text-uppercase text-muted small fw-bold mb-1">Invoice From:</h6>
+                            <h5 class="mb-0">{{ shop_info.shop_name if shop_info else 'Repair Shop Ticketing' }}</h5>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-1">{{ shop_info.shop_address if shop_info else 'System Generated Invoice' }}</p>
+                    {% if shop_info and (shop_info.shop_phone or shop_info.shop_email) %}
+                        <p class="text-muted small mb-0">{{ shop_info.shop_phone or '' }} {{ '| ' + shop_info.shop_email if shop_info.shop_email else '' }}</p>
+                    {% endif %}
+
                     <h6 class="text-uppercase text-muted small fw-bold mt-3">Bill To:</h6>
                     <h5 class="mb-0">{{ invoice.ticket.customer.name }}</h5>
                     <p class="mb-0">{{ invoice.ticket.customer.phone }}</p>

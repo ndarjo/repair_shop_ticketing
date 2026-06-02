@@ -375,3 +375,13 @@ class InvoiceItem(db.Model):
     cost_price = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
     unit_price = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
     total_price = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
+
+class ShopSetting(db.Model):
+    """Global shop configuration for invoices and branding"""
+    __tablename__ = 'shop_settings'
+    id = db.Column(db.Integer, primary_key=True)
+    shop_name = db.Column(db.String(120), default='Repair Shop')
+    shop_address = db.Column(db.Text)
+    shop_phone = db.Column(db.String(20))
+    shop_email = db.Column(db.String(120))
+    logo_path = db.Column(db.String(255))

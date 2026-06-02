@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, current_app
 from flask_login import login_required, current_user, login_user, logout_user
+from werkzeug.utils import secure_filename
 from datetime import datetime, timezone
 from sqlalchemy import desc, or_, func
-from models import db, User, Role, Permission, Customer, Device, Ticket, Note, Payment, PhaseLog, Service, SparePart, Invoice, InvoiceItem, TicketService, CommonProblem
+from models import db, User, Role, Permission, Customer, Device, Ticket, Note, Payment, PhaseLog, Service, SparePart, Invoice, InvoiceItem, TicketService, CommonProblem, ShopSetting
 from decimal import Decimal
 import uuid
 from functools import wraps
@@ -459,6 +460,41 @@ def admin_dashboard():
         return redirect(url_for('main.dashboard'))
     return render_template('admin/dashboard.html')
 
+@admin_bp.route('/settings', methods=['GET', 'POST'])
+@login_required
+@require_superuser()
+def shop_settings():
+    """Configure shop name, location, contact and logo"""
+    settings = ShopSetting.query.first()
+    if not settings:
+        settings = ShopSetting()
+        db.session.add(settings)
+        db.session.commit()
+        
+    if request.method == 'POST':
+        settings.shop_name = request.form.get('shop_name', 'Repair Shop')
+        settings.shop_address = request.form.get('shop_address')
+        settings.shop_phone = request.form.get('shop_phone')
+        settings.shop_email = request.form.get('shop_email')
+        
+        # Handle Logo Upload
+        logo_file = request.files.get('shop_logo')
+        if logo_file and logo_file.filename != '':
+            filename = secure_filename(f"logo_{uuid.uuid4().hex[:8]}_{logo_file.filename}")
+            upload_path = os.path.join(current_app.static_folder, 'uploads', 'logos')
+            
+            if not os.path.exists(upload_path):
+                os.makedirs(upload_path)
+                
+            logo_file.save(os.path.join(upload_path, filename))
+            settings.logo_path = filename
+            
+        db.session.commit()
+        flash('Shop settings updated successfully.', 'success')
+        return redirect(url_for('admin.shop_settings'))
+        
+    return render_template('admin/settings.html', settings=settings)
+
 @admin_bp.route('/services', endpoint='manage_services')
 @login_required
 @require_permission('manage_services')
@@ -667,11 +703,28 @@ def edit_user(user_id):
 @login_required
 @require_superuser()
 def delete_user(user_id):
+    """Permanently delete a user account if no audit dependencies exist"""
     user = db.session.get(User, user_id)
-    if user and not user.is_superuser:
+    if not user:
+        flash('User not found.', 'error')
+        return redirect(url_for('admin.manage_users'))
+
+    if user.is_superuser:
+        flash('Cannot delete a superuser account.', 'error')
+        return redirect(url_for('admin.manage_users'))
+
+    if user.id == current_user.id:
+        flash('Security Error: You cannot delete your own account while logged in.', 'error')
+        return redirect(url_for('admin.manage_users'))
+
+    try:
         db.session.delete(user)
         db.session.commit()
-        flash('User deleted.', 'success')
+        flash(f'User account "{user.username}" deleted successfully.', 'success')
+    except Exception:
+        db.session.rollback()
+        flash(f'Cannot delete "{user.username}" because they have recorded activity (notes, payments, or repair logs). Please deactivate the user instead to preserve audit history.', 'error')
+
     return redirect(url_for('admin.manage_users'))
 
 @admin_bp.route('/problems', methods=['GET', 'POST'])

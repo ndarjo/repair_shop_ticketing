@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Shop Settings - Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">Global Shop Settings</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row mb-4">
+                        <div class="col-md-4 text-center">
+                            <label class="form-label d-block fw-bold">Shop Logo</label>
+                            <div class="mb-3">
+                                {% if settings.logo_path %}
+                                    <img src="{{ url_for('static', filename='uploads/logos/' + settings.logo_path) }}" alt="Current Logo" class="img-thumbnail" style="max-height: 120px;">
+                                {% else %}
+                                    <div class="bg-light border rounded d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                                        <i class="bi bi-image text-muted fs-1"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <input type="file" name="shop_logo" class="form-control form-control-sm" accept="image/*">
+                            <small class="text-muted d-block mt-1">Recommended: Square PNG/SVG</small>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Shop Name *</label>
+                                <input type="text" name="shop_name" class="form-control" value="{{ settings.shop_name }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Shop Address (Location)</label>
+                                <textarea name="shop_address" class="form-control" rows="3">{{ settings.shop_address or '' }}</textarea>
+                                <small class="text-muted">This will appear on invoices.</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Contact Phone</label>
+                            <input type="text" name="shop_phone" class="form-control" value="{{ settings.shop_phone or '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Contact Email</label>
+                            <input type="email" name="shop_email" class="form-control" value="{{ settings.shop_email or '' }}">
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <div class="text-end">
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary px-4 me-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

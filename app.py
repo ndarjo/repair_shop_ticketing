@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_login import LoginManager, current_user
-from models import db, User, Role, Permission, CommonProblem
+from models import db, User, Role, Permission, CommonProblem, ShopSetting
 from routes import auth_bp, main_bp, ticket_bp, customer_bp, admin_bp, report_bp, device_bp
 from config import DevelopmentConfig
 from datetime import datetime, timezone
@@ -39,8 +39,11 @@ def create_app(config_name='development'):
         
         symbol = currency_map.get(shop_admin.currency, '$') if shop_admin else '$'
         decimals = shop_admin.currency_decimals if shop_admin else 2
+
+        # Global shop configuration for branding
+        shop_info = ShopSetting.query.first()
             
-        return {'now': datetime.now(timezone.utc), 'currency_symbol': symbol, 'currency_decimals': decimals}
+        return {'now': datetime.now(timezone.utc), 'currency_symbol': symbol, 'currency_decimals': decimals, 'shop_info': shop_info}
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -204,6 +207,11 @@ def initialize_default_data():
     if not CommonProblem.query.first():
         for text in defaults:
             db.session.add(CommonProblem(problem_text=text))
+
+    # Initialize shop settings
+    if not ShopSetting.query.first():
+        db.session.add(ShopSetting(shop_name="Repair Shop Ticketing"))
+
         db.session.commit()
 
 

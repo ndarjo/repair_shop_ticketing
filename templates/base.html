@@ -22,7 +22,14 @@
 <body class="theme-{{ theme }} color-{{ color }}" data-theme-pref="{{ theme }}" data-color-pref="{{ color }}">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="{{ url_for('main.dashboard') }}">🛠️ RepairShop</a>
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="{{ url_for('main.dashboard') }}">
+                {% if shop_info and shop_info.logo_path %}
+                    <img src="{{ url_for('static', filename='uploads/logos/' + shop_info.logo_path) }}" alt="Logo" height="30" class="me-2 rounded">
+                {% else %}
+                    <span class="me-2">🛠️</span>
+                {% endif %}
+                {{ shop_info.shop_name if shop_info else 'RepairShop' }}
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -58,6 +65,7 @@
                                 <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Profile & Theme</a></li>
                                 {% if current_user.is_superuser %}
                                     <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">Admin Panel</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.shop_settings') }}">Shop Branding</a></li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
