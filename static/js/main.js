@@ -40,14 +40,24 @@ function applyColorScheme(color) {
 }
 
 /**
- * Load saved theme and color scheme from localStorage
+ * Initialize theme and color scheme.
+ * Prioritizes server-side attributes, falls back to localStorage.
  */
-function loadSavedTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    const savedColor = localStorage.getItem('colorScheme') || 'blue';
-    
-    applyTheme(savedTheme);
-    applyColorScheme(savedColor);
+function initializeTheme() {
+    const body = document.body;
+    const serverTheme = body.getAttribute('data-theme-pref');
+    const serverColor = body.getAttribute('data-color-pref');
+
+    // Priority: Server attributes > LocalStorage > Defaults
+    const theme = serverTheme || localStorage.getItem('theme') || 'light';
+    const color = serverColor || localStorage.getItem('colorScheme') || 'blue';
+
+    applyTheme(theme);
+    applyColorScheme(color);
+
+    // Ensure localStorage is synced for anonymous sessions
+    if (!serverTheme) localStorage.setItem('theme', theme);
+    if (!serverColor) localStorage.setItem('colorScheme', color);
 }
 
 /**
@@ -67,13 +77,20 @@ function initCustomerSearch() {
             return;
         }
         
+        const results = document.getElementById('customer_results');
+        results.innerHTML = '<div class="list-group-item text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Searching...</div>';
+        results.style.display = 'block';
+
         searchTimeout = setTimeout(() => {
             fetch(`/customer/search?q=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(customers => {
-                    const results = document.getElementById('customer_results');
                     results.innerHTML = '';
                     
+                    if (customers.length === 0) {
+                        results.innerHTML = '<div class="list-group-item text-muted">No customers found. Click "Create New" to add one.</div>';
+                    }
+
                     customers.forEach(customer => {
                         const div = document.createElement('a');
                         div.href = '#';
@@ -86,7 +103,6 @@ function initCustomerSearch() {
                         results.appendChild(div);
                     });
                     
-                    results.style.display = customers.length > 0 ? 'block' : 'none';
                 })
                 .catch(error => console.error('Error:', error));
         }, 300);
@@ -97,14 +113,25 @@ function initCustomerSearch() {
  * Select a customer from search results
  */
 function selectCustomer(customerId, customerName) {
+    const customerInput = document.getElementById('customer_search');
+    const deviceInput = document.getElementById('device_search');
+
     document.getElementById('customer_id').value = customerId;
-    document.getElementById('customer_search').value = customerName;
+    customerInput.value = customerName;
+    customerInput.classList.add('is-valid'); // Visual polish: green highlight on selection
+    
     document.getElementById('customer_results').style.display = 'none';
-    document.getElementById('device_search').disabled = false;
+    deviceInput.disabled = false;
     document.getElementById('new_device_btn').disabled = false;
     document.getElementById('modal_device_customer_id').value = customerId;
-    document.getElementById('device_search').value = '';
+    deviceInput.value = '';
     document.getElementById('device_results').innerHTML = '';
+    
+    // Mobile navigation: hide keyboard before moving to next field
+    customerInput.blur();
+    setTimeout(() => {
+        deviceInput.focus();
+    }, 100);
 }
 
 /**
@@ -122,13 +149,20 @@ function initDeviceSearch() {
         
         const query = this.value.trim();
         
+        const results = document.getElementById('device_results');
+        results.innerHTML = '<div class="list-group-item text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Searching...</div>';
+        results.style.display = 'block';
+
         searchTimeout = setTimeout(() => {
             fetch(`/device/search/${customerId}?q=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(devices => {
-                    const results = document.getElementById('device_results');
                     results.innerHTML = '';
                     
+                    if (devices.length === 0) {
+                        results.innerHTML = '<div class="list-group-item text-muted">No devices found for this customer.</div>';
+                    }
+
                     devices.forEach(device => {
                         const div = document.createElement('a');
                         div.href = '#';
@@ -141,7 +175,6 @@ function initDeviceSearch() {
                         results.appendChild(div);
                     });
                     
-                    results.style.display = devices.length > 0 ? 'block' : 'none';
                 })
                 .catch(error => console.error('Error:', error));
         }, 300);
@@ -152,9 +185,12 @@ function initDeviceSearch() {
  * Select a device from search results
  */
 function selectDevice(deviceId, deviceDisplay) {
+    const deviceInput = document.getElementById('device_search');
     document.getElementById('device_id').value = deviceId;
-    document.getElementById('device_search').value = deviceDisplay;
+    deviceInput.value = deviceDisplay;
+    deviceInput.classList.add('is-valid'); // Visual polish
     document.getElementById('device_results').style.display = 'none';
+    deviceInput.blur(); // Hide keyboard on mobile
 }
 
 /**
@@ -196,11 +232,16 @@ function initNewCustomerModal() {
     const saveBtn = document.getElementById('saveCustomerBtn');
     if (!saveBtn) return;
     
+    const originalText = saveBtn.innerHTML;
+
     saveBtn.addEventListener('click', async function() {
         const form = document.getElementById('newCustomerForm');
         const formData = new FormData(form);
         
         try {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
             const response = await fetch('/customer/new', {
                 method: 'POST',
                 body: formData,
@@ -219,12 +260,14 @@ function initNewCustomerModal() {
                 modal.hide();
                 form.reset();
             } else {
-                alert('Error creating customer');
                 const errorData = await response.json();
                 alert(`Error creating customer: ${errorData.error || response.statusText}`);
             }
         } catch (error) {
             console.error('Error:', error);
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText;
         }
     });
 }
@@ -236,11 +279,16 @@ function initNewDeviceModal() {
     const saveBtn = document.getElementById('saveDeviceBtn');
     if (!saveBtn) return;
     
+    const originalText = saveBtn.innerHTML;
+
     saveBtn.addEventListener('click', async function() {
         const form = document.getElementById('newDeviceForm');
         const formData = new FormData(form);
         
         try {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
             const response = await fetch('/device/new', {
                 method: 'POST',
                 body: formData,
@@ -259,12 +307,14 @@ function initNewDeviceModal() {
                 modal.hide();
                 form.reset();
             } else {
-                alert('Error creating device');
                 const errorData = await response.json();
                 alert(`Error creating device: ${errorData.error || response.statusText}`);
             }
         } catch (error) {
             console.error('Error:', error);
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText;
         }
     });
 }
@@ -280,10 +330,220 @@ function initThemeToggles() {
     });
     
     document.querySelectorAll('[data-color-control]').forEach(control => {
-        control.addEventListener('click', function(e) {
-            e.preventDefault();
-            applyColorScheme(this.dataset.colorControl);
+        if (control.tagName === 'INPUT' && control.type === 'radio') {
+            control.addEventListener('change', function() {
+                if (this.checked) applyColorScheme(this.value);
+            });
+        } else {
+            control.addEventListener('click', function(e) {
+                e.preventDefault();
+                applyColorScheme(this.dataset.colorControl);
+            });
+        }
+    });
+}
+
+/**
+ * Initialize Ticket Detail Calculator and UI Logic
+ */
+function initTicketDetail() {
+    const paymentAmountInput = document.getElementById('paymentAmount');
+    if (!paymentAmountInput) return;
+
+    const cashReceivedInput = document.getElementById('cashReceived');
+    const changeToGiveDisplay = document.getElementById('changeToGive');
+    const fillBalanceBtn = document.getElementById('fillBalanceBtn');
+    
+    const currentBalance = parseFloat(paymentAmountInput.dataset.balance || 0);
+    const decimals = parseInt(paymentAmountInput.dataset.decimals || 2);
+
+    if (fillBalanceBtn) {
+        fillBalanceBtn.addEventListener('click', () => {
+            paymentAmountInput.value = currentBalance.toFixed(decimals);
+            updateChange();
         });
+    }
+
+    function updateChange() {
+        const amount = parseFloat(paymentAmountInput.value) || 0;
+        const received = parseFloat(cashReceivedInput.value) || 0;
+        const change = received - amount;
+        
+        changeToGiveDisplay.textContent = (change >= 0 ? change : 0).toFixed(decimals);
+
+        // Add visual feedback: green text if change is due
+        if (change > 0) {
+            changeToGiveDisplay.classList.add('text-success', 'fw-bold');
+        } else {
+            changeToGiveDisplay.classList.remove('text-success', 'fw-bold');
+        }
+    }
+
+    paymentAmountInput.addEventListener('input', updateChange);
+    cashReceivedInput.addEventListener('input', updateChange);
+}
+
+/**
+ * Toggle Part Price and Manual Name fields based on inventory selection
+ */
+function initPartModalLogic() {
+    const partSelect = document.getElementById('partSelect');
+    const manualName = document.getElementById('manualPartName');
+    const partPrice = document.getElementById('partPrice');
+    const partCost = document.getElementById('partCost');
+
+    if (!partSelect || !manualName || !partPrice || !partCost) return;
+
+    function toggleFields() {
+        const isInventorySelected = partSelect.value !== "";
+        
+        if (isInventorySelected) {
+            manualName.value = "";
+            manualName.disabled = true;
+            partPrice.value = ""; // Clear to let server use catalog price
+            partPrice.disabled = true;
+            partPrice.placeholder = "Using catalog price...";
+            partCost.value = "";
+            partCost.disabled = true;
+            partCost.placeholder = "Using catalog cost...";
+        } else {
+            manualName.disabled = false;
+            partPrice.disabled = false;
+            partPrice.placeholder = (0).toFixed(parseInt(partPrice.step.includes('.') ? partPrice.step.split('.')[1].length : 0));
+            partCost.disabled = false;
+            partCost.placeholder = (0).toFixed(parseInt(partCost.step.includes('.') ? partCost.step.split('.')[1].length : 0));
+        }
+    }
+
+    partSelect.addEventListener('change', toggleFields);
+}
+
+/**
+ * Initialize generic print button handler
+ */
+function initPrintHandler() {
+    const btn = document.getElementById('printInvoiceBtn');
+    if (btn) {
+        btn.addEventListener('click', () => window.print());
+    }
+}
+
+/**
+ * Initialize form auto-submit for marked elements
+ */
+function initFormAutoSubmit() {
+    document.querySelectorAll('.auto-submit').forEach(el => {
+        el.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+}
+
+/**
+ * Initialize global confirmation dialogs for forms and buttons
+ */
+function initGlobalConfirmations() {
+    // For forms
+    document.querySelectorAll('form.confirm-action').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const msg = this.dataset.confirm || 'Are you sure?';
+            if (!confirm(msg)) e.preventDefault();
+        });
+    });
+    // For individual buttons/links
+    document.querySelectorAll('.confirm-action:not(form)').forEach(el => {
+        el.addEventListener('click', function(e) {
+            const msg = this.dataset.confirm || 'Are you sure?';
+            if (!confirm(msg)) e.preventDefault();
+        });
+    });
+}
+
+/**
+ * Initialize Financial Analytics Chart
+ */
+function initFinanceChart() {
+    const canvas = document.getElementById('financeChart');
+    if (!canvas) return;
+
+    const theme = document.documentElement.dataset.theme || 'light';
+    const isDark = theme === 'dark';
+    const textColor = isDark ? '#e0e0e0' : '#212529';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+    // Extract primary color based on active color scheme class
+    let primaryColor = '#0d6efd';
+    const body = document.body;
+    if (body.classList.contains('color-green')) primaryColor = '#198754';
+    else if (body.classList.contains('color-purple')) primaryColor = '#6f42c1';
+    else if (body.classList.contains('color-red')) primaryColor = '#dc3545';
+    else if (body.classList.contains('color-orange')) primaryColor = '#fd7e14';
+
+    const labels = JSON.parse(canvas.dataset.labels);
+    const revenue = JSON.parse(canvas.dataset.revenue);
+    const costs = JSON.parse(canvas.dataset.costs);
+    const profit = JSON.parse(canvas.dataset.profit);
+
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Net Profit',
+                    data: profit,
+                    backgroundColor: primaryColor,
+                    borderRadius: 4,
+                    order: 1
+                },
+                {
+                    type: 'bar',
+                    label: 'Gross Revenue',
+                    data: revenue,
+                    backgroundColor: isDark ? '#1a6b3d' : '#198754',
+                    borderRadius: 4,
+                    order: 2
+                },
+                {
+                    type: 'bar',
+                    label: 'Hardware Costs',
+                    data: costs,
+                    backgroundColor: isDark ? '#842029' : '#dc3545',
+                    borderRadius: 4,
+                    order: 3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: gridColor },
+                    ticks: { color: textColor }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: textColor }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: textColor, usePointStyle: true, padding: 20 }
+                },
+                tooltip: {
+                    padding: 12,
+                    backgroundColor: isDark ? '#2d2d2d' : '#ffffff',
+                    titleColor: isDark ? '#ffffff' : '#212529',
+                    bodyColor: isDark ? '#e0e0e0' : '#212529',
+                    borderColor: gridColor,
+                    borderWidth: 1
+                }
+            }
+        }
     });
 }
 
@@ -291,11 +551,30 @@ function initThemeToggles() {
 // CORE ENGINE INITIALIZATION
 // ========================================
 document.addEventListener('DOMContentLoaded', () => {
-    loadSavedTheme();
+    initializeTheme();
     initThemeToggles();
     initCustomerSearch();
     initDeviceSearch();
     initCommonProblems();
     initNewCustomerModal();
     initNewDeviceModal();
+    initTicketDetail();
+    initFinanceChart();
+    initPartModalLogic();
+    initPrintHandler();
+    initFormAutoSubmit();
+    initGlobalConfirmations();
+
+    // UI POLISH: Close autocomplete dropdowns when clicking outside the component
+    document.addEventListener('click', function(e) {
+        const customerResults = document.getElementById('customer_results');
+        const deviceResults = document.getElementById('device_results');
+        
+        if (customerResults && !e.target.closest('#customer_search') && !e.target.closest('#customer_results')) {
+            customerResults.style.display = 'none';
+        }
+        if (deviceResults && !e.target.closest('#device_search') && !e.target.closest('#device_results')) {
+            deviceResults.style.display = 'none';
+        }
+    });
 });

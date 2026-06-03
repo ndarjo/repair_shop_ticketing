@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}All Tickets - Repair Shop{% endblock %}
+{% block title %}{{ _('All Tickets - Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-0">{% if current_view == 'history' %}Pickup History{% else %}Repair Tickets{% endif %}</h2>
-        <p class="text-muted small">{% if current_view == 'history' %}Archive of completed and collected devices{% else %}Active units currently in the shop{% endif %}</p>
+        <h2 class="mb-0">{% if current_view == 'history' %}{{ _('Pickup History') }}{% else %}{{ _('Repair Tickets') }}{% endif %}</h2>
+        <p class="text-muted small">{% if current_view == 'history' %}{{ _('Archive of completed and collected devices') }}{% else %}{{ _('Active units currently in the shop') }}{% endif %}</p>
     </div>
     <div class="d-flex gap-2">
         <div class="btn-group">
-            <a href="{{ url_for('ticket.tickets_list', view='active') }}" class="btn btn-outline-secondary {% if current_view != 'history' %}active{% endif %}">Active</a>
-            <a href="{{ url_for('ticket.tickets_list', view='history') }}" class="btn btn-outline-secondary {% if current_view == 'history' %}active{% endif %}">Picked Up</a>
+            <a href="{{ url_for('ticket.tickets_list', view='active') }}" class="btn btn-outline-secondary {% if current_view != 'history' %}active{% endif %}">{{ _('Active') }}</a>
+            <a href="{{ url_for('ticket.tickets_list', view='history') }}" class="btn btn-outline-secondary {% if current_view == 'history' %}active{% endif %}">{{ _('Picked Up') }}</a>
         </div>
-        <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-primary">+ Create Ticket</a>
+        <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-primary">{{ _('+ Create Ticket') }}</a>
     </div>
 </div>
 
@@ -22,13 +22,13 @@
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Ticket #</th>
-                    <th>Customer</th>
-                    <th>Device</th>
-                    <th>Phase</th>
-                    <th>Technician</th>
-                    <th>Created</th>
-                    <th>Actions</th>
+                    <th>{{ _('Ticket #') }}</th>
+                    <th>{{ _('Customer') }}</th>
+                    <th>{{ _('Device') }}</th>
+                    <th class="text-center">{{ _('Phase') }}</th>
+                    <th>{{ _('Technician') }}</th>
+                    <th>{{ _('Created') }}</th>
+                    <th class="text-end">{{ _('Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -37,29 +37,29 @@
                     <td><strong>{{ ticket.ticket_number }}</strong></td>
                     <td>{{ ticket.customer.name }}</td>
                     <td>{{ ticket.device.display }}</td>
-                    <td>
+                    <td class="text-center">
                         <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
-                            {{ ticket.current_phase }}
+                            {{ _(ticket.current_phase) }}
                         </span>
                     </td>
-                    <td><small>{{ ticket.assigned_to_user.full_name if ticket.assigned_to_user else 'Unassigned' }}</small></td>
+                    <td><small>{{ ticket.assigned_to_user.full_name if ticket.assigned_to_user else _('Unassigned') }}</small></td>
                     <td><small>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
-                    <td>
-                        <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <td class="text-end">
+                        <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">No repair tickets found.</td>
+                    <td colspan="7" class="text-center text-muted py-4">{{ _('No repair tickets found.') }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     <div class="card-footer text-center">
-        {% if tickets.has_prev %}<a href="{{ url_for('ticket.tickets_list', page=tickets.prev_num, view=current_view) }}" class="btn btn-sm btn-secondary">Previous</a>{% endif %}
-        <span class="mx-3">Page {{ tickets.page }} of {{ tickets.pages }}</span>
-        {% if tickets.has_next %}<a href="{{ url_for('ticket.tickets_list', page=tickets.next_num, view=current_view) }}" class="btn btn-sm btn-secondary">Next</a>{% endif %}
+        {% if tickets.has_prev %}<a href="{{ url_for('ticket.tickets_list', page=tickets.prev_num, view=current_view) }}" class="btn btn-sm btn-secondary">{{ _('Previous') }}</a>{% endif %}
+        <span class="mx-3">{{ _('Page') }} {{ tickets.page }} {{ _('of') }} {{ tickets.pages }}</span>
+        {% if tickets.has_next %}<a href="{{ url_for('ticket.tickets_list', page=tickets.next_num, view=current_view) }}" class="btn btn-sm btn-secondary">{{ _('Next') }}</a>{% endif %}
     </div>
 </div>
 {% endblock %}

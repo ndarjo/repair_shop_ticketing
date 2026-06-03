@@ -22,11 +22,16 @@ wheels/
 .installed.cfg
 *.egg
 .env
+env.local
+.env.local
 .DS_Store
 *.db
 *.sqlite
 *.sqlite3
 instance/
+logs/
+translations/*/*/*.mo
 .pytest_cache/
 .coverage
+backups/
 htmlcov/

@@ -1,31 +1,38 @@
 {% extends "base.html" %}
 
-{% block title %}Device History - {{ device.display }}{% endblock %}
+{% block title %}{{ _('Device History - %(device_display)s', device_display=device.display) }}{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="card h-100 shadow-sm">
             <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">Device Information</h5>
+                <h5 class="mb-0">{{ _('Device Information') }}</h5>
             </div>
             <div class="card-body">
                 <h3>{{ device.display }}</h3>
-                <p class="text-muted">Owner: <a href="{{ url_for('customer.view_customer', customer_id=device.customer.id) }}">{{ device.customer.name }}</a></p>
+                <p class="text-muted">{{ _('Owner:') }} <a href="{{ url_for('customer.view_customer', customer_id=device.customer.id) }}">{{ device.customer.name }}</a></p>
                 <hr>
                 <ul class="list-unstyled">
-                    <li><strong>Type:</strong> {{ device.device_type }}</li>
-                    <li><strong>Brand:</strong> {{ device.brand or 'N/A' }}</li>
-                    <li><strong>Model #:</strong> {{ device.model_number or 'N/A' }}</li>
-                    <li><strong>CPU:</strong> {{ device.cpu or 'N/A' }}</li>
-                    <li><strong>RAM:</strong> {{ device.ram or 'N/A' }}</li>
-                    <li><strong>Storage:</strong> {{ device.storage_capacity or '' }} {{ device.storage_type or '' }}</li>
-                    <li><strong>Serial:</strong> {{ device.serial_number or 'N/A' }}</li>
+                    <li><strong>{{ _('Type:') }}</strong> {{ _(device.device_type) }}</li>
+                    <li><strong>{{ _('Brand:') }}</strong> {{ device.brand or 'N/A' }}</li>
+                    <li><strong>{{ _('Model #:') }}</strong> {{ device.model_number or 'N/A' }}</li>
+                    <li><strong>{{ _('CPU:') }}</strong> {{ device.cpu or 'N/A' }}</li>
+                    <li><strong>{{ _('RAM:') }}</strong> {{ device.ram or 'N/A' }}</li>
+                    <li><strong>{{ _('Storage:') }}</strong> {{ device.storage_capacity or '' }} {{ _(device.storage_type) if device.storage_type else '' }}</li>
+                    <li><strong>{{ _('Color:') }}</strong> {{ device.color or 'N/A' }}</li>
+                    <li><strong>{{ _('Serial:') }}</strong> {{ device.serial_number or 'N/A' }}</li>
                 </ul>
+                {% if device.notes %}
+                <hr>
+                <strong>{{ _('Technical Notes:') }}</strong>
+                <p class="small text-muted mb-0">{{ device.notes }}</p> {# Notes are user-entered, not translated #}
+                {% endif %}
                 <div class="mt-3 d-flex gap-2">
-                    <a href="{{ url_for('device.edit_device', device_id=device.id) }}" class="btn btn-sm btn-warning">Edit Device</a>
-                    <form method="POST" action="{{ url_for('device.delete_device', device_id=device.id) }}" onsubmit="return confirm('Delete this device and its history?');">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    <a href="{{ url_for('device.edit_device', device_id=device.id) }}" class="btn btn-sm btn-warning">{{ _('Edit Device') }}</a>
+                    <form method="POST" action="{{ url_for('device.delete_device', device_id=device.id) }}" class="confirm-action" data-confirm="{{ _('Delete this device and its history?') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> {# CSRF token for delete form #}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Delete') }}</button>
                     </form>
                 </div>
             </div>
@@ -34,16 +41,16 @@
     <div class="col-md-8">
         <div class="card shadow-sm">
             <div class="card-header">
-                <h5 class="mb-0">Repair History</h5>
+                <h5 class="mb-0">{{ _('Repair History') }}</h5>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>Ticket #</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            <th>Action</th>
+                            <th>{{ _('Ticket #') }}</th>
+                            <th class="text-center">{{ _('Status') }}</th>
+                            <th>{{ _('Date') }}</th>
+                            <th class="text-end">{{ _('Action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -51,16 +58,16 @@
                         {% if not ticket.is_archived %}
                         <tr>
                             <td><strong>{{ ticket.ticket_number }}</strong></td>
-                            <td><span class="badge bg-primary">{{ ticket.current_phase }}</span></td>
+                            <td class="text-center"><span class="badge bg-primary">{{ _(ticket.current_phase) }}</span></td>
                             <td>{{ ticket.created_at.strftime('%Y-%m-%d') }}</td>
-                            <td>
-                                <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                            <td class="text-end">
+                                <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
                             </td>
                         </tr>
                         {% endif %}
                         {% else %}
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">No repair history found for this device.</td>
+                            <td colspan="4" class="text-center text-muted py-4">{{ _('No repair history found for this device.') }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

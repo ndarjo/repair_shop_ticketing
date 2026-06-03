@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Edit Ticket {{ ticket.ticket_number }}{% endblock %}
+{% block title %}{{ _('Edit Ticket') }} {{ ticket.ticket_number }}{% endblock %}
 
 {% block content %}
 <div class="card">
     <div class="card-header bg-warning">
-        <h4 class="mb-0">Edit Repair Ticket: {{ ticket.ticket_number }}</h4>
+        <h4 class="mb-0">{{ _('Edit Repair Ticket:') }} {{ ticket.ticket_number }}</h4>
     </div>
     <div class="card-body">
         {% if ticket.current_phase == 'Already Taken' %}
@@ -14,30 +14,31 @@
         </div>
         {% endif %}
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label class="form-label">Customer</label>
+                    <label class="form-label">{{ _('Customer') }}</label>
                     <input type="text" class="form-control" value="{{ ticket.customer.name }}" readonly disabled>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Device</label>
+                    <label class="form-label">{{ _('Device') }}</label>
                     <input type="text" class="form-control" value="{{ ticket.device.display }}" readonly disabled>
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label">Items Included</label>
+                    <label class="form-label">{{ _('Items Included') }}</label>
                     <input type="text" name="items_included" class="form-control" value="{{ ticket.items_included }}" required>
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label">Problem Description</label>
+                    <label class="form-label">{{ _('Problem Description') }}</label>
                     <textarea name="problem_description" class="form-control" rows="3" required>{{ ticket.problem_description }}</textarea>
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">Technician Assignment</label>
+                    <label class="form-label">{{ _('Technician Assignment') }}</label>
                     <select name="assigned_to" class="form-select">
-                        <option value="">-- Unassigned --</option>
+                        <option value="">{{ _('-- Unassigned --') }}</option>
                         {% for user in users %}
                             <option value="{{ user.id }}" {% if ticket.assigned_to == user.id %}selected{% endif %}>{{ user.full_name }}</option>
                         {% endfor %}
@@ -45,8 +46,8 @@
                 </div>
 
                 <div class="col-12 text-end mt-4">
-                    <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-secondary px-4">Cancel</a>
-                    <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+                    <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-secondary px-4">{{ _('Cancel') }}</a>
+                    <button type="submit" class="btn btn-primary px-4">{{ _('Save Changes') }}</button>
                 </div>
             </div>
         </form>

@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}Financial Report - Repair Shop{% endblock %}
+{% block title %}{{ _('Financial Report - Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Financial Analytics</h2>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2>{{ _('Financial Analytics') }}</h2>
     <div class="d-flex gap-2">
         <form action="{{ url_for('report.finance_report') }}" method="GET" class="d-inline-flex gap-2">
-            <input type="month" name="month" class="form-control form-control-sm" value="{{ selected_month or '' }}">
-            <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+            <input type="month" name="month" class="form-control form-control-sm w-auto" value="{{ selected_month or '' }}">
+            <button type="submit" class="btn btn-sm btn-primary">{{ _('Filter') }}</button>
             {% if selected_month %}
-                <a href="{{ url_for('report.finance_report') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                <a href="{{ url_for('report.finance_report') }}" class="btn btn-sm btn-outline-secondary">{{ _('Clear') }}</a>
             {% endif %}
         </form>
-        <a href="{{ url_for('report.reports') }}" class="btn btn-sm btn-secondary">Back to Reports</a>
+        <a href="{{ url_for('report.reports') }}" class="btn btn-sm btn-secondary">{{ _('Back to Reports') }}</a>
     </div>
 </div>
 
@@ -24,10 +24,10 @@
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ url_for('report.finance_report') }}" 
                    class="btn btn-sm {{ 'btn-dark' if not selected_month else 'btn-outline-dark' }}">
-                    All Time
+                    {{ _('All Time') }}
                 </a>
                 {% for month_str in available_months %}
-                    <a href="{{ url_for('report.finance_report', month=month_str) }}" 
+                    <a href="{{ url_for('report.finance_report', month=month_str) }}"
                        class="btn btn-sm {{ 'btn-primary' if selected_month == month_str else 'btn-outline-primary' }}">
                         {{ month_str }}
                     </a>
@@ -37,50 +37,36 @@
     </div>
 </div>
 
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <h6 class="text-uppercase small">Total Revenue</h6>
-                <h2 class="mb-0">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, total_revenue) }}</h2>
-                <p class="mb-0 small opacity-75">Gross payments received</p>
-            </div>
-        </div>
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>{{ _('Net Income Trends') }}</h5>
     </div>
-    <div class="col-md-4">
-        <div class="card bg-danger text-white">
-            <div class="card-body">
-                <h6 class="text-uppercase small">Hardware Costs</h6>
-                <h2 class="mb-0">- {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, total_hardware_cost) }}</h2>
-                <p class="mb-0 small opacity-75">Wholesale cost of spare parts</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <h6 class="text-uppercase small">Net Profit</h6>
-                <h2 class="mb-0">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, net_profit) }}</h2>
-                <p class="mb-0 small opacity-75">Revenue minus material expenses</p>
-            </div>
+    <div class="card-body">
+        <div style="height: 300px;">
+            <canvas id="financeChart" 
+                data-labels='{{ monthly_analysis|reverse|map(attribute="month")|list|tojson }}'
+                data-revenue='{{ monthly_analysis|reverse|map(attribute="revenue")|map("float")|list|tojson }}'
+                data-costs='{{ monthly_analysis|reverse|map(attribute="costs")|map("float")|list|tojson }}'
+                data-profit='{{ monthly_analysis|reverse|map(attribute="profit")|map("float")|list|tojson }}'>
+            </canvas>
         </div>
     </div>
 </div>
 
 <div class="card shadow-sm">
     <div class="card-header bg-dark text-white">
-        <h5 class="mb-0">Customer Payment History</h5>
+        <h5 class="mb-0">{{ _('Customer Payment History') }}</h5>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Date & Time</th>
-                    <th>Customer</th>
-                    <th>Ticket #</th>
-                    <th>Method</th>
-                    <th>Reference</th>
-                    <th class="text-end">Amount</th>
+                    <th>{{ _('Date & Time') }}</th>
+                    <th>{{ _('Customer') }}</th>
+                    <th>{{ _('Ticket #') }}</th>
+                    <th>{{ _('Method') }}</th>
+                    <th>{{ _('Reference') }}</th>
+                    <th class="text-end">{{ _('Amount') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -96,13 +82,13 @@
                             {{ ticket.ticket_number }}
                         </a>
                     </td>
-                    <td>{{ payment.payment_method }}</td>
+                    <td>{{ _(payment.payment_method) }}</td>
                     <td><small class="text-muted">{{ payment.transaction_reference or '-' }}</small></td>
                     <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, payment.amount) }}</td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">No payment records found.</td>
+                    <td colspan="6" class="text-center text-muted py-4">{{ _('No payment records found.') }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -112,20 +98,21 @@
 
 <div class="card shadow-sm mt-4">
     <div class="card-header bg-info text-dark d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Material Usage & Hardware Tracking</h5>
-        <small class="fw-bold">Includes Inventory & Manual Items</small>
+        <h5 class="mb-0">{{ _('Material Usage & Hardware Tracking') }}</h5>
+        <small class="fw-bold">{{ _('Includes Inventory & Manual Items') }}</small>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Item Description</th>
-                    <th>Type</th>
-                    <th>Customer</th>
-                    <th>Ticket #</th>
-                    <th class="text-center">Qty</th>
-                    <th class="text-end">Unit Price</th>
-                    <th class="text-end">Total</th>
+                    <th>{{ _('Item Description') }}</th>
+                    <th>{{ _('Type') }}</th>
+                    <th>{{ _('Customer') }}</th>
+                    <th>{{ _('Ticket #') }}</th>
+                    <th class="text-end">{{ _('Qty') }}</th>
+                    <th class="text-end">{{ _('Unit Cost') }}</th>
+                    <th class="text-end">{{ _('Unit Price') }}</th>
+                    <th class="text-end">{{ _('Total') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -134,9 +121,9 @@
                     <td><strong>{{ item.description }}</strong></td>
                     <td>
                         {% if item.spare_part_id %}
-                            <span class="badge bg-secondary">Inventory</span>
+                            <span class="badge bg-secondary">{{ _('Inventory') }}</span>
                         {% else %}
-                            <span class="badge bg-warning text-dark">Manual Entry</span>
+                            <span class="badge bg-warning text-dark">{{ _('Manual Entry') }}</span>
                         {% endif %}
                     </td>
                     <td><small>{{ customer.name }}</small></td>
@@ -145,12 +132,13 @@
                             {{ ticket.ticket_number }}
                         </a>
                     </td>
-                    <td class="text-center">{{ item.quantity }}</td>
+                    <td class="text-end">{{ item.quantity }}</td>
+                    <td class="text-end text-muted small">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.cost_price) }}</td>
                     <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price) }}</td>
                     <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price) }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="7" class="text-center text-muted py-4">No materials recorded yet.</td></tr>
+                <tr><td colspan="7" class="text-center text-muted py-4">{{ _('No materials recorded yet.') }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>

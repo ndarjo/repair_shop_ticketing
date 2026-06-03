@@ -3,17 +3,18 @@
 {% block title %}Shop Settings - Admin{% endblock %}
 
 {% block content %}
-<div class="row">
+<div class="row justify-content-center">
     <div class="col-md-8 offset-md-2">
         <div class="card shadow-sm">
             <div class="card-header bg-dark text-white">
-                <h4 class="mb-0">Global Shop Settings</h4>
+                <h4 class="mb-0">{{ _('Global Shop Settings') }}</h4>
             </div>
             <div class="card-body">
                 <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row mb-4">
                         <div class="col-md-4 text-center">
-                            <label class="form-label d-block fw-bold">Shop Logo</label>
+                            <label class="form-label d-block fw-bold">{{ _('Shop Logo') }}</label>
                             <div class="mb-3">
                                 {% if settings.logo_path %}
                                     <img src="{{ url_for('static', filename='uploads/logos/' + settings.logo_path) }}" alt="Current Logo" class="img-thumbnail" style="max-height: 120px;">
@@ -24,36 +25,36 @@
                                 {% endif %}
                             </div>
                             <input type="file" name="shop_logo" class="form-control form-control-sm" accept="image/*">
-                            <small class="text-muted d-block mt-1">Recommended: Square PNG/SVG</small>
+                            <small class="text-muted d-block mt-1">{{ _('Recommended: Square PNG/SVG') }}</small>
                         </div>
                         <div class="col-md-8">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Shop Name *</label>
+                                <label class="form-label fw-bold">{{ _('Shop Name') }} *</label>
                                 <input type="text" name="shop_name" class="form-control" value="{{ settings.shop_name }}" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Shop Address (Location)</label>
+                                <label class="form-label fw-bold">{{ _('Shop Address (Location)') }}</label>
                                 <textarea name="shop_address" class="form-control" rows="3">{{ settings.shop_address or '' }}</textarea>
-                                <small class="text-muted">This will appear on invoices.</small>
+                                <small class="text-muted">{{ _('This will appear on invoices.') }}</small>
                             </div>
                         </div>
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Contact Phone</label>
+                            <label class="form-label fw-bold">{{ _('Contact Phone') }}</label>
                             <input type="text" name="shop_phone" class="form-control" value="{{ settings.shop_phone or '' }}">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Contact Email</label>
+                            <label class="form-label fw-bold">{{ _('Contact Email') }}</label>
                             <input type="email" name="shop_email" class="form-control" value="{{ settings.shop_email or '' }}">
                         </div>
                     </div>
                     
                     <hr>
                     <div class="text-end">
-                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary px-4 me-2">Cancel</a>
-                        <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary px-4 me-2">{{ _('Cancel') }}</a>
+                        <button type="submit" class="btn btn-primary px-4">{{ _('Save Changes') }}</button>
                     </div>
                 </form>
             </div>

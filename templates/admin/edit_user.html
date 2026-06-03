@@ -3,13 +3,14 @@
 {% block title %}Edit User - Admin{% endblock %}
 
 {% block content %}
-<div class="row">
+<div class="row justify-content-center">
     <div class="col-md-10 offset-md-1">
-        <h1 class="mb-4">Edit User: {{ user.full_name }}</h1>
+        <h1 class="mb-4">{{ _('Edit User') }}: {{ user.full_name }}</h1>
         
         <div class="card">
             <div class="card-body">
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <!-- Basic Info -->
                     <div class="card mb-4">
                         <div class="card-header">
@@ -18,19 +19,18 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="full_name" class="form-label">Full Name</label>
+                                    <label for="full_name" class="form-label">{{ _('Full Name') }}</label>
                                     <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name }}" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="email" class="form-label">Email (Optional)</label>
+                                    <label for="email" class="form-label">{{ _('Email (Optional)') }}</label>
                                     <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if user.is_active %}checked{% endif %}>
-                                    <label class="form-check-label" for="is_active">
-                                        Active (user can log in)
+                                    <label class="form-check-label" for="is_active">{{ _('Active (user can log in)') }}
                                     </label>
                                 </div>
                             </div>
@@ -40,13 +40,13 @@
                     <!-- Reset Password Section -->
                     <div class="card mb-4 border-warning">
                         <div class="card-header bg-warning text-dark">
-                            <h5 class="mb-0">Reset Password</h5>
+                            <h5 class="mb-0">{{ _('Reset Password') }}</h5>
                         </div>
                         <div class="card-body">
                             <div class="mb-0">
-                                <label for="password" class="form-label">New Password</label>
-                                <input type="password" class="form-control" id="password" name="password" placeholder="Leave blank to keep current password">
-                                <small class="text-muted">Minimum 6 characters. Use this field only if you need to override the user's current password.</small>
+                                <label for="password" class="form-label">{{ _('New Password') }}</label>
+                                <input type="password" class="form-control" id="password" name="password" placeholder="{{ _('Leave blank to keep current password') }}">
+                                <small class="text-muted">{{ _('Minimum 6 characters. Use this field only if you need to override the user\'s current password.') }}</small>
                             </div>
                         </div>
                     </div>
@@ -54,7 +54,7 @@
                     <!-- Roles -->
                     <div class="card mb-4">
                         <div class="card-header">
-                            <h5 class="mb-0">Roles</h5>
+                            <h5 class="mb-0">{{ _('Roles') }}</h5>
                         </div>
                         <div class="card-body">
                             <div class="row">
@@ -62,9 +62,8 @@
                                 <div class="col-md-6 mb-3">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="role_{{ role.id }}" name="roles" value="{{ role.id }}" {% if role in user.roles %}checked{% endif %}>
-                                        <label class="form-check-label" for="role_{{ role.id }}">
-                                            <strong>{{ role.name }}</strong><br>
-                                            <small class="text-muted">{{ role.description }}</small>
+                                        <label class="form-check-label" for="role_{{ role.id }}"><strong>{{ _(role.name) }}</strong><br>
+                                            <small class="text-muted">{{ _(role.description) }}</small>
                                         </label>
                                     </div>
                                 </div>
@@ -77,14 +76,14 @@
                     {% for category, permissions in permissions_by_category.items() %}
                     <div class="card mb-4">
                         <div class="card-header">
-                            <h5 class="mb-0">{{ category|title }} Permissions</h5>
+                            <h5 class="mb-0">{{ _(category|title) }} {{ _('Permissions') }}</h5>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-sm">
                                     <tbody>
                                         {% for perm in permissions %}
-                                        <tr>
+                                        <tr class="align-middle">
                                             <td style="width: 100%">
                                                 <strong>{{ perm.name }}</strong><br>
                                                 <small class="text-muted">{{ perm.description }}</small>
@@ -105,8 +104,8 @@
                     
                     <!-- Submit Buttons -->
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">{{ _('Save Changes') }}</button>
+                        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">{{ _('Cancel') }}</a>
                     </div>
                 </form>
             </div>

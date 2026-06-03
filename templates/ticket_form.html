@@ -1,21 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}Create New Ticket{% endblock %}
+{% block title %}{{ _('Create New Ticket') }}{% endblock %}
 
 {% block content %}
-<div class="card">
+<div class="card shadow-sm">
     <div class="card-header bg-primary text-white">
-        <h4 class="mb-0">New Repair Ticket</h4>
+        <h4 class="mb-0">{{ _('New Repair Ticket') }}</h4>
     </div>
     <div class="card-body">
         <form method="POST" id="ticketForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row g-3">
                 <!-- Customer Search Section -->
                 <div class="col-md-6 position-relative">
-                    <label class="form-label">Search Customer</label>
+                    <label class="form-label">{{ _('Search Customer') }}</label>
                     <div class="input-group">
-                        <input type="text" id="customer_search" class="form-control" placeholder="Type name or phone..." autocomplete="off">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#newCustomerModal">New +</button>
+                        <input type="text" id="customer_search" class="form-control" placeholder="{{ _('Type name or phone...') }}" autocomplete="off">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#newCustomerModal">{{ _('New') }} +</button>
                     </div>
                     <input type="hidden" name="customer_id" id="customer_id" required>
                     <div id="customer_results" class="list-group position-absolute w-100 z-3 shadow mt-1" style="display: none; max-height: 250px; overflow-y: auto;"></div>
@@ -23,43 +24,43 @@
 
                 <!-- Device Search Section -->
                 <div class="col-md-6 position-relative">
-                    <label class="form-label">Select Device</label>
+                    <label class="form-label">{{ _('Select Device') }}</label>
                     <div class="input-group">
-                        <input type="text" id="device_search" class="form-control" placeholder="Search customer's devices..." disabled autocomplete="off">
-                        <button type="button" id="new_device_btn" class="btn btn-outline-secondary" disabled data-bs-toggle="modal" data-bs-target="#newDeviceModal">New +</button>
+                        <input type="text" id="device_search" class="form-control" placeholder="{{ _('Search customer\'s devices...') }}" disabled autocomplete="off">
+                        <button type="button" id="new_device_btn" class="btn btn-outline-secondary" disabled data-bs-toggle="modal" data-bs-target="#newDeviceModal">{{ _('New') }} +</button>
                     </div>
                     <input type="hidden" name="device_id" id="device_id" required>
                     <div id="device_results" class="list-group position-absolute w-100 z-3 shadow mt-1" style="display: none; max-height: 250px; overflow-y: auto;"></div>
                 </div>
 
                 <div class="col-12 mt-4">
-                    <h6>Problem & Intake Details</h6>
+                    <h6>{{ _('Problem & Intake Details') }}</h6>
                     <hr>
                 </div>
 
                 <div class="col-md-12 mb-2">
-                    <label class="form-label">Common Problems (Quick Select)</label>
+                    <label class="form-label">{{ _('Common Problems (Quick Select)') }}</label>
                     <div class="d-flex flex-wrap gap-2">
                         {% for problem in common_problems %}
-                            <button type="button" class="btn btn-sm btn-outline-info problem-quick-select" data-problem="{{ problem.problem_text }}">{{ problem.problem_text }}</button>
+                            <button type="button" class="btn btn-sm btn-outline-info problem-quick-select" data-problem="{{ problem.problem_text }}">{{ _(problem.problem_text) }}</button>
                         {% endfor %}
                     </div>
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label">Problem Description</label>
+                    <label class="form-label">{{ _('Problem Description') }}</label>
                     <textarea name="problem_description" id="problem_description" class="form-control" rows="3" required></textarea>
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label">Items Included (Charger, Case, etc.)</label>
-                    <input type="text" name="items_included" class="form-control" placeholder="e.g., Original Charger, Leather Case">
+                    <label class="form-label">{{ _('Items Included (Charger, Case, etc.)') }}</label>
+                    <input type="text" name="items_included" class="form-control" placeholder="{{ _('e.g., Original Charger, Leather Case') }}">
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">Technician Assignment</label>
+                    <label class="form-label">{{ _('Technician Assignment') }}</label>
                     <select name="assigned_to" class="form-select">
-                        <option value="">-- Unassigned --</option>
+                        <option value="">{{ _('-- Unassigned --') }}</option>
                         {% for user in users %}
                             <option value="{{ user.id }}">{{ user.full_name }}</option>
                         {% endfor %}
@@ -67,7 +68,7 @@
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">Down Payment</label>
+                    <label class="form-label">{{ _('Down Payment') }}</label>
                     <div class="input-group">
                         <span class="input-group-text">{{ currency_symbol }}</span>
                         <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="down_payment_amount" class="form-control" value="{{ '%.*f'|format(currency_decimals, 0.0) }}">
@@ -75,17 +76,17 @@
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">Payment Method</label>
+                    <label class="form-label">{{ _('Payment Method') }}</label>
                     <select name="payment_method" class="form-select">
-                        <option value="Cash">Cash</option>
-                        <option value="Card">Card</option>
-                        <option value="Transfer">Bank Transfer</option>
-                        <option value="Other">Other</option>
+                        <option value="Cash">{{ _('Cash') }}</option>
+                        <option value="Card">{{ _('Card') }}</option>
+                        <option value="Transfer">{{ _('Bank Transfer') }}</option>
+                        <option value="Other">{{ _('Other') }}</option>
                     </select>
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">Date/Time In</label>
+                    <label class="form-label">{{ _('Date/Time In') }}</label>
                     <div class="input-group">
                         <input type="date" name="created_date" class="form-control" value="{{ now_date }}">
                         <input type="time" name="created_time" class="form-control" value="{{ now_time }}">
@@ -93,7 +94,7 @@
                 </div>
 
                 <div class="col-12 text-end mt-4">
-                    <button type="submit" class="btn btn-primary btn-lg px-5">Create Ticket</button>
+                    <button type="submit" class="btn btn-primary btn-lg px-5">{{ _('Create Ticket') }}</button>
                 </div>
             </div>
         </form>
@@ -104,15 +105,16 @@
 <div class="modal fade" id="newCustomerModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header"><h5>Add New Customer</h5></div>
+            <div class="modal-header"><h5>{{ _('Add New Customer') }}</h5></div>
             <div class="modal-body">
                 <form id="newCustomerForm">
-                    <input type="text" name="name" class="form-control mb-2" placeholder="Full Name" required>
-                    <input type="text" name="phone" class="form-control mb-2" placeholder="Phone Number" required>
-                    <textarea name="address" class="form-control" placeholder="Address (Optional)"></textarea>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="text" name="name" class="form-control mb-2" placeholder="{{ _('Full Name') }}" required>
+                    <input type="text" name="phone" class="form-control mb-2" placeholder="{{ _('Phone Number') }}" required>
+                    <textarea name="address" class="form-control" placeholder="{{ _('Address (Optional)') }}"></textarea>
                 </form>
             </div>
-            <div class="modal-footer"><button id="saveCustomerBtn" class="btn btn-primary">Save Customer</button></div>
+            <div class="modal-footer"><button id="saveCustomerBtn" class="btn btn-primary">{{ _('Save Customer') }}</button></div>
         </div>
     </div>
 </div>
@@ -120,59 +122,68 @@
 <div class="modal fade" id="newDeviceModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header"><h5>Add New Device for Customer</h5></div>
+            <div class="modal-header"><h5>{{ _('Add New Device for Customer') }}</h5></div>
             <div class="modal-body">
                 <form id="newDeviceForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="customer_id" id="modal_device_customer_id">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Device Type *</label>
+                            <label class="form-label">{{ _('Device Type') }} *</label>
                             <select name="device_type" class="form-select" required>
-                                <option value="">-- Select --</option>
-                                <option value="Phone">Phone</option>
-                                <option value="Laptop">Laptop</option>
-                                <option value="Tablet">Tablet</option>
-                                <option value="Desktop">Desktop</option>
-                                <option value="Monitor">Monitor</option>
-                                <option value="Printer">Printer</option>
-                                <option value="Other">Other</option>
+                                <option value="">{{ _('-- Select --') }}</option>
+                                <option value="Phone">{{ _('Phone') }}</option>
+                                <option value="Laptop">{{ _('Laptop') }}</option>
+                                <option value="Tablet">{{ _('Tablet') }}</option>
+                                <option value="Desktop">{{ _('Desktop') }}</option>
+                                <option value="Monitor">{{ _('Monitor') }}</option>
+                                <option value="Printer">{{ _('Printer') }}</option>
+                                <option value="Other">{{ _('Other') }}</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Brand *</label>
-                            <input type="text" name="brand" class="form-control" required>
+                            <label class="form-label">{{ _('Brand') }} *</label>
+                            <input type="text" name="brand" class="form-control" placeholder="{{ _('e.g. Apple, Dell') }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Model Number</label>
-                            <input type="text" name="model_number" class="form-control">
+                            <label class="form-label">{{ _('Model Number') }}</label>
+                            <input type="text" name="model_number" class="form-control" placeholder="{{ _('e.g. A2633') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">CPU/Processor</label>
-                            <input type="text" name="cpu" class="form-control">
+                            <label class="form-label">{{ _('CPU/Processor') }}</label>
+                            <input type="text" name="cpu" class="form-control" placeholder="{{ _('e.g. Core i7') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">RAM</label>
-                            <input type="text" name="ram" class="form-control">
+                            <label class="form-label">{{ _('RAM') }}</label>
+                            <input type="text" name="ram" class="form-control" placeholder="{{ _('e.g. 16GB') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Storage Type</label>
+                            <label class="form-label">{{ _('Storage Type') }}</label>
                             <select name="storage_type" class="form-select">
-                                <option value="">-- Select --</option>
-                                <option value="HDD">HDD</option>
-                                <option value="SSD">SSD</option>
-                                <option value="Mixed">Mixed</option>
+                                <option value="">{{ _('-- Select --') }}</option>
+                                <option value="HDD">{{ _('HDD') }}</option>
+                                <option value="SSD">{{ _('SSD') }}</option>
+                                <option value="Mixed">{{ _('Mixed') }}</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Storage Capacity</label>
-                            <input type="text" name="storage_capacity" class="form-control" placeholder="e.g. 512GB">
+                            <label class="form-label">{{ _('Storage Capacity') }}</label>
+                            <input type="text" name="storage_capacity" class="form-control" placeholder="{{ _('e.g. 512GB') }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ _('Serial Number') }}</label>
+                            <input type="text" name="serial_number" class="form-control" placeholder="{{ _('e.g. C02ABCDEFGH') }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ _('Color') }}</label>
+                            <input type="text" name="color" class="form-control" placeholder="{{ _('e.g. Space Gray') }}">
                         </div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button id="saveDeviceBtn" class="btn btn-primary">Save Device</button>
+            <div class="modal-footer d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                <button id="saveDeviceBtn" class="btn btn-primary">{{ _('Save Device') }}</button>
             </div>
         </div>
     </div>

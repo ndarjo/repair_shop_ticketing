@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}Reports & Analytics - Repair Shop{% endblock %}
+{% block title %}{{ _('Reports & Analytics - Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0">Reports & Analytics</h1>
+    <h1 class="mb-0">{{ _('Reports & Analytics') }}</h1>
     <div class="d-flex gap-3 align-items-center">
         <form action="{{ url_for('report.reports') }}" method="GET" class="d-flex gap-2 align-items-center">
-            <label class="small fw-bold text-muted text-uppercase mb-0">Period:</label>
-            <select name="month" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                <option value="">All Time</option>
+            <label class="small fw-bold text-muted text-uppercase mb-0">{{ _('Period:') }}</label>
+            <select name="month" class="form-select form-select-sm w-auto auto-submit">
+                <option value="">{{ _('All Time') }}</option>
                 {% for m in available_months %}
                 <option value="{{ m }}" {{ 'selected' if m == monthly_stats.selected_month }}>{{ m }}</option>
                 {% endfor %}
             </select>
         </form>
         <div class="vr"></div>
-        <a href="{{ url_for('report.finance_report', month=monthly_stats.selected_month if monthly_stats.selected_month else '') }}" class="btn btn-outline-primary fw-bold">💰 Detailed Finance Report</a>
+        <a href="{{ url_for('report.finance_report', month=monthly_stats.selected_month if monthly_stats.selected_month else '') }}" class="btn btn-outline-primary fw-bold">💰 {{ _('Detailed Finance Report') }}</a>
     </div>
 </div>
 
@@ -25,7 +25,7 @@
     <div class="col-md-3">
         <div class="card text-white bg-primary">
             <div class="card-body">
-                <h5 class="card-title">Total Tickets</h5>
+                <h5 class="card-title">{{ _('Total Tickets') }}</h5>
                 <h2 class="card-text">{{ monthly_stats.total_tickets }}</h2>
             </div>
         </div>
@@ -33,7 +33,7 @@
     <div class="col-md-3">
         <div class="card text-white bg-success">
             <div class="card-body">
-                <h5 class="card-title">Completed Tickets</h5>
+                <h5 class="card-title">{{ _('Completed Tickets') }}</h5>
                 <h2 class="card-text">{{ monthly_stats.completed_tickets }}</h2>
             </div>
         </div>
@@ -41,7 +41,7 @@
     <div class="col-md-3">
         <div class="card text-white bg-warning">
             <div class="card-body">
-                <h5 class="card-title">Completion Rate</h5>
+                <h5 class="card-title">{{ _('Completion Rate') }}</h5>
                 <h2 class="card-text">
                     {% if monthly_stats.total_tickets > 0 %}
                         {{ "%.0f"|format((monthly_stats.completed_tickets / monthly_stats.total_tickets) * 100) }}%
@@ -55,7 +55,7 @@
     <div class="col-md-3">
         <div class="card text-white bg-info">
             <div class="card-body">
-                <h5 class="card-title">Net Profit</h5>
+                <h5 class="card-title">{{ _('Net Profit') }}</h5>
                 <h2 class="card-text">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, monthly_stats.net_profit) }}</h2>
             </div>
         </div>
@@ -67,7 +67,7 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Recent Tickets</h5>
+                <h5 class="mb-0">{{ _('Recent Tickets') }}</h5>
             </div>
             <div class="card-body">
                 {% if recent_tickets %}
@@ -75,12 +75,12 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>Ticket #</th>
-                                <th>Customer</th>
-                                <th>Device (Brand/Model)</th>
-                                <th>Phase</th>
-                                <th>Created</th>
-                                <th>Actions</th>
+                                <th>{{ _('Ticket #') }}</th>
+                                <th>{{ _('Customer') }}</th>
+                                <th>{{ _('Device (Brand/Model)') }}</th>
+                                <th class="text-center">{{ _('Phase') }}</th>
+                                <th>{{ _('Created') }}</th>
+                                <th class="text-end">{{ _('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -89,14 +89,14 @@
                                 <td><strong>{{ ticket.ticket_number }}</strong></td>
                                 <td>{{ ticket.customer.name }}</td>
                                 <td>{{ ticket.device.brand }} {{ ticket.device.model_number }}</td>
-                                <td>
+                                <td class="text-center">
                                     <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
-                                        {{ ticket.current_phase }}
+                                        {{ _(ticket.current_phase) }}
                                     </span>
                                 </td>
                                 <td><small>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
-                                <td>
-                                    <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-primary">View</a>
+                                <td class="text-end">
+                                    <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-primary">{{ _('View') }}</a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -104,7 +104,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted">No tickets found.</p>
+                <p class="text-muted">{{ _('No tickets found.') }}</p>
                 {% endif %}
             </div>
         </div>

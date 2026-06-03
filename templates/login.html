@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Login - Repair Shop{% endblock %}
+{% block title %}{{ _('Login') }} - Repair Shop{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -8,19 +8,20 @@
         <div class="card mt-5 shadow">
             <div class="card-body">
                 <div class="text-center mb-4">
-                    <h3>🛠️ Staff Login</h3>
-                    <p class="text-muted">Enter credentials to continue</p>
+                    <h3>🛠️ {{ _('Staff Login') }}</h3>
+                    <p class="text-muted">{{ _('Enter credentials to continue') }}</p>
                 </div>
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
-                        <label class="form-label">Username</label>
+                        <label class="form-label">{{ _('Username') }}</label>
                         <input type="text" name="username" class="form-control" required autofocus>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Password</label>
+                        <label class="form-label">{{ _('Password') }}</label>
                         <input type="password" name="password" class="form-control" required>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Sign In</button>
+                    <button type="submit" class="btn btn-primary w-100">{{ _('Sign In') }}</button>
                 </form>
             </div>
         </div>

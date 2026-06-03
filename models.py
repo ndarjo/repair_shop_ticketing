@@ -4,6 +4,9 @@ from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
 from decimal import Decimal
+from cryptography.fernet import Fernet
+import hashlib
+from flask import current_app
 
 db = SQLAlchemy()
 
@@ -36,6 +39,7 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)
     theme_preference = db.Column(db.String(20), default='light')
     color_theme = db.Column(db.String(50), default='blue')
+    language_preference = db.Column(db.String(5), default='en')
     currency = db.Column(db.String(10), default='USD')
     currency_decimals = db.Column(db.Integer, default=2)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -59,22 +63,16 @@ class User(UserMixin, db.Model):
         if self.is_superuser:
             return True
         
-        # Check direct permissions
-        direct_perm = db.session.query(Permission).join(user_permissions).filter(
-            user_permissions.c.user_id == self.id,
-            Permission.name == permission_name
-        ).exists()
-
-        # Check permissions inherited from roles
-        role_perm = db.session.query(Permission).join(role_permissions).join(Role).join(user_roles).filter(
-            user_roles.c.user_id == self.id,
-            Permission.name == permission_name
-        ).exists()
-
-        # FIXED: Evaluate clauses individually to return Python booleans
-        if db.session.query(direct_perm).scalar():
+        # Check direct permissions assigned to user
+        if any(p.name == permission_name for p in self.permissions):
             return True
-        return db.session.query(role_perm).scalar()
+            
+        # Check permissions inherited from assigned roles
+        for role in self.roles:
+            if any(p.name == permission_name for p in role.permissions):
+                return True
+                
+        return False
     
     def has_role(self, role_name):
         """Check if user has specific role"""
@@ -121,14 +119,68 @@ class Customer(db.Model):
     __tablename__ = 'customers'
     
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    phone = db.Column(db.String(20), nullable=False)
-    address = db.Column(db.Text, nullable=True)
+    
+    # GDPR: Encryption at Rest. Name is kept plaintext for searchability, 
+    # while Phone and Address are encrypted using AES-256.
+    name = db.Column(db.String(120), nullable=False, index=True)
+    _phone_encrypted = db.Column('phone', db.Text, nullable=False)
+    _address_encrypted = db.Column('address', db.Text, nullable=True)
+    
+    # GDPR Blind Index: A hash of the phone number used for exact searches 
+    # without revealing the actual number to the database engine.
+    phone_hash = db.Column(db.String(64), index=True)
+
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     devices = db.relationship('Device', backref='customer', lazy=True, cascade='all, delete-orphan')
     tickets = db.relationship('Ticket', backref='customer', lazy=True)
+
+    def _get_cipher(self):
+        """Internal helper to get the Fernet cipher"""
+        return Fernet(current_app.config['ENCRYPTION_KEY'].encode())
+
+    @property
+    def phone(self):
+        if not self._phone_encrypted: return ""
+        return self._get_cipher().decrypt(self._phone_encrypted.encode()).decode()
+
+    @phone.setter
+    def phone(self, value):
+        if value:
+            self._phone_encrypted = self._get_cipher().encrypt(value.encode()).decode()
+            # SECURITY: Use a dedicated salt for the blind index to prevent rainbow table attacks
+            self.phone_hash = hashlib.sha256((current_app.config['BLIND_INDEX_SALT'] + value).encode()).hexdigest()
+        else:
+            self._phone_encrypted = ""
+            self.phone_hash = None
+
+    @property
+    def address(self):
+        if not self._address_encrypted: return ""
+        return self._get_cipher().decrypt(self._address_encrypted.encode()).decode()
+
+    @address.setter
+    def address(self, value):
+        if value:
+            self._address_encrypted = self._get_cipher().encrypt(value.encode()).decode()
+        else:
+            self._address_encrypted = ""
+
+    def anonymize(self):
+        """GDPR Compliance: Right to be Forgotten. Scrub PII but keep logs."""
+        self.name = f"DELETED_USER_{self.id}"
+        self.phone = "0000000000"
+        self.address = "ANONYMIZED"
+        self.phone_hash = "ANONYMIZED"
+
+    def export_data(self):
+        """GDPR Compliance: Right to Data Portability."""
+        return {
+            'customer_info': {'name': self.name, 'phone': self.phone, 'address': self.address},
+            'devices': [{'type': d.device_type, 'brand': d.brand, 'sn': d.serial_number} for d in self.devices],
+            'tickets': [{'id': t.ticket_number, 'phase': t.current_phase} for t in self.tickets]
+        }
     
     def __repr__(self):
         return f'<Customer {self.name}>'
@@ -147,7 +199,7 @@ class Device(db.Model):
     ram = db.Column(db.String(50))
     storage_type = db.Column(db.String(50))
     storage_capacity = db.Column(db.String(100))
-    serial_number = db.Column(db.String(100))
+    serial_number = db.Column(db.String(100), index=True)
     color = db.Column(db.String(50))
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -196,7 +248,7 @@ class Ticket(db.Model):
         """Generates a unique ticket number with collision check"""
         while True:
             ticket_number = f"TKT-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
-            if not Ticket.query.filter_by(ticket_number=ticket_number).first():
+            if not db.session.query(Ticket.id).filter_by(ticket_number=ticket_number).first():
                 return ticket_number
 
     @property
@@ -376,6 +428,9 @@ class InvoiceItem(db.Model):
     unit_price = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
     total_price = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
 
+    # Relationship for easier inventory access
+    part = db.relationship('SparePart', backref='invoice_line_items', lazy=True)
+
 class ShopSetting(db.Model):
     """Global shop configuration for invoices and branding"""
     __tablename__ = 'shop_settings'
@@ -385,3 +440,4 @@ class ShopSetting(db.Model):
     shop_phone = db.Column(db.String(20))
     shop_email = db.Column(db.String(120))
     logo_path = db.Column(db.String(255))
+    setup_completed = db.Column(db.Boolean, default=False)

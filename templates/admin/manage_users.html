@@ -3,10 +3,10 @@
 {% block title %}Manage Users - Repair Shop{% endblock %}
 
 {% block content %}
-<div class="row mb-3">
+<div class="row mb-3 justify-content-between align-items-center">
     <div class="col-md-12">
-        <h2>Manage Users</h2>
-        <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">+ Create User</a>
+        <h2>{{ _('Manage Users') }}</h2>
+        <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">{{ _('+ Create User') }}</a>
     </div>
 </div>
 
@@ -17,13 +17,13 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>Username</th>
-                            <th>Full Name</th>
-                            <th>Email</th>
-                            <th>Roles</th>
-                            <th>Status</th>
-                            <th>Created</th>
-                            <th>Action</th>
+                            <th>{{ _('Username') }}</th>
+                            <th>{{ _('Full Name') }}</th>
+                            <th>{{ _('Email') }}</th>
+                            <th>{{ _('Roles') }}</th>
+                            <th>{{ _('Status') }}</th>
+                            <th>{{ _('Created') }}</th>
+                            <th>{{ _('Action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -34,21 +34,22 @@
                             <td>{{ user.email }}</td>
                             <td>
                                 {% if user.is_superuser %}
-                                    <span class="badge bg-danger">Superuser</span>
+                                    <span class="badge bg-danger">{{ _('Superuser') }}</span>
                                 {% else %}
                                     {% for role in user.roles %}
-                                        <span class="badge bg-primary">{{ role.name }}</span>
+                                        <span class="badge bg-primary">{{ _(role.name) }}</span>
                                     {% endfor %}
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="badge bg-{% if user.is_active %}success{% else %}danger{% endif %}">{{ 'Active' if user.is_active else 'Inactive' }}</span>
+                                <span class="badge bg-{% if user.is_active %}success{% else %}danger{% endif %}">{{ _('Active') if user.is_active else _('Inactive') }}</span>
                             </td>
                             <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
                             <td>
-                                <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-warning">Edit</a>
+                                <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-warning">{{ _('Edit') }}</a>
                                 {% if not user.is_superuser %}
                                 <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                 </form>
                                 {% endif %}
@@ -63,14 +64,14 @@
                     <ul class="pagination">
                         {% if users.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('admin.manage_users', page=users.prev_num) }}">Previous</a>
+                            <a class="page-link" href="{{ url_for('admin.manage_users', page=users.prev_num) }}">{{ _('Previous') }}</a>
                         </li>
                         {% endif %}
 
                         {% for page_num in users.iter_pages() %}
                             {% if page_num %}
                                 {% if page_num == users.page %}
-                                <li class="page-item active">
+                                <li class="page-item active" aria-current="page">
                                     <span class="page-link">{{ page_num }}</span>
                                 </li>
                                 {% else %}
@@ -83,7 +84,7 @@
 
                         {% if users.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('admin.manage_users', page=users.next_num) }}">Next</a>
+                            <a class="page-link" href="{{ url_for('admin.manage_users', page=users.next_num) }}">{{ _('Next') }}</a>
                         </li>
                         {% endif %}
                     </ul>

@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Repair Shop{% endblock %}
+{% block title %}{{ _('Dashboard - Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
+<div class="row mb-4 g-3">
     <div class="col-md-3">
         <div class="card text-center bg-primary text-white">
             <div class="card-body">
-                <h6 class="card-title">Total Tickets</h6>
+                <h6 class="card-title">{{ _('Total Tickets') }}</h6>
                 <h2 class="mb-0">{{ stats.total_tickets }}</h2>
             </div>
         </div>
@@ -15,7 +15,7 @@
     <div class="col-md-3">
         <div class="card text-center bg-warning text-dark">
             <div class="card-body">
-                <h6 class="card-title">In Repair</h6>
+                <h6 class="card-title">{{ _('In Repair') }}</h6>
                 <h2 class="mb-0">{{ stats.repairing }}</h2>
             </div>
         </div>
@@ -23,7 +23,7 @@
     <div class="col-md-3">
         <div class="card text-center bg-success text-white">
             <div class="card-body">
-                <h6 class="card-title">Finished</h6>
+                <h6 class="card-title">{{ _('Finished') }}</h6>
                 <h2 class="mb-0">{{ stats.finished }}</h2>
             </div>
         </div>
@@ -31,28 +31,28 @@
     <div class="col-md-3">
         <div class="card text-center bg-info text-white">
             <div class="card-body">
-                <h6 class="card-title">Customers</h6>
+                <h6 class="card-title">{{ _('Customers') }}</h6>
                 <h2 class="mb-0">{{ stats.total_customers }}</h2>
             </div>
         </div>
     </div>
 </div>
 
-<div class="card">
+<div class="card shadow-sm">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Recent Tickets</h5>
-        <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-sm btn-primary">+ Create Ticket</a>
+        <h5 class="mb-0">{{ _('Recent Tickets') }}</h5>
+        <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-sm btn-primary">{{ _('+ Create Ticket') }}</a>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Ticket #</th>
-                    <th>Customer</th>
-                    <th>Device</th>
-                    <th>Phase</th>
-                    <th>Created</th>
-                    <th>Action</th>
+                    <th>{{ _('Ticket #') }}</th>
+                    <th>{{ _('Customer') }}</th>
+                    <th>{{ _('Device') }}</th>
+                    <th class="text-center">{{ _('Phase') }}</th>
+                    <th>{{ _('Created') }}</th>
+                    <th class="text-end">{{ _('Action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -60,15 +60,18 @@
                 <tr>
                     <td><strong>{{ ticket.ticket_number }}</strong></td>
                     <td>{{ ticket.customer.name }}</td>
-                    <td>{{ ticket.device.display }}</td>
                     <td>
+                        <div>{{ ticket.device.display }}</div>
+                        <small class="text-muted">{{ _('S/N:') }} {{ ticket.device.serial_number or 'N/A' }}</small>
+                    </td>
+                    <td class="text-center">
                         <span class="badge bg-{{ 'secondary' if ticket.current_phase == 'Open' else 'primary' }}">
-                            {{ ticket.current_phase }}
+                            {{ _(ticket.current_phase) }}
                         </span>
                     </td>
                     <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                    <td>
-                        <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                    <td class="text-end">
+                        <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -77,9 +80,9 @@
     </div>
     <!-- Simple Pagination -->
     <div class="card-footer text-center">
-        {% if tickets.has_prev %}<a href="{{ url_for('main.dashboard', page=tickets.prev_num) }}" class="btn btn-sm btn-secondary">Previous</a>{% endif %}
-        <span class="mx-3">Page {{ tickets.page }} of {{ tickets.pages }}</span>
-        {% if tickets.has_next %}<a href="{{ url_for('main.dashboard', page=tickets.next_num) }}" class="btn btn-sm btn-secondary">Next</a>{% endif %}
+        {% if tickets.has_prev %}<a href="{{ url_for('main.dashboard', page=tickets.prev_num) }}" class="btn btn-sm btn-secondary">{{ _('Previous') }}</a>{% endif %}
+        <span class="mx-3">{{ _('Page') }} {{ tickets.page }} {{ _('of') }} {{ tickets.pages }}</span>
+        {% if tickets.has_next %}<a href="{{ url_for('main.dashboard', page=tickets.next_num) }}" class="btn btn-sm btn-secondary">{{ _('Next') }}</a>{% endif %}
     </div>
 </div>
 {% endblock %}

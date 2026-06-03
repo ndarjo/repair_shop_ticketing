@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+{% block title %}{{ _('Invoice') }} {{ invoice.invoice_number }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4 mb-5">
     <div class="card shadow-sm border-0">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center p-3">
-            <h4 class="mb-0"><i class="bi bi-receipt-cutoff me-2"></i>Invoice Details</h4>
+            <h4 class="mb-0"><i class="bi bi-receipt-cutoff me-2"></i>{{ _('Invoice Details') }}</h4>
             <span class="badge bg-{{ 'success' if invoice.status == 'Paid' else 'warning' if invoice.status == 'Partial' else 'info' }} rounded-pill px-3">
-                {{ invoice.status }}
+                {{ _(invoice.status) }}
             </span>
         </div>
         <div class="card-body p-4">
@@ -19,27 +19,27 @@
                             <img src="{{ url_for('static', filename='uploads/logos/' + shop_info.logo_path) }}" alt="Logo" height="50" class="me-3">
                         {% endif %}
                         <div>
-                            <h6 class="text-uppercase text-muted small fw-bold mb-1">Invoice From:</h6>
-                            <h5 class="mb-0">{{ shop_info.shop_name if shop_info else 'Repair Shop Ticketing' }}</h5>
+                            <h6 class="text-uppercase text-muted small fw-bold mb-1">{{ _('Invoice From:') }}</h6>
+                            <h5 class="mb-0">{{ shop_info.shop_name if shop_info else _('Repair Shop Ticketing') }}</h5>
                         </div>
                     </div>
-                    <p class="text-muted small mb-1">{{ shop_info.shop_address if shop_info else 'System Generated Invoice' }}</p>
+                    <p class="text-muted small mb-1">{{ shop_info.shop_address if shop_info else _('System Generated Invoice') }}</p>
                     {% if shop_info and (shop_info.shop_phone or shop_info.shop_email) %}
                         <p class="text-muted small mb-0">{{ shop_info.shop_phone or '' }} {{ '| ' + shop_info.shop_email if shop_info.shop_email else '' }}</p>
                     {% endif %}
 
-                    <h6 class="text-uppercase text-muted small fw-bold mt-3">Bill To:</h6>
+                    <h6 class="text-uppercase text-muted small fw-bold mt-3">{{ _('Bill To:') }}</h6>
                     <h5 class="mb-0">{{ invoice.ticket.customer.name }}</h5>
                     <p class="mb-0">{{ invoice.ticket.customer.phone }}</p>
                     <p class="text-muted small">{{ invoice.ticket.customer.address or '' }}</p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <h3 class="mb-0">{{ invoice.invoice_number }}</h3>
-                    <p class="text-muted small">Date: {{ invoice.created_at.strftime('%d %b %Y') }}</p>
+                    <p class="text-muted small">{{ _('Date:') }} {{ invoice.created_at.strftime('%d %b %Y') }}</p>
                     
-                    <h6 class="text-uppercase text-muted small fw-bold mt-3">Device Info:</h6>
-                    <p class="mb-0"><strong>{{ invoice.ticket.device.display }}</strong></p>
-                    <p class="text-muted small">Ticket: {{ invoice.ticket.ticket_number }}</p>
+                    <h6 class="text-uppercase text-muted small fw-bold mt-3">{{ _('Device Info:') }}</h6>
+                    <p class="mb-0"><strong>{{ invoice.ticket.device.display }}</strong> ({{ _('S/N:') }} {{ invoice.ticket.device.serial_number or _('N/A') }})</p>
+                    <p class="text-muted small">{{ _('Ticket:') }} {{ invoice.ticket.ticket_number }}</p>
                 </div>
             </div>
 
@@ -47,16 +47,16 @@
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col">Description</th>
-                            <th scope="col" class="text-center">Qty</th>
-                            <th scope="col" class="text-end">Unit Price</th>
-                            <th scope="col" class="text-end">Total</th>
+                            <th scope="col">{{ _('Description') }}</th>
+                            <th scope="col" class="text-center">{{ _('Qty') }}</th>
+                            <th scope="col" class="text-end">{{ _('Unit Price') }}</th>
+                            <th scope="col" class="text-end">{{ _('Total') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for ts in invoice.ticket.ticket_services %}
                         <tr>
-                            <td>{{ ts.service.name }} <span class="badge bg-light text-dark border ms-1 small">Service</span></td>
+                            <td>{{ _(ts.service.name) }} <span class="badge bg-light text-dark border ms-1 small">{{ _('Service') }}</span></td>
                             <td class="text-center">{{ ts.quantity }}</td>
                             <td class="text-end">{{ currency_symbol }}{{ "{:,.{}f}".format(ts.price_charged, currency_decimals) }}</td>
                             <td class="text-end">{{ currency_symbol }}{{ "{:,.{}f}".format(ts.price_charged * ts.quantity, currency_decimals) }}</td>
@@ -65,7 +65,7 @@
                         
                         {% for item in invoice.items %}
                         <tr>
-                            <td>{{ item.description }} <span class="badge bg-light text-dark border ms-1 small">Part</span></td>
+                            <td>{{ item.description }} <span class="badge bg-light text-dark border ms-1 small">{{ _('Part') }}</span></td>
                             <td class="text-center">{{ item.quantity }}</td>
                             <td class="text-end">{{ currency_symbol }}{{ "{:,.{}f}".format(item.unit_price, currency_decimals) }}</td>
                             <td class="text-end">{{ currency_symbol }}{{ "{:,.{}f}".format(item.total_price, currency_decimals) }}</td>
@@ -79,17 +79,17 @@
                 <div class="col-md-5">
                     <table class="table table-sm table-borderless">
                         <tr>
-                            <td class="text-muted">Subtotal:</td>
+                            <td class="text-muted">{{ _('Subtotal:') }}</td>
                             <td class="text-end fw-bold">{{ currency_symbol }}{{ "{:,.{}f}".format(invoice.subtotal + invoice.spare_parts_total, currency_decimals) }}</td>
                         </tr>
                         {% if invoice.full_payment_received > 0 %}
                         <tr>
-                            <td class="text-muted">Total Paid:</td>
+                            <td class="text-muted">{{ _('Total Paid:') }}</td>
                             <td class="text-end text-success fw-bold">-{{ currency_symbol }}{{ "{:,.{}f}".format(invoice.full_payment_received, currency_decimals) }}</td>
                         </tr>
                         {% endif %}
                         <tr class="border-top">
-                            <td class="pt-2"><h5 class="mb-0">Balance Due:</h5></td>
+                            <td class="pt-2"><h5 class="mb-0">{{ _('Balance Due:') }}</h5></td>
                             <td class="text-end pt-2 text-primary"><h5 class="mb-0 fw-bold">{{ currency_symbol }}{{ "{:,.{}f}".format(invoice.remaining_balance, currency_decimals) }}</h5></td>
                         </tr>
                     </table>
@@ -98,12 +98,12 @@
 
             {% if invoice.payments %}
             <div class="mt-4 pt-3 border-top">
-                <h6 class="text-uppercase text-muted small fw-bold mb-3">Recent Payments:</h6>
+                <h6 class="text-uppercase text-muted small fw-bold mb-3">{{ _('Recent Payments:') }}</h6>
                 <div class="row row-cols-1 row-cols-md-3 g-3">
                     {% for payment in invoice.payments %}
                     <div class="col">
                         <div class="p-2 border rounded small bg-light">
-                            <strong>{{ payment.paid_at.strftime('%Y-%m-%d') }}</strong> - {{ payment.payment_method }}<br>
+                            <strong>{{ payment.paid_at.strftime('%Y-%m-%d') }}</strong> - {{ _(payment.payment_method) }}<br>
                             <span class="text-primary">{{ currency_symbol }}{{ "{:,.{}f}".format(payment.amount, currency_decimals) }}</span>
                         </div>
                     </div>
@@ -113,11 +113,11 @@
             {% endif %}
         </div>
         <div class="card-footer bg-white border-0 p-4 text-center">
-            <a href="{{ url_for('ticket.ticket_detail', ticket_id=invoice.ticket_id) }}" class="btn btn-outline-secondary px-4 me-2">
-                <i class="bi bi-arrow-left me-1"></i> Back to Ticket
+            <a href="{{ url_for('ticket.ticket_detail', ticket_id=invoice.ticket_id) }}" class="btn btn-outline-secondary px-4 me-2">{{ _('Back to Ticket') }}
+                <i class="bi bi-arrow-left me-1"></i>
             </a>
-            <button onclick="window.print()" class="btn btn-primary px-4">
-                <i class="bi bi-printer me-1"></i> Print Invoice
+            <button id="printInvoiceBtn" class="btn btn-primary px-4">{{ _('Print Invoice') }}
+                <i class="bi bi-printer me-1"></i>
             </button>
         </div>
     </div>

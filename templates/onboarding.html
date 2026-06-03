@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Initial Setup - Repair Shop') }}{% endblock %}
+{% block content %}
+<div class="container py-3 py-md-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h3 class="mb-0">{{ _('System Onboarding') }}</h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-tools fa-3x text-primary mb-3"></i>
+                        <p class="lead">{{ _('Welcome! Let\'s get your repair shop configured for the first time.') }}</p>
+                    </div>
+
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3"><i class="fas fa-store me-2"></i>{{ _('Shop Identity') }}</h5>
+                            <div class="mb-3">
+                                <label class="form-label">{{ _('Shop Name') }}</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-heading"></i></span>
+                                    <input type="text" name="shop_name" class="form-control" value="{{ settings.shop_name }}" required placeholder="{{ _('e.g., QuickFix Tech Solutions') }}">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ _('Address') }}</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                                    <textarea name="shop_address" class="form-control" rows="2" placeholder="{{ _('Your physical shop location...') }}"></textarea>
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ _('Phone') }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                        <input type="tel" name="shop_phone" class="form-control" placeholder="{{ _('+1 (555) 000-0000') }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ _('Email') }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                        <input type="email" name="shop_email" class="form-control" placeholder="{{ _('contact@yourshop.com') }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <h5 class="border-bottom pb-2 mb-3"><i class="fas fa-globe me-2"></i>{{ _('Regional Settings') }}</h5>
+                            <div class="mb-3">
+                                <label class="form-label">{{ _('System Language') }}</label>
+                                <select name="language" class="form-select">
+                                    {% for code, name in languages.items() %}
+                                    <option value="{{ code }}" {% if current_user.language_preference == code %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">{{ _('Select the primary language for the application interface.') }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{{ _('Primary Currency') }}</label>
+                                <select name="currency" class="form-select">
+                                    <option value="USD" {% if current_user.currency == 'USD' %}selected{% endif %}>{{ _('USD ($) - US Dollar') }}</option>
+                                    <option value="IDR" {% if current_user.currency == 'IDR' %}selected{% endif %}>{{ _('IDR (Rp) - Indonesian Rupiah') }}</option>
+                                    <option value="EUR" {% if current_user.currency == 'EUR' %}selected{% endif %}>{{ _('EUR (€) - Euro') }}</option>
+                                    <option value="GBP" {% if current_user.currency == 'GBP' %}selected{% endif %}>{{ _('GBP (£) - British Pound') }}</option>
+                                </select>
+                                <div class="form-text">{{ _('This will be used for all invoices and financial reports.') }}</div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info small mb-4">
+                            <i class="fas fa-info-circle me-2"></i> {{ _('You can change these settings later in the Admin Panel.') }}
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg py-3">{{ _('Complete Setup & Launch Dashboard') }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

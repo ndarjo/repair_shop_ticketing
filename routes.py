@@ -3,13 +3,62 @@ from flask_login import login_required, current_user, login_user, logout_user
 from werkzeug.utils import secure_filename
 from datetime import datetime, timezone
 from sqlalchemy import desc, or_, func
+from sqlalchemy.orm import joinedload
 from models import db, User, Role, Permission, Customer, Device, Ticket, Note, Payment, PhaseLog, Service, SparePart, Invoice, InvoiceItem, TicketService, CommonProblem, ShopSetting
+import decimal
 from decimal import Decimal
+from app import limiter
+from flask_babel import _
+import hashlib
 import uuid
 from functools import wraps
 import json
 import io
 import os
+import subprocess
+import shutil
+
+def safe_decimal(value, default='0.00'):
+    """Helper to convert string to Decimal without crashing on invalid input"""
+    try:
+        if isinstance(value, Decimal):
+            return value
+        if value is None or str(value).strip() == '':
+            return Decimal(default)
+        return Decimal(str(value).replace(',', ''))
+    except (ValueError, TypeError, decimal.InvalidOperation):
+        return Decimal(default)
+
+def get_logical_backup_data():
+    """Helper to extract all critical system data for JSON backup"""
+    return {
+        'customers': [{
+            'id': c.id, 'name': c.name, 'phone': c.phone, 'address': c.address, 
+            'created_at': c.created_at.isoformat() if c.created_at else None
+        } for c in Customer.query.all()],
+        'devices': [{
+            'id': d.id, 'customer_id': d.customer_id, 'device_type': d.device_type, 
+            'brand': d.brand, 'model_number': d.model_number, 'serial_number': d.serial_number,
+            'cpu': d.cpu, 'ram': d.ram, 'storage_type': d.storage_type, 
+            'storage_capacity': d.storage_capacity, 'color': d.color, 'notes': d.notes,
+            'created_at': d.created_at.isoformat() if d.created_at else None
+        } for d in Device.query.all()],
+        'tickets': [{
+            'id': t.id, 'ticket_number': t.ticket_number, 'customer_id': t.customer_id, 
+            'device_id': t.device_id, 'assigned_to': t.assigned_to, 
+            'problem_description': t.problem_description, 'items_included': t.items_included,
+            'current_phase': t.current_phase, 'estimated_cost': str(t.estimated_cost),
+            'actual_cost': str(t.actual_cost), 'device_picked_up': t.device_picked_up,
+            'picked_up_date': t.picked_up_date.isoformat() if t.picked_up_date else None,
+            'created_at': t.created_at.isoformat() if t.created_at else None
+        } for t in Ticket.query.all()],
+        'shop_settings': [{
+            'shop_name': s.shop_name, 'shop_address': s.shop_address,
+            'shop_phone': s.shop_phone, 'shop_email': s.shop_email,
+            'logo_path': s.logo_path,
+            'setup_completed': s.setup_completed
+        } for s in ShopSetting.query.all()]
+    }
 
 # Create blueprints cleanly
 auth_bp = Blueprint('auth', __name__)
@@ -19,6 +68,7 @@ customer_bp = Blueprint('customer', __name__)
 admin_bp = Blueprint('admin', __name__)
 report_bp = Blueprint('report', __name__)
 device_bp = Blueprint('device', __name__)
+onboarding_bp = Blueprint('onboarding', __name__)
 
 
 # ==================== PERMISSION DECORATORS ====================
@@ -28,14 +78,15 @@ def require_permission(permission_name):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
-                if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                if request.mimetype == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'error': 'Authentication required'}), 401
-                flash('Please log in first.', 'error')
+                flash(_('Please log in first.'), 'error')
                 return redirect(url_for('auth.login'))
             if not current_user.has_permission(permission_name):
-                if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                current_app.logger.warning(f"Access denied for user {current_user.username} to permission {permission_name}")
+                if request.mimetype == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'error': 'Permission denied'}), 403
-                flash('You do not have permission to access this page.', 'error')
+                flash(_('You do not have permission to access this page.'), 'error')
                 return redirect(url_for('main.dashboard'))
             return f(*args, **kwargs)
         return decorated_function
@@ -48,10 +99,10 @@ def require_superuser():
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
-                flash('Please log in first.', 'error')
+                flash(_('Please log in first.'), 'error')
                 return redirect(url_for('auth.login'))
             if not current_user.is_superuser:
-                flash('You do not have permission to access this page.', 'error')
+                flash(_('You do not have permission to access this page.'), 'error')
                 return redirect(url_for('main.dashboard'))
             return f(*args, **kwargs)
         return decorated_function
@@ -60,19 +111,37 @@ def require_superuser():
 
 # ==================== AUTH ROUTES ====================
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
+    current_app.logger.debug(f"Login route accessed. Method: {request.method}, Mimetype: {request.mimetype}, Content-Type: {request.content_type}")
+
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+
+        if not username or not password:
+            flash(_('Username and password are required'), 'error')
+            return render_template('login.html')
         
-        user = User.query.filter_by(username=username).first()
+        # PostgreSQL is case-sensitive; use func.lower to ensure case-insensitive login
+        user = User.query.filter(func.lower(User.username) == func.lower(username)).first()
         
-        if user and user.check_password(password) and user.is_active:
-            login_user(user)
-            flash('Logged in successfully!', 'success')
-            return redirect(url_for('main.dashboard'))
+        if user:
+            if user.check_password(password):
+                if user.is_active:
+                    login_user(user)
+                    current_app.logger.info(f"User '{user.username}' logged in successfully.")
+                    flash(_('Logged in successfully!'), 'success')
+                    return redirect(url_for('main.dashboard'))
+                else:
+                    current_app.logger.warning(f"Login attempted for inactive user: '{username}'")
+                    flash(_('Your account is deactivated. Please contact an administrator.'), 'error')
+            else:
+                current_app.logger.warning(f"Incorrect password for username: '{username}'")
+                flash(_('Invalid username or password'), 'error')
         else:
-            flash('Invalid username or password', 'error')
+            current_app.logger.warning(f"Failed login attempt for username: '{username}'")
+            flash(_('Invalid username or password'), 'error')
     
     return render_template('login.html')
 
@@ -81,7 +150,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash('You have been logged out.', 'success')
+    flash(_('You have been logged out.'), 'success')
     return redirect(url_for('auth.login'))
 
 
@@ -95,11 +164,11 @@ def profile():
         if action == 'change_username':
             new_username = request.form.get('new_username')
             if User.query.filter_by(username=new_username).first():
-                flash('Username already exists', 'error')
+                flash(_('Username already exists'), 'error')
             else:
                 current_user.username = new_username
                 db.session.commit()
-                flash('Username changed successfully!', 'success')
+                flash(_('Username changed successfully!'), 'success')
         
         elif action == 'change_password':
             old_password = request.form.get('old_password')
@@ -107,23 +176,26 @@ def profile():
             confirm_password = request.form.get('confirm_password')
             
             if not current_user.check_password(old_password):
-                flash('Current password is incorrect', 'error')
+                flash(_('Current password is incorrect'), 'error')
             elif new_password != confirm_password:
-                flash('New passwords do not match', 'error')
+                flash(_('New passwords do not match'), 'error')
             elif len(new_password) < 6:
-                flash('Password must be at least 6 characters', 'error')
+                flash(_('Password must be at least 6 characters'), 'error')
             else:
                 current_user.set_password(new_password)
                 db.session.commit()
-                flash('Password changed successfully!', 'success')
+                flash(_('Password changed successfully!'), 'success')
         
         elif action == 'change_theme':
             theme = request.form.get('theme')
             color = request.form.get('color_theme')
+            language = request.form.get('language')
             if theme in ['light', 'dark']:
                 current_user.theme_preference = theme
             if color in ['blue', 'green', 'purple', 'red', 'orange']:
                 current_user.color_theme = color
+            if language in current_app.config['LANGUAGES']:
+                current_user.language_preference = language
 
             # Restrict currency settings to superuser or manager
             if current_user.is_superuser or current_user.has_role('manager'):
@@ -135,11 +207,51 @@ def profile():
                     current_user.currency_decimals = currency_decimals
 
             db.session.commit()
-            flash('Preferences updated successfully!', 'success')
+            flash(_('Preferences updated successfully!'), 'success')
         
         return redirect(url_for('auth.profile'))
     
     return render_template('profile.html')
+
+
+# ==================== ONBOARDING ROUTES ====================
+@onboarding_bp.route('/setup', methods=['GET', 'POST'])
+@login_required
+def setup():
+    """Initial system setup wizard for superusers"""
+    if not current_user.is_superuser:
+        flash(_('Only administrators can access the setup wizard.'), 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    settings = ShopSetting.query.first()
+    if settings and settings.setup_completed:
+        return redirect(url_for('main.dashboard'))
+    
+    if request.method == 'POST':
+        try:
+            settings.shop_name = request.form.get('shop_name', 'Repair Shop')
+            settings.shop_address = request.form.get('shop_address')
+            settings.shop_phone = request.form.get('shop_phone')
+            settings.shop_email = request.form.get('shop_email')
+            
+            currency = request.form.get('currency', 'USD')
+            if currency in ['USD', 'IDR', 'EUR', 'GBP']:
+                current_user.currency = currency
+            
+            language = request.form.get('language')
+            if language in current_app.config['LANGUAGES']:
+                current_user.language_preference = language
+                
+            settings.setup_completed = True
+            db.session.commit()
+            flash('Welcome! Your shop configuration is complete.', 'success')
+            return redirect(url_for('main.dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Onboarding setup failed: {str(e)}")
+            flash('An error occurred during initial setup. Please try again.', 'error')
+            
+    return render_template('onboarding.html', settings=settings)
 
 
 # ==================== MAIN ROUTES ====================
@@ -150,7 +262,11 @@ def dashboard():
     page = request.args.get('page', 1, type=int)
     
     # FIXED: Filter out tickets that have already been picked up by customers
-    query = Ticket.query.filter(Ticket.current_phase != 'Already Taken', Ticket.is_archived == False).order_by(desc(Ticket.created_at))
+    query = Ticket.query.options(
+        joinedload(Ticket.customer), 
+        joinedload(Ticket.device)
+    ).filter(Ticket.current_phase != 'Already Taken', Ticket.is_archived == False).order_by(desc(Ticket.created_at))
+    
     tickets = query.paginate(page=page, per_page=10)
     
     # Single aggregate query for status counts
@@ -185,10 +301,13 @@ def tickets_list():
         query = Ticket.query.filter_by(current_phase='Already Taken', is_archived=False)
     else:
         # Show everything currently in the shop
-        query = Ticket.query.filter(Ticket.current_phase != 'Already Taken', Ticket.is_archived == False)
+        query = Ticket.query.options(
+            joinedload(Ticket.customer), 
+            joinedload(Ticket.device)
+        ).filter(Ticket.current_phase != 'Already Taken', Ticket.is_archived == False)
         
     query = query.order_by(desc(Ticket.created_at))
-    tickets = query.paginate(page=page, per_page=20)
+    tickets = query.paginate(page=page, per_page=15)
     return render_template('tickets_list.html', tickets=tickets, current_view=view)
 
 @ticket_bp.route('/new', methods=['GET', 'POST'])
@@ -214,17 +333,17 @@ def new_ticket():
         created_time = request.form.get('created_time')
         
         # Financial fields from form
-        down_payment = Decimal(request.form.get('down_payment_amount', '0') or '0')
+        down_payment = safe_decimal(request.form.get('down_payment_amount'))
         payment_method = request.form.get('payment_method')
         
         if not device_id:
-            flash('Please select a device', 'error')
+            flash(_('Please select a device'), 'error')
             return redirect(url_for('ticket.new_ticket'))
         
         # Verify device ownership to prevent data mismatch
         device = db.session.get(Device, device_id)
         if not device or str(device.customer_id) != str(customer_id):
-            flash('Security Error: Selected device does not belong to the selected customer.', 'error')
+            flash(_('Security Error: Selected device does not belong to the selected customer.'), 'error')
             return redirect(url_for('ticket.new_ticket'))
 
         try:
@@ -261,27 +380,31 @@ def new_ticket():
                     ticket_id=ticket.id,
                     user_id=current_user.id,
                     amount=down_payment,
-                    payment_method=payment_method or 'Cash',
+                    payment_method=payment_method or _('Cash'),
                     paid_at=created_datetime
                 )
                 db.session.add(payment)
                 
+                # Automated internal note for down payment
                 payment_note = Note(
                     ticket_id=ticket.id,
                     user_id=current_user.id,
-                    content=f"Initial down payment of {down_payment} received via {payment_method or 'Cash'}.",
+                    content=_('Initial down payment of %(amount)s received via %(method)s.', amount=down_payment, method=payment_method or _('Cash')),
                     is_internal=True
                 )
                 db.session.add(payment_note)
 
             db.session.commit()
+            current_app.logger.info(f"New ticket created: {ticket_number} by user {current_user.username}")
         except Exception as e:
             db.session.rollback()
-            flash(f'Error creating ticket: {str(e)}', 'error')
+            current_app.logger.error(f"Error creating ticket: {str(e)}")
+            flash(_('Error creating ticket: %(error)s', error=str(e)), 'error')
             return redirect(url_for('ticket.new_ticket'))
         
-        flash(f'Ticket {ticket_number} created successfully!', 'success')
-        return redirect(url_for('main.dashboard'))
+        # NAVIGATION POLISH: Redirect to detail page immediately so staff can add services/parts
+        flash(_('Ticket %(ticket_num)s created successfully. You can now add services or parts.', ticket_num=ticket_number), 'success')
+        return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
         
     return render_template('ticket_form.html', 
                            customers=customers, 
@@ -320,7 +443,7 @@ def reports():
         Ticket, Payment.ticket_id == Ticket.id
     ).join(Customer, Ticket.customer_id == Customer.id)
     if selected_month:
-        rev_q = rev_q.filter(func.strftime('%Y-%m', Payment.paid_at) == selected_month)
+        rev_q = rev_q.filter(func.to_char(Payment.paid_at, 'YYYY-MM') == selected_month)
     gross_revenue = rev_q.scalar() or Decimal('0.00')
     
     # Calculate Total Hardware Cost
@@ -329,7 +452,7 @@ def reports():
     )
     if selected_month:
         cost_q = cost_q.join(Invoice, InvoiceItem.invoice_id == Invoice.id).filter(
-            func.strftime('%Y-%m', Invoice.created_at) == selected_month
+            func.to_char(Invoice.created_at, 'YYYY-MM') == selected_month
         )
     hardware_cost = cost_q.scalar() or Decimal('0.00')
 
@@ -343,14 +466,14 @@ def reports():
     }
 
     # Get available months from payments and invoices for filtering
-    months_p = db.session.query(func.strftime('%Y-%m', Payment.paid_at)).distinct().all()
-    months_i = db.session.query(func.strftime('%Y-%m', Invoice.created_at)).distinct().all()
+    months_p = db.session.query(func.to_char(Payment.paid_at, 'YYYY-MM')).distinct().all()
+    months_i = db.session.query(func.to_char(Invoice.created_at, 'YYYY-MM')).distinct().all()
     available_months = sorted(list(set([m[0] for m in (months_p + months_i) if m[0]])), reverse=True)
 
     # Fetch recent tickets for the report table
     recent_tickets_q = Ticket.query
     if selected_month:
-        recent_tickets_q = recent_tickets_q.filter(func.strftime('%Y-%m', Ticket.created_at) == selected_month)
+        recent_tickets_q = recent_tickets_q.filter(func.to_char(Ticket.created_at, 'YYYY-MM') == selected_month)
     recent_tickets = recent_tickets_q.order_by(desc(Ticket.created_at)).limit(5).all()
 
     return render_template('reports.html', 
@@ -370,7 +493,7 @@ def finance_report():
         Ticket, Payment.ticket_id == Ticket.id
     ).join(Customer, Ticket.customer_id == Customer.id)
     if selected_month:
-        rev_q = rev_q.filter(func.strftime('%Y-%m', Payment.paid_at) == selected_month)
+        rev_q = rev_q.filter(func.to_char(Payment.paid_at, 'YYYY-MM') == selected_month)
     total_revenue = rev_q.scalar() or Decimal('0.00')
     
     # Total wholesale cost of all hardware replacements used
@@ -379,7 +502,7 @@ def finance_report():
     )
     if selected_month:
         cost_q = cost_q.join(Invoice, InvoiceItem.invoice_id == Invoice.id).filter(
-            func.strftime('%Y-%m', Invoice.created_at) == selected_month
+            func.to_char(Invoice.created_at, 'YYYY-MM') == selected_month
         )
     total_hardware_cost = cost_q.scalar() or Decimal('0.00')
     
@@ -392,7 +515,7 @@ def finance_report():
         Customer, Ticket.customer_id == Customer.id
     )
     if selected_month:
-        ph_q = ph_q.filter(func.strftime('%Y-%m', Payment.paid_at) == selected_month)
+        ph_q = ph_q.filter(func.to_char(Payment.paid_at, 'YYYY-MM') == selected_month)
     payment_history = ph_q.order_by(desc(Payment.paid_at)).all()
     
     # Detailed material usage (Standard Parts + Manual Items)
@@ -404,7 +527,7 @@ def finance_report():
         Customer, Ticket.customer_id == Customer.id
     )
     if selected_month:
-        mu_q = mu_q.filter(func.strftime('%Y-%m', Invoice.created_at) == selected_month)
+        mu_q = mu_q.filter(func.to_char(Invoice.created_at, 'YYYY-MM') == selected_month)
     material_usage = mu_q.order_by(desc(InvoiceItem.id)).all()
 
     # Monthly breakdown for financial analysis
@@ -412,7 +535,7 @@ def finance_report():
     
     # Aggregate Revenue by Month
     rev_results = db.session.query(
-        func.strftime('%Y-%m', Payment.paid_at).label('month'),
+        func.to_char(Payment.paid_at, 'YYYY-MM').label('month'),
         func.sum(Payment.amount)
     ).join(Ticket, Payment.ticket_id == Ticket.id)\
      .join(Customer, Ticket.customer_id == Customer.id)\
@@ -424,7 +547,7 @@ def finance_report():
 
     # Aggregate Hardware Costs by Month (based on Invoice date)
     cost_results = db.session.query(
-        func.strftime('%Y-%m', Invoice.created_at).label('month'),
+        func.to_char(Invoice.created_at, 'YYYY-MM').label('month'),
         func.sum(InvoiceItem.cost_price * InvoiceItem.quantity)
     ).join(Invoice, InvoiceItem.invoice_id == Invoice.id)\
      .group_by('month').all()
@@ -456,7 +579,7 @@ def finance_report():
 def admin_dashboard():
     """Admin control panel requested by base.html dropdown"""
     if not (current_user.is_superuser or current_user.has_role('manager')):
-        flash('You do not have permission to access the admin panel.', 'error')
+        flash(_('You do not have permission to access the admin panel.'), 'error')
         return redirect(url_for('main.dashboard'))
     return render_template('admin/dashboard.html')
 
@@ -490,7 +613,7 @@ def shop_settings():
             settings.logo_path = filename
             
         db.session.commit()
-        flash('Shop settings updated successfully.', 'success')
+        flash(_('Shop settings updated successfully.'), 'success')
         return redirect(url_for('admin.shop_settings'))
         
     return render_template('admin/settings.html', settings=settings)
@@ -523,13 +646,13 @@ def add_part_admin():
     stock = request.form.get('stock_quantity', 0, type=int)
     
     if not name or selling_price is None:
-        flash('Part name and selling price are required.', 'error')
+        flash(_('Part name and selling price are required.'), 'error')
     else:
-        part = SparePart(name=name, description=description, cost=cost or 0.0, 
+        part = SparePart(name=name, description=description, cost=cost or Decimal('0.00'), 
                          selling_price=selling_price, stock_quantity=stock)
         db.session.add(part)
         db.session.commit()
-        flash(f'Spare part "{name}" added to inventory.', 'success')
+        flash(_('Spare part "%(name)s" added to inventory.', name=name), 'success')
     return redirect(url_for('admin.manage_parts'))
 
 @admin_bp.route('/parts/edit/<int:part_id>', methods=['POST'], endpoint='edit_part_admin')
@@ -539,7 +662,7 @@ def edit_part_admin(part_id):
     """Update existing spare part details and global pricing"""
     part = db.session.get(SparePart, part_id)
     if not part:
-        flash('Part not found.', 'error')
+        flash(_('Part not found.'), 'error')
         return redirect(url_for('admin.manage_parts'))
         
     part.name = request.form.get('name')
@@ -550,7 +673,7 @@ def edit_part_admin(part_id):
     part.is_active = 'is_active' in request.form
     
     db.session.commit()
-    flash(f'Part "{part.name}" updated.', 'success')
+    flash(_('Part "%(name)s" updated.', name=part.name), 'success')
     return redirect(url_for('admin.manage_parts'))
 
 @admin_bp.route('/parts/delete/<int:part_id>', methods=['POST'], endpoint='delete_part_admin')
@@ -563,10 +686,10 @@ def delete_part_admin(part_id):
         try:
             db.session.delete(part)
             db.session.commit()
-            flash(f'Spare part "{part.name}" deleted successfully.', 'success')
+            flash(_('Spare part "%(name)s" deleted successfully.', name=part.name), 'success')
         except Exception:
             db.session.rollback()
-            flash('Cannot delete part because it is linked to existing invoices. Try deactivating it instead.', 'error')
+            flash(_('Cannot delete part because it is linked to existing invoices. Try deactivating it instead.'), 'error')
     return redirect(url_for('admin.manage_parts'))
 
 @admin_bp.route('/services/add', methods=['POST'], endpoint='add_service_admin')
@@ -579,12 +702,12 @@ def add_service_admin():
     price = Decimal(request.form.get('price') or '0')
     
     if not name or price is None:
-        flash('Service name and price are required.', 'error')
+        flash(_('Service name and price are required.'), 'error')
     else:
         service = Service(name=name, description=description, price=price)
         db.session.add(service)
         db.session.commit()
-        flash(f'Service "{name}" created successfully.', 'success')
+        flash(_('Service "%(name)s" created successfully.', name=name), 'success')
     
     return redirect(url_for('admin.manage_services'))
 
@@ -595,7 +718,7 @@ def edit_service_admin(service_id):
     """Update existing repair service details and pricing"""
     service = db.session.get(Service, service_id)
     if not service:
-        flash('Service not found.', 'error')
+        flash(_('Service not found.'), 'error')
         return redirect(url_for('admin.manage_services'))
         
     service.name = request.form.get('name')
@@ -604,7 +727,7 @@ def edit_service_admin(service_id):
     service.is_active = 'is_active' in request.form
     
     db.session.commit()
-    flash(f'Service "{service.name}" updated.', 'success')
+    flash(_('Service "%(name)s" updated.', name=service.name), 'success')
     return redirect(url_for('admin.manage_services'))
 
 @admin_bp.route('/services/delete/<int:service_id>', methods=['POST'], endpoint='delete_service_admin')
@@ -617,10 +740,10 @@ def delete_service_admin(service_id):
         try:
             db.session.delete(service)
             db.session.commit()
-            flash(f'Service "{service.name}" deleted successfully.', 'success')
+            flash(_('Service "%(name)s" deleted successfully.', name=service.name), 'success')
         except Exception:
             db.session.rollback()
-            flash('Cannot delete service because it is linked to existing repairs. Try deactivating it instead.', 'error')
+            flash(_('Cannot delete service because it is linked to existing repairs. Try deactivating it instead.'), 'error')
     return redirect(url_for('admin.manage_services'))
 
 @admin_bp.route('/users', endpoint='manage_users')
@@ -643,7 +766,7 @@ def create_user():
         role_ids = request.form.getlist('roles')
         
         if User.query.filter_by(username=username).first():
-            flash('Username already exists', 'error')
+            flash(_('Username already exists'), 'error')
         else:
             user = User(username=username, full_name=full_name, email=email, is_active=True)
             user.set_password(password)
@@ -652,7 +775,7 @@ def create_user():
                 if role: user.roles.append(role)
             db.session.add(user)
             db.session.commit()
-            flash('User created successfully!', 'success')
+            flash(_('User created successfully!'), 'success')
             return redirect(url_for('admin.manage_users'))
     return render_template('admin/create_user.html', roles=roles)
 
@@ -679,10 +802,10 @@ def edit_user(user_id):
         new_password = request.form.get('password')
         if new_password:
             if len(new_password) < 6:
-                flash('New password must be at least 6 characters', 'error')
+                flash(_('New password must be at least 6 characters'), 'error')
                 return render_template('admin/edit_user.html', user=user, roles=roles, permissions_by_category=permissions_by_category)
             user.set_password(new_password)
-            flash(f"Password for {user.username} has been updated.", "info")
+            flash(_('Password for %(user)s has been updated.', user=user.username), "info")
 
         user.roles = []
         for rid in request.form.getlist('roles'):
@@ -695,7 +818,7 @@ def edit_user(user_id):
             if perm: user.permissions.append(perm)
 
         db.session.commit()
-        flash('User updated!', 'success')
+        flash(_('User updated!'), 'success')
         return redirect(url_for('admin.manage_users'))
     return render_template('admin/edit_user.html', user=user, roles=roles, permissions_by_category=permissions_by_category)
 
@@ -706,37 +829,38 @@ def delete_user(user_id):
     """Permanently delete a user account if no audit dependencies exist"""
     user = db.session.get(User, user_id)
     if not user:
-        flash('User not found.', 'error')
+        flash(_('User not found.'), 'error')
         return redirect(url_for('admin.manage_users'))
 
     if user.is_superuser:
-        flash('Cannot delete a superuser account.', 'error')
+        flash(_('Cannot delete a superuser account.'), 'error')
         return redirect(url_for('admin.manage_users'))
 
     if user.id == current_user.id:
-        flash('Security Error: You cannot delete your own account while logged in.', 'error')
+        flash(_('Security Error: You cannot delete your own account while logged in.'), 'error')
         return redirect(url_for('admin.manage_users'))
 
     try:
         db.session.delete(user)
         db.session.commit()
-        flash(f'User account "{user.username}" deleted successfully.', 'success')
+        flash(_('User account "%(user)s" deleted successfully.', user=user.username), 'success')
     except Exception:
         db.session.rollback()
-        flash(f'Cannot delete "{user.username}" because they have recorded activity (notes, payments, or repair logs). Please deactivate the user instead to preserve audit history.', 'error')
+        flash(_('Cannot delete "%(user)s" because they have recorded activity. Please deactivate them instead.', user=user.username), 'error')
 
     return redirect(url_for('admin.manage_users'))
 
 @admin_bp.route('/problems', methods=['GET', 'POST'])
 @login_required
 @require_superuser()
+@limiter.limit("10 per minute") # Rate limit for adding/deleting problems
 def manage_problems():
     if request.method == 'POST':
         text = request.form.get('problem_text')
         if text and not CommonProblem.query.filter_by(problem_text=text).first():
             db.session.add(CommonProblem(problem_text=text))
             db.session.commit()
-            flash('Common problem added!', 'success')
+            flash(_('Common problem added!'), 'success')
         return redirect(url_for('admin.manage_problems'))
     problems = CommonProblem.query.all()
     return render_template('admin/manage_common_problems.html', problems=problems)
@@ -744,13 +868,14 @@ def manage_problems():
 @admin_bp.route('/problems/delete/<int:problem_id>', methods=['POST'])
 @login_required
 @require_superuser()
+@limiter.limit("10 per minute") # Rate limit for adding/deleting problems
 def delete_problem(problem_id):
     """Remove a common problem from the quick-select list"""
     problem = db.session.get(CommonProblem, problem_id)
     if problem:
         db.session.delete(problem)
         db.session.commit()
-        flash('Common problem deleted.', 'success')
+        flash(_('Common problem deleted.'), 'success')
     return redirect(url_for('admin.manage_problems'))
 
 @admin_bp.route('/backup', methods=['GET', 'POST'])
@@ -760,70 +885,140 @@ def backup():
     if request.method == 'POST':
         backup_type = request.form.get('backup_type')
         if backup_type == 'json_data':
-            data = {
-                'customers': [{
-                    'id': c.id, 'name': c.name, 'phone': c.phone, 'address': c.address, 
-                    'created_at': c.created_at.isoformat() if c.created_at else None
-                } for c in Customer.query.all()],
-                'devices': [{
-                    'id': d.id, 'customer_id': d.customer_id, 'device_type': d.device_type, 
-                    'brand': d.brand, 'model_number': d.model_number, 'serial_number': d.serial_number,
-                    'cpu': d.cpu, 'ram': d.ram, 'storage_type': d.storage_type, 
-                    'storage_capacity': d.storage_capacity, 'color': d.color, 'notes': d.notes,
-                    'created_at': d.created_at.isoformat() if d.created_at else None
-                } for d in Device.query.all()],
-                'tickets': [{
-                    'id': t.id, 'ticket_number': t.ticket_number, 'customer_id': t.customer_id, 
-                    'device_id': t.device_id, 'assigned_to': t.assigned_to, 
-                    'problem_description': t.problem_description, 'items_included': t.items_included,
-                    'current_phase': t.current_phase, 'estimated_cost': str(t.estimated_cost),
-                    'actual_cost': str(t.actual_cost), 'device_picked_up': t.device_picked_up,
-                    'picked_up_date': t.picked_up_date.isoformat() if t.picked_up_date else None,
-                    'created_at': t.created_at.isoformat() if t.created_at else None
-                } for t in Ticket.query.all()]
-            }
+            data = get_logical_backup_data()
             output = io.BytesIO(json.dumps(data, indent=4, default=str).encode('utf-8')) # default=str handles datetime objects
             return send_file(output, mimetype='application/json', as_attachment=True, 
                              download_name=f"logical_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json")
         elif backup_type == 'full_db':
-            db_path = db.engine.url.database # Get the path to the SQLite DB file
-            if os.path.exists(db_path):
-                return send_file(db_path, mimetype='application/octet-stream', as_attachment=True,
-                                 download_name=f"full_db_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.db")
+            # Binary file backup only works for SQLite
+            if 'sqlite' in db.engine.url.drivername:
+                db_path = db.engine.url.database
+                if os.path.exists(db_path):
+                    return send_file(db_path, mimetype='application/octet-stream', as_attachment=True,
+                                     download_name=f"full_db_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.db")
+                flash(_('SQLite database file not found.'), 'error')
+            elif 'postgresql' in db.engine.url.drivername:
+                if not shutil.which('pg_dump'):
+                    flash(_('The "pg_dump" utility was not found in the system path. Please install the PostgreSQL client tools (e.g., sudo apt install postgresql-client) to use this feature.'), 'error')
+                    return redirect(url_for('admin.backup'))
+
+                try:
+                    url = db.engine.url
+                    env = os.environ.copy()
+                    if url.password:
+                        env['PGPASSWORD'] = url.password
+                    
+                    cmd = [
+                        'pg_dump',
+                        '-h', url.host or 'localhost',
+                        '-p', str(url.port or 5432),
+                        '-U', url.username or 'postgres',
+                        '-F', 'c', # Custom format (compressed binary)
+                        url.database
+                    ]
+                    
+                    result = subprocess.run(cmd, env=env, capture_output=True)
+                    
+                    if result.returncode != 0:
+                        raise Exception(result.stderr.decode())
+                        
+                    output = io.BytesIO(result.stdout)
+                    return send_file(output, mimetype='application/octet-stream', as_attachment=True, 
+                                     download_name=f"pg_full_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.dump")
+                except Exception as e:
+                    current_app.logger.error(f"PostgreSQL backup failed: {str(e)}")
+                    flash(_('Error creating PostgreSQL backup: %(error)s', error=str(e)), 'error')
             else:
-                flash('Database file not found.', 'error')
-                return redirect(url_for('admin.backup'))
+                flash(_('Full binary backup is not supported for driver: %(driver)s', driver=db.engine.url.drivername), 'warning')
+        return redirect(url_for('admin.backup'))
     return render_template('admin/backup.html')
 
 @admin_bp.route('/restore', methods=['POST'])
 @login_required
 @require_superuser()
 def restore():
-    """Restore database from an uploaded .db or .json file"""
+    """Restore database from an uploaded .db, .dump or .json file"""
     if 'backup_file' not in request.files:
-        flash('No file selected', 'error')
+        flash(_('No file selected'), 'error')
         return redirect(url_for('admin.backup'))
     
     file = request.files['backup_file']
     if file.filename == '':
-        flash('No file selected', 'error')
+        flash(_('No file selected'), 'error')
         return redirect(url_for('admin.backup'))
 
     if file and file.filename.lower().endswith('.db'):
-        try:
-            db_path = db.engine.url.database
-            # Close connections to allow file overwrite
-            db.session.remove()
-            db.engine.dispose()
+        if 'sqlite' in db.engine.url.drivername:
+            try:
+                db_path = db.engine.url.database
+                # Close connections to allow file overwrite
+                db.session.remove()
+                db.engine.dispose()
+                
+                # Overwrite the database file
+                file.save(db_path)
+                
+                current_app.logger.info(f"System restored from .db file by {current_user.username}")
+                flash(_('System restored successfully from .db file. Please log in again.'), 'success')
+                logout_user()
+                return redirect(url_for('auth.login'))
+            except Exception as e:
+                current_app.logger.error(f"Database restore failed: {str(e)}")
+                flash(_('Error restoring database: %(error)s', error=str(e)), 'error')
+        else:
+            flash(_('Binary .db restore is only supported for SQLite databases.'), 'error')
             
-            # Overwrite the database file
-            file.save(db_path)
-            
-            flash('System restored successfully from .db file. Please log in again.', 'success')
-            logout_user()
-            return redirect(url_for('auth.login'))
-        except Exception as e:
-            flash(f'Error restoring database: {str(e)}', 'error')
+    elif file and file.filename.lower().endswith('.dump'):
+        if 'postgresql' in db.engine.url.drivername:
+            if not shutil.which('pg_restore'):
+                flash(_('The "pg_restore" utility was not found in the system path. Please install the PostgreSQL client tools (e.g., sudo apt install postgresql-client) to use this feature.'), 'error')
+                return redirect(url_for('admin.backup'))
+
+            try:
+                temp_path = os.path.join(current_app.config['BACKUP_DIR'], 'temp_restore.dump')
+                file.save(temp_path)
+                
+                url = db.engine.url
+                env = os.environ.copy()
+                if url.password:
+                    env['PGPASSWORD'] = url.password
+                
+                # IMPORTANT: Close active connections to prevent locks during schema modification
+                db.session.remove()
+                db.engine.dispose()
+
+                # pg_restore -c (clean) drops objects before recreating them.
+                # --if-exists prevents errors if the database is currently empty.
+                # --no-owner and --no-privileges ensure compatibility across different DB users.
+                cmd = [
+                    'pg_restore',
+                    '-h', url.host or 'localhost',
+                    '-p', str(url.port or 5432),
+                    '-U', url.username or 'postgres',
+                    '-d', url.database,
+                    '-c',
+                    '--if-exists',
+                    '--no-owner',
+                    '--no-privileges',
+                    temp_path
+                ]
+                
+                result = subprocess.run(cmd, env=env, capture_output=True)
+                if os.path.exists(temp_path): os.remove(temp_path)
+                
+                # Exit code 1 is often non-fatal warnings in pg_restore
+                if result.returncode not in [0, 1]:
+                    raise Exception(result.stderr.decode())
+
+                current_app.logger.info(f"System restored from .dump file by {current_user.username}")
+                flash(_('System restored successfully from PostgreSQL dump. Please log in again.'), 'success')
+                logout_user()
+                return redirect(url_for('auth.login'))
+            except Exception as e:
+                current_app.logger.error(f"PostgreSQL restore failed: {str(e)}")
+                flash(_('Error restoring PostgreSQL dump: %(error)s', error=str(e)), 'error')
+        else:
+            flash(_('PostgreSQL .dump restore is only supported for PostgreSQL databases.'), 'error')
             
     elif file and file.filename.lower().endswith('.json'):
         try:
@@ -831,17 +1026,21 @@ def restore():
             data = json.load(file)
             count = 0
             for c_data in data.get('customers', []):
-                if not Customer.query.filter_by(phone=c_data['phone']).first():
+                # PII Security: Use the blind index hash for duplicate check during restore
+                p_hash = hashlib.sha256((current_app.config['BLIND_INDEX_SALT'] + c_data['phone']).encode()).hexdigest()
+                if not Customer.query.filter_by(phone_hash=p_hash).first():
                     new_customer = Customer(name=c_data['name'], phone=c_data['phone'], address=c_data.get('address'))
                     db.session.add(new_customer)
                     count += 1
             db.session.commit()
-            flash(f'Import completed. Added {count} new customers from JSON.', 'success')
+            current_app.logger.info(f"Imported {count} customers from JSON by {current_user.username}")
+            flash(_('Import completed. Added %(count)s new customers from JSON.', count=count), 'success')
         except Exception as e:
             db.session.rollback()
-            flash(f'Error importing JSON data: {str(e)}', 'error')
+            current_app.logger.error(f"JSON import failed: {str(e)}")
+            flash(_('Error importing JSON data: %(error)s', error=str(e)), 'error')
     else:
-        flash('Invalid file format. Please upload a .db or .json file.', 'error')
+        flash(_('Invalid file format. Please upload a .db, .dump or .json file.'), 'error')
         
     return redirect(url_for('admin.backup'))
 
@@ -851,7 +1050,7 @@ def restore():
 def ticket_detail(ticket_id):
     ticket = db.session.get(Ticket, ticket_id)
     if not ticket:
-        flash('Ticket not found', 'error')
+        flash(_('Ticket not found'), 'error')
         return redirect(url_for('main.dashboard'))
     
     # FIXED: Added context for services and spare parts management
@@ -870,7 +1069,7 @@ def add_service(ticket_id):
     """Attach a standardized service to the ticket"""
     ticket = db.session.get(Ticket, ticket_id)
     if ticket and ticket.current_phase == 'Already Taken':
-        flash('This ticket is locked and cannot be modified.', 'error')
+        flash(_('This ticket is locked and cannot be modified.'), 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     # Ensure a draft invoice exists to hold the charges
@@ -889,17 +1088,22 @@ def add_service(ticket_id):
     
     service = db.session.get(Service, service_id)
     if service:
-        ts = TicketService(
-            ticket_id=ticket_id,
-            service_id=service_id,
-            quantity=quantity,
-            price_charged=service.price
-        )
-        db.session.add(ts)
-        db.session.flush()
-        invoice.calculate_total()
-        db.session.commit()
-        flash(f'Service "{service.name}" added.', 'success')
+        try:
+            ts = TicketService(
+                ticket_id=ticket_id,
+                service_id=service_id,
+                quantity=quantity,
+                price_charged=service.price
+            )
+            db.session.add(ts)
+            db.session.flush()
+            invoice.calculate_total()
+            db.session.commit()
+            flash(_('Service "%(name)s" added.', name=service.name), 'success')
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Failed to add service to ticket {ticket_id}: {str(e)}")
+            flash(_('Database error: Service could not be added.'), 'error')
     return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
 @ticket_bp.route('/remove_service/<int:ticket_id>/<int:ts_id>', methods=['POST'])
@@ -909,7 +1113,7 @@ def remove_service(ticket_id, ts_id):
     """Remove a service entry from the ticket"""
     ticket = db.session.get(Ticket, ticket_id)
     if ticket and ticket.current_phase == 'Already Taken':
-        flash('This ticket is locked and cannot be modified.', 'error')
+        flash(_('This ticket is locked and cannot be modified.'), 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     ts = db.session.get(TicketService, ts_id)
@@ -920,7 +1124,7 @@ def remove_service(ticket_id, ts_id):
         if invoice:
             invoice.calculate_total()
         db.session.commit()
-        flash('Service removed.', 'success')
+        flash(_('Service removed.'), 'success')
     return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
 @ticket_bp.route('/add_part/<int:ticket_id>', methods=['POST'])
@@ -930,13 +1134,14 @@ def add_part(ticket_id):
     """Record a spare part replacement (manages draft invoice automatically)"""
     ticket = db.session.get(Ticket, ticket_id)
     if ticket and ticket.current_phase == 'Already Taken':
-        flash('This ticket is locked and cannot be modified.', 'error')
+        flash(_('This ticket is locked and cannot be modified.'), 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     part_id = request.form.get('part_id')
     manual_name = request.form.get('manual_name')
     quantity = request.form.get('quantity', 1, type=int)
     price_val = request.form.get('price', '').strip()
+    cost_val = request.form.get('cost', '').strip()
     
     description = ""
     item_price = Decimal('0.00')
@@ -955,11 +1160,14 @@ def add_part(ticket_id):
         elif manual_name:
             description = manual_name
             if not price_val:
-                flash('Price is required for manual parts.', 'error')
+                flash(_('Price is required for manual parts.'), 'error')
                 return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
             item_price = Decimal(price_val)
+            # Use manually entered wholesale cost if provided
+            if cost_val:
+                item_cost = Decimal(cost_val)
     except Exception:
-        flash('Invalid price format entered. Please use numbers only.', 'error')
+        flash(_('Invalid price format entered. Please use numbers only.'), 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     if description:
@@ -974,21 +1182,26 @@ def add_part(ticket_id):
             db.session.add(invoice)
             db.session.flush()
 
-        item = InvoiceItem(
-            invoice_id=invoice.id,
-            spare_part_id=spare_part_id,
-            description=description,
-            quantity=quantity,
-            cost_price=item_cost,
-            unit_price=item_price,
-            total_price=item_price * quantity
-        )
-        db.session.add(item)
-        invoice.calculate_total()
-        db.session.commit()
-        flash(f'Part "{description}" added to costs.', 'success')
+        try:
+            item = InvoiceItem(
+                invoice_id=invoice.id,
+                spare_part_id=spare_part_id,
+                description=description,
+                quantity=quantity,
+                cost_price=item_cost,
+                unit_price=item_price,
+                total_price=item_price * quantity
+            )
+            db.session.add(item)
+            invoice.calculate_total()
+            db.session.commit()
+            flash(_('Part "%(name)s" added to costs.', name=description), 'success')
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Failed to add part to ticket {ticket_id}: {str(e)}")
+            flash(_('Database error: Part could not be recorded.'), 'error')
     else:
-        flash('Please select a part or enter a description.', 'error')
+        flash(_('Please select a part or enter a description.'), 'error')
         
     return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
@@ -999,7 +1212,7 @@ def remove_part(ticket_id, item_id):
     """Remove a spare part from the ticket and recalculate invoice total"""
     ticket = db.session.get(Ticket, ticket_id)
     if ticket and ticket.current_phase == 'Already Taken':
-        flash('This ticket is locked and cannot be modified.', 'error')
+        flash(_('This ticket is locked and cannot be modified.'), 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
     item = db.session.get(InvoiceItem, item_id)
@@ -1009,7 +1222,7 @@ def remove_part(ticket_id, item_id):
         db.session.flush() # Ensure item is removed before recalculation
         invoice.calculate_total()
         db.session.commit()
-        flash('Spare part removed.', 'success')
+        flash(_('Spare part removed.'), 'success')
     return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
 @ticket_bp.route('/create_invoice/<int:ticket_id>', methods=['POST'])
@@ -1019,7 +1232,7 @@ def create_invoice(ticket_id):
     """Finalize the draft invoice or create a new one for the ticket"""
     ticket = db.session.get(Ticket, ticket_id)
     if not ticket:
-        flash('Ticket not found', 'error')
+        flash(_('Ticket not found'), 'error')
         return redirect(url_for('main.dashboard'))
 
     invoice = Invoice.query.filter_by(ticket_id=ticket_id).first()
@@ -1037,7 +1250,7 @@ def create_invoice(ticket_id):
     
     invoice.calculate_total()
     db.session.commit()
-    flash(f'Invoice {invoice.invoice_number} created successfully.', 'success')
+    flash(_('Invoice %(num)s created successfully.', num=invoice.invoice_number), 'success')
     return redirect(url_for('ticket.view_invoice', invoice_id=invoice.id))
 
 @ticket_bp.route('/invoice/<int:invoice_id>')
@@ -1047,7 +1260,7 @@ def view_invoice(invoice_id):
     """View the generated invoice details"""
     invoice = db.session.get(Invoice, invoice_id)
     if not invoice:
-        flash('Invoice not found', 'error')
+        flash(_('Invoice not found'), 'error')
         return redirect(url_for('main.dashboard'))
     return render_template('invoice.html', invoice=invoice)
 
@@ -1058,61 +1271,66 @@ def record_payment(ticket_id):
     """Route to record manual payments against a ticket"""
     ticket = db.session.get(Ticket, ticket_id)
     if not ticket:
-        flash('Ticket not found', 'error')
+        flash(_('Ticket not found'), 'error')
         return redirect(url_for('main.dashboard'))
 
     if ticket.current_phase == 'Already Taken':
-        flash('This ticket is locked and cannot be modified.', 'error')
+        flash(_('This ticket is locked and cannot be modified.'), 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
-    amount = Decimal(request.form.get('amount', '0') or '0')
-    method = request.form.get('payment_method', 'Cash')
+    amount = safe_decimal(request.form.get('amount'))
+    method = request.form.get('payment_method', _('Cash'))
     reference = request.form.get('reference', '')
 
     if amount == 0:
-        flash('Please enter a valid non-zero payment amount.', 'error')
+        flash(_('Please enter a valid non-zero payment amount.'), 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
-    payment = Payment(
-        ticket_id=ticket.id,
-        user_id=current_user.id,
-        amount=amount,
-        payment_method=method,
-        transaction_reference=reference,
-        paid_at=datetime.now(timezone.utc)
-    )
-    db.session.add(payment)
-    db.session.flush()
+    try:
+        payment = Payment(
+            ticket_id=ticket.id,
+            user_id=current_user.id,
+            amount=amount,
+            payment_method=method,
+            transaction_reference=reference,
+            paid_at=datetime.now(timezone.utc)
+        )
+        db.session.add(payment)
+        db.session.flush()
 
-    # Synchronize Invoice status with the new payment balance
-    invoice = Invoice.query.filter_by(ticket_id=ticket.id).first()
-    if invoice:
-        balance = invoice.remaining_balance
-        if balance <= 0:
-            invoice.status = 'Paid'
-        elif balance < invoice.total_amount:
-            invoice.status = 'Partial'
+        # Synchronize Invoice status with the new payment balance
+        invoice = Invoice.query.filter_by(ticket_id=ticket.id).first()
+        if invoice:
+            balance = invoice.remaining_balance
+            if balance <= 0:
+                invoice.status = 'Paid'
+            elif balance < invoice.total_amount:
+                invoice.status = 'Partial'
 
-    # Fetch global symbol for the automated note content
-    shop_admin = User.query.filter_by(is_superuser=True).first()
-    currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
-    symbol = currency_map.get(shop_admin.currency, '$') if shop_admin else '$'
+        # Fetch global symbol for the automated note content
+        shop_admin = User.query.filter_by(is_superuser=True).first()
+        currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
+        symbol = currency_map.get(shop_admin.currency, '$') if shop_admin else '$'
 
-    # Create an automated note for the payment
-    note_type = 'Payment Received' if amount > 0 else 'Change Given / Refund'
-    note_content = f"{note_type}: {symbol}{abs(amount)}. Method: {method}. Ref: {reference}"
+        # Create an automated note for the payment
+        note_type = _('Payment Received') if amount > 0 else _('Change Given / Refund')
+        note_content = _('%(type)s: %(symbol)s%(amount)s. Method: %(method)s. Ref: %(ref)s', type=note_type, symbol=symbol, amount=abs(amount), method=method, ref=reference)
 
-    note = Note(
-        ticket_id=ticket.id,
-        user_id=current_user.id,
-        note_type=note_type,
-        content=note_content,
-        is_internal=True
-    )
-    db.session.add(note)
+        note = Note(
+            ticket_id=ticket.id,
+            user_id=current_user.id,
+            note_type=note_type,
+            content=note_content,
+            is_internal=True
+        )
+        db.session.add(note)
 
-    db.session.commit()
-    flash(f'Payment of {amount} recorded successfully.', 'success')
+        db.session.commit()
+        flash(_('Payment of %(amount)s recorded successfully.', amount=amount), 'success')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Critical: Payment recording failed for ticket {ticket_id}: {str(e)}")
+        flash(_('Critical Error: Could not save payment details.'), 'error')
     return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
 @ticket_bp.route('/edit/<int:ticket_id>', methods=['GET', 'POST'])
@@ -1122,11 +1340,11 @@ def edit_ticket(ticket_id):
     """Route to edit basic ticket information"""
     ticket = db.session.get(Ticket, ticket_id)
     if not ticket:
-        flash('Ticket not found', 'error')
+        flash(_('Ticket not found'), 'error')
         return redirect(url_for('main.dashboard'))
 
     if ticket.current_phase == 'Already Taken':
-        flash('This ticket is locked and cannot be modified.', 'error')
+        flash(_('This ticket is locked and cannot be modified.'), 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
         
     users = User.query.filter(User.roles.any(Role.name == 'technician')).all()
@@ -1140,7 +1358,7 @@ def edit_ticket(ticket_id):
         ticket.assigned_to = int(assigned_to) if assigned_to else None
         
         db.session.commit()
-        flash('Ticket updated successfully!', 'success')
+        flash(_('Ticket updated successfully!'), 'success')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
         
     return render_template('edit_ticket.html', ticket=ticket, users=users)
@@ -1152,16 +1370,16 @@ def archive_ticket(ticket_id):
     """Move a completed ticket to archive to keep active records clean"""
     ticket = db.session.get(Ticket, ticket_id)
     if not ticket:
-        flash('Ticket not found', 'error')
+        flash(_('Ticket not found'), 'error')
         return redirect(url_for('main.dashboard'))
     
     if ticket.current_phase != 'Already Taken':
-        flash('Only tickets that are already collected (Already Taken) can be archived.', 'error')
+        flash(_('Only tickets that are already collected (Already Taken) can be archived.'), 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
     
     ticket.is_archived = True
     db.session.commit()
-    flash(f'Ticket {ticket.ticket_number} has been archived.', 'success')
+    flash(_('Ticket %(num)s has been archived.', num=ticket.ticket_number), 'success')
     return redirect(url_for('ticket.tickets_list', view='history'))
 
 @ticket_bp.route('/delete/<int:ticket_id>', methods=['POST'])
@@ -1171,12 +1389,12 @@ def delete_ticket(ticket_id):
     """Permanently erase a ticket and its associated logs/notes"""
     ticket = db.session.get(Ticket, ticket_id)
     if not ticket:
-        flash('Ticket not found', 'error')
+        flash(_('Ticket not found'), 'error')
         return redirect(url_for('main.dashboard'))
     
     db.session.delete(ticket)
     db.session.commit()
-    flash(f'Ticket {ticket.ticket_number} has been permanently erased.', 'success')
+    flash(_('Ticket %(num)s has been permanently erased.', num=ticket.ticket_number), 'success')
     return redirect(url_for('main.dashboard'))
 
 @ticket_bp.route('/update_phase/<int:ticket_id>', methods=['POST'])
@@ -1185,18 +1403,18 @@ def update_phase(ticket_id):
     """Route to advance the repair ticket through its lifecycle"""
     ticket = db.session.get(Ticket, ticket_id)
     if not ticket:
-        flash('Ticket not found', 'error')
+        flash(_('Ticket not found'), 'error')
         return redirect(url_for('main.dashboard'))
 
     if ticket.current_phase == 'Already Taken':
-        flash('This ticket is locked and cannot be modified.', 'error')
+        flash(_('This ticket is locked and cannot be modified.'), 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
     new_phase = request.form.get('new_phase')
     commentary = request.form.get('commentary', '')
 
     if not new_phase:
-        flash('Please select a valid phase', 'error')
+        flash(_('Please select a valid phase'), 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
     # Dynamic permission check based on target phase
@@ -1207,7 +1425,7 @@ def update_phase(ticket_id):
         required_perm = 'mark_as_taken'
         
     if not current_user.has_permission(required_perm):
-        flash(f'You do not have the required permission ({required_perm}) to move a ticket to "{new_phase}".', 'error')
+        flash(_('You do not have the required permission (%(perm)s) to move a ticket to "%(phase)s".', perm=required_perm, phase=new_phase), 'error')
         return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
 
@@ -1233,14 +1451,19 @@ def update_phase(ticket_id):
         note = Note(
             ticket_id=ticket.id,
             user_id=current_user.id,
-            note_type='Phase Update',
-            content=f"Phase update to {new_phase}: {commentary}",
+            note_type=_('Phase Update'),
+            content=_('Phase update to %(phase)s: %(comment)s', phase=new_phase, comment=commentary),
             is_internal=True
         )
         db.session.add(note)
 
-    db.session.commit()
-    flash(f'Ticket phase updated to {new_phase}', 'success')
+    try:
+        db.session.commit()
+        flash(_('Ticket phase updated to %(phase)s', phase=new_phase), 'success')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to update phase for ticket {ticket_id}: {str(e)}")
+        flash(_('Error updating ticket phase.'), 'error')
     return redirect(url_for('ticket.ticket_detail', ticket_id=ticket.id))
 
 @customer_bp.route('/view/<int:customer_id>', endpoint='view_customer')
@@ -1250,7 +1473,7 @@ def view_customer(customer_id):
     """Detailed view for a single customer and their devices"""
     customer = db.session.get(Customer, customer_id)
     if not customer:
-        flash('Customer not found', 'error')
+        flash(_('Customer not found'), 'error')
         return redirect(url_for('customer.customers_list'))
     return render_template('customer_detail.html', customer=customer)
 
@@ -1265,12 +1488,12 @@ def new_customer():
         address = request.form.get('address', '')
         
         if not name or not phone:
-            flash('Name and phone are required', 'error')
+            flash(_('Name and phone are required'), 'error')
         else:
             customer = Customer(name=name, phone=phone, address=address)
             db.session.add(customer)
             db.session.commit()
-            flash('Customer created successfully!', 'success')
+            flash(_('Customer created successfully!'), 'success')
             return redirect(url_for('customer.customers_list'))
     return render_template('new_customer.html')
 
@@ -1286,7 +1509,7 @@ def new_device():
         brand = request.form.get('brand')
         
         if not all([customer_id, device_type, brand]):
-            flash('Customer, Type, and Brand are required', 'error')
+            flash(_('Customer, Type, and Brand are required'), 'error')
         else:
             device = Device(
                 customer_id=customer_id,
@@ -1302,7 +1525,7 @@ def new_device():
             )
             db.session.add(device)
             db.session.commit()
-            flash('Device added successfully!', 'success')
+            flash(_('Device added successfully!'), 'success')
             return redirect(url_for('main.devices_list'))
             
     return render_template('new_device.html', customers=customers)
@@ -1314,7 +1537,7 @@ def edit_device(device_id):
     """Route to edit hardware specifications for a specific device"""
     device = db.session.get(Device, device_id)
     if not device:
-        flash('Device not found', 'error')
+        flash(_('Device not found'), 'error')
         return redirect(url_for('main.devices_list'))
     
     if request.method == 'POST':
@@ -1330,7 +1553,7 @@ def edit_device(device_id):
         device.notes = request.form.get('notes')
         
         db.session.commit()
-        flash('Device updated successfully!', 'success')
+        flash(_('Device updated successfully!'), 'success')
         return redirect(url_for('customer.view_customer', customer_id=device.customer_id))
         
     return render_template('edit_device.html', device=device)
@@ -1344,7 +1567,7 @@ def delete_device(device_id):
         customer_id = device.customer_id
         db.session.delete(device)
         db.session.commit()
-        flash('Device deleted successfully.', 'success')
+        flash(_('Device deleted successfully.'), 'success')
         return redirect(url_for('customer.view_customer', customer_id=customer_id))
     return redirect(url_for('main.devices_list'))
 
@@ -1353,7 +1576,7 @@ def delete_device(device_id):
 @require_permission('create_invoice')
 def download_invoice_pdf(ticket_id):
     """Placeholder for PDF generation logic (Future Feature)"""
-    flash('PDF generation is currently being implemented. Please use the on-screen invoice view.', 'info')
+    flash(_('PDF generation is currently being implemented. Please use the on-screen invoice view.'), 'info')
     return redirect(url_for('ticket.ticket_detail', ticket_id=ticket_id))
 
 @device_bp.route('/view/<int:device_id>')
@@ -1363,7 +1586,7 @@ def device_detail(device_id):
     """Detailed view for a single device repair history"""
     device = db.session.get(Device, device_id)
     if not device:
-        flash('Device not found', 'error')
+        flash(_('Device not found'), 'error')
         return redirect(url_for('main.dashboard'))
     return render_template('device_detail.html', device=device)
 
@@ -1376,12 +1599,47 @@ def search_customers():
     query = request.args.get('q', '').strip()
     if len(query) < 2:
         return jsonify([])
+
+    # GDPR Search: Exact matches use the blind index hash for security.
+    query_hash = hashlib.sha256((current_app.config['BLIND_INDEX_SALT'] + query).encode()).hexdigest()
         
     customers = Customer.query.filter(
-        or_(Customer.name.ilike(f'%{query}%'), Customer.phone.ilike(f'%{query}%'))
+        or_(Customer.name.ilike(f'%{query}%'), Customer.phone_hash == query_hash)
     ).limit(10).all()
     
     return jsonify([{'id': c.id, 'name': c.name, 'phone': c.phone} for c in customers])
+
+
+@customer_bp.route('/export/<int:customer_id>')
+@login_required
+@require_permission('view_customer')
+def export_customer_data(customer_id):
+    """GDPR compliance: Data Portability."""
+    customer = db.session.get(Customer, customer_id)
+    if not customer:
+        flash(_('Customer not found'), 'error')
+        return redirect(url_for('customer.customers_list'))
+    
+    data = customer.export_data()
+    output = io.BytesIO(json.dumps(data, indent=4).encode('utf-8'))
+    return send_file(output, mimetype='application/json', as_attachment=True,
+                     download_name=f"customer_export_{customer_id}.json")
+
+
+@customer_bp.route('/anonymize/<int:customer_id>', methods=['POST'])
+@login_required
+@require_permission('delete_customer')
+def anonymize_customer(customer_id):
+    """GDPR compliance: Right to Erasure."""
+    customer = db.session.get(Customer, customer_id)
+    if not customer:
+        flash(_('Customer not found'), 'error')
+        return redirect(url_for('customer.customers_list'))
+    
+    customer.anonymize()
+    db.session.commit()
+    flash(_('Customer data has been anonymized successfully.'), 'success')
+    return redirect(url_for('customer.customers_list'))
 
 
 @customer_bp.route('/new', methods=['POST'])
@@ -1394,13 +1652,18 @@ def new_customer_ajax():
     address = request.form.get('address', '')
     
     if not name or not phone:
-        return jsonify({'error': 'Name and phone fields are required'}), 400
+        return jsonify({'error': _('Name and phone fields are required')}), 400
         
-    customer = Customer(name=name, phone=phone, address=address)
-    db.session.add(customer)
-    db.session.commit()
-    
-    return jsonify({'id': customer.id, 'name': customer.name})
+    try:
+        customer = Customer(name=name, phone=phone, address=address)
+        db.session.add(customer)
+        db.session.commit()
+        return jsonify({'id': customer.id, 'name': customer.name})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Ajax customer creation failed: {str(e)}")
+        return jsonify({'error': _('Failed to create customer record')}), 500
+
 
 
 # ==================== DEVICE AJAX ROUTERS (COMPLETING MAIN.JS MATCH) ====================
@@ -1432,7 +1695,7 @@ def new_device_ajax():
     brand = request.form.get('brand')
     
     if not all([customer_id, device_type, brand]):
-        return jsonify({'error': 'Customer, Type, and Brand are required'}), 400
+        return jsonify({'error': _('Customer, Type, and Brand are required')}), 400
         
     device = Device(
         customer_id=customer_id,

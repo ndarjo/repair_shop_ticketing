@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Devices - Repair Shop{% endblock %}
+{% block title %}{{ _('Devices - Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Device Inventory</h2>
-    <a href="{{ url_for('device.new_device') }}" class="btn btn-primary">+ Add Device</a>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2>{{ _('Device Inventory') }}</h2>
+    <a href="{{ url_for('device.new_device') }}" class="btn btn-primary">{{ _('+ Add Device') }}</a>
 </div>
 
 <div class="card shadow-sm">
@@ -13,11 +13,11 @@
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Device</th>
-                    <th>Owner</th>
-                    <th>Serial Number</th>
-                    <th>Tickets</th>
-                    <th>Actions</th>
+                    <th>{{ _('Device') }}</th>
+                    <th>{{ _('Owner') }}</th>
+                    <th>{{ _('Serial Number') }}</th>
+                    <th class="text-center">{{ _('Tickets') }}</th>
+                    <th class="text-end">{{ _('Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -25,14 +25,14 @@
                 <tr>
                     <td>
                         <div class="fw-bold">{{ device.display }}</div>
-                        <small class="text-muted">{{ device.device_type }}</small>
+                        <small class="text-muted">{{ _(device.device_type) }}</small>
                     </td>
                     <td><a href="{{ url_for('customer.view_customer', customer_id=device.customer.id) }}">{{ device.customer.name }}</a></td>
                     <td>{{ device.serial_number or 'N/A' }}</td>
-                    <td><span class="badge bg-info text-dark">{{ device.tickets|length }}</span></td>
-                    <td>
-                        <a href="{{ url_for('device.device_detail', device_id=device.id) }}" class="btn btn-sm btn-outline-primary">View</a>
-                        <a href="{{ url_for('device.edit_device', device_id=device.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <td class="text-center"><span class="badge bg-info text-dark">{{ device.tickets|length }}</span></td>
+                    <td class="text-end">
+                        <a href="{{ url_for('device.device_detail', device_id=device.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                        <a href="{{ url_for('device.edit_device', device_id=device.id) }}" class="btn btn-sm btn-outline-secondary">{{ _('Edit') }}</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -40,9 +40,9 @@
         </table>
     </div>
     <div class="card-footer text-center">
-        {% if devices.has_prev %}<a href="{{ url_for('main.devices_list', page=devices.prev_num) }}" class="btn btn-sm btn-secondary">Previous</a>{% endif %}
-        <span class="mx-3">Page {{ devices.page }} of {{ devices.pages }}</span>
-        {% if devices.has_next %}<a href="{{ url_for('main.devices_list', page=devices.next_num) }}" class="btn btn-sm btn-secondary">Next</a>{% endif %}
+        {% if devices.has_prev %}<a href="{{ url_for('main.devices_list', page=devices.prev_num) }}" class="btn btn-sm btn-secondary">{{ _('Previous') }}</a>{% endif %}
+        <span class="mx-3">{{ _('Page') }} {{ devices.page }} {{ _('of') }} {{ devices.pages }}</span>
+        {% if devices.has_next %}<a href="{{ url_for('main.devices_list', page=devices.next_num) }}" class="btn btn-sm btn-secondary">{{ _('Next') }}</a>{% endif %}
     </div>
 </div>
 {% endblock %}

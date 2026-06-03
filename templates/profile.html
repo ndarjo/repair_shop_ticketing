@@ -1,23 +1,29 @@
 {% extends "base.html" %}
 
-{% block title %}My Profile - Repair Shop{% endblock %}
+{% block title %}{{ _('My Profile - Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-md-8 offset-md-2">
-        <h1 class="mb-4">My Profile</h1>
+        <h1 class="mb-4">{{ _('My Profile') }}</h1>
         
         <div class="row">
             <div class="col-md-6 mb-4">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">Account Information</h5>
+                        <h5 class="mb-0">{{ _('Account Information') }}</h5>
                     </div>
                     <div class="card-body">
-                        <p><strong>Username:</strong> {{ current_user.username }}</p>
-                        <p><strong>Full Name:</strong> {{ current_user.full_name }}</p>
-                        <p><strong>Email:</strong> {{ current_user.email or 'Not set' }}</p>
-                        <p><strong>User Type:</strong> <span class="badge bg-primary">{% if current_user.is_superuser %}Superuser{% else %}Regular User{% endif %}</span></p>
+                        <p><strong>{{ _('Username') }}:</strong> {{ current_user.username }}</p>
+                        <p><strong>{{ _('Full Name') }}:</strong> {{ current_user.full_name }}</p>
+                        <p><strong>{{ _('Email') }}:</strong> {{ current_user.email or _('Not set') }}</p>
+                        <p><strong>{{ _('Roles') }}:</strong> 
+                            {% if current_user.is_superuser %}
+                                <span class="badge bg-danger">{{ _('Superuser') }}</span>
+                            {% else %}
+                                {% for role in current_user.roles %}<span class="badge bg-primary me-1">{{ role.name }}</span>{% endfor %}
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -25,33 +31,43 @@
             <div class="col-md-6 mb-4">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">Appearance Settings</h5>
+                        <h5 class="mb-0">{{ _('Appearance Settings') }}</h5>
                     </div>
                     <div class="card-body">
                         <form method="POST" action="{{ url_for('auth.profile') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="action" value="change_theme">
                             
                             <div class="mb-3">
-                                <label for="theme" class="form-label">Theme</label>
-                                <select class="form-control" id="theme" name="theme" onchange="applyTheme(this.value)">
-                                    <option value="light" {% if current_user.theme_preference == 'light' %}selected{% endif %}>☀️ Light</option>
-                                    <option value="dark" {% if current_user.theme_preference == 'dark' %}selected{% endif %}>🌙 Dark</option>
+                                <label for="theme" class="form-label">{{ _('Theme') }}</label>
+                                <select class="form-control" id="theme" name="theme" data-theme-control>
+                                    <option value="light" {% if current_user.theme_preference == 'light' %}selected{% endif %}>{{ _('☀️ Light') }}</option>
+                                    <option value="dark" {% if current_user.theme_preference == 'dark' %}selected{% endif %}>{{ _('🌙 Dark') }}</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="language" class="form-label">{{ _('Language') }}</label>
+                                <select class="form-control" id="language" name="language">
+                                    {% for code, name in languages.items() %}
+                                    <option value="{{ code }}" {% if current_user.language_preference == code %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
 
                             {% if current_user.is_superuser or current_user.has_role('manager') %}
                             <div class="mb-3">
-                                <label for="currency" class="form-label">Currency</label>
+                                <label for="currency" class="form-label">{{ _('Currency') }}</label>
                                 <select class="form-control" id="currency" name="currency">
-                                    <option value="USD" {% if current_user.currency == 'USD' %}selected{% endif %}>US Dollar ($)</option>
-                                    <option value="IDR" {% if current_user.currency == 'IDR' %}selected{% endif %}>Indonesian Rupiah (Rp)</option>
-                                    <option value="EUR" {% if current_user.currency == 'EUR' %}selected{% endif %}>Euro (€)</option>
-                                    <option value="GBP" {% if current_user.currency == 'GBP' %}selected{% endif %}>British Pound (£)</option>
+                                    <option value="USD" {% if current_user.currency == 'USD' %}selected{% endif %}>{{ _('US Dollar ($)') }}</option>
+                                    <option value="IDR" {% if current_user.currency == 'IDR' %}selected{% endif %}>{{ _('Indonesian Rupiah (Rp)') }}</option>
+                                    <option value="EUR" {% if current_user.currency == 'EUR' %}selected{% endif %}>{{ _('Euro (€)') }}</option>
+                                    <option value="GBP" {% if current_user.currency == 'GBP' %}selected{% endif %}>{{ _('British Pound (£)') }}</option>
                                 </select>
                             </div>
 
                             <div class="mb-3">
-                                <label for="currency_decimals" class="form-label">Currency Decimals</label>
+                                <label for="currency_decimals" class="form-label">{{ _('Currency Decimals') }}</label>
                                 <select class="form-control" id="currency_decimals" name="currency_decimals">
                                     <option value="0" {% if current_user.currency_decimals == 0 %}selected{% endif %}>0 (e.g. Rp 1500)</option>
                                     <option value="2" {% if current_user.currency_decimals == 2 %}selected{% endif %}>2 (e.g. $15.00)</option>
@@ -61,42 +77,42 @@
                             {% endif %}
                             
                             <div class="mb-3">
-                                <label for="color_theme" class="form-label">Color Scheme</label>
+                                <label for="color_theme" class="form-label">{{ _('Color Scheme') }}</label>
                                 <div class="color-scheme-picker">
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="color_theme" id="color_blue" value="blue" {% if current_user.color_theme == 'blue' %}checked{% endif %}>
+                                        <input class="form-check-input" type="radio" name="color_theme" id="color_blue" value="blue" data-color-control {% if current_user.color_theme == 'blue' %}checked{% endif %}>
                                         <label class="form-check-label" for="color_blue">
-                                            <span class="color-swatch" style="background-color: #0d6efd;"></span> Blue
+                                            <span class="color-swatch blue"></span> {{ _('Blue') }}
                                         </label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="color_theme" id="color_green" value="green" {% if current_user.color_theme == 'green' %}checked{% endif %}>
+                                        <input class="form-check-input" type="radio" name="color_theme" id="color_green" value="green" data-color-control {% if current_user.color_theme == 'green' %}checked{% endif %}>
                                         <label class="form-check-label" for="color_green">
-                                            <span class="color-swatch" style="background-color: #198754;"></span> Green
+                                            <span class="color-swatch green"></span> {{ _('Green') }}
                                         </label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="color_theme" id="color_purple" value="purple" {% if current_user.color_theme == 'purple' %}checked{% endif %}>
+                                        <input class="form-check-input" type="radio" name="color_theme" id="color_purple" value="purple" data-color-control {% if current_user.color_theme == 'purple' %}checked{% endif %}>
                                         <label class="form-check-label" for="color_purple">
-                                            <span class="color-swatch" style="background-color: #6f42c1;"></span> Purple
+                                            <span class="color-swatch purple"></span> {{ _('Purple') }}
                                         </label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="color_theme" id="color_red" value="red" {% if current_user.color_theme == 'red' %}checked{% endif %}>
+                                        <input class="form-check-input" type="radio" name="color_theme" id="color_red" value="red" data-color-control {% if current_user.color_theme == 'red' %}checked{% endif %}>
                                         <label class="form-check-label" for="color_red">
-                                            <span class="color-swatch" style="background-color: #dc3545;"></span> Red
+                                            <span class="color-swatch red"></span> {{ _('Red') }}
                                         </label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="color_theme" id="color_orange" value="orange" {% if current_user.color_theme == 'orange' %}checked{% endif %}>
+                                        <input class="form-check-input" type="radio" name="color_theme" id="color_orange" value="orange" data-color-control {% if current_user.color_theme == 'orange' %}checked{% endif %}>
                                         <label class="form-check-label" for="color_orange">
-                                            <span class="color-swatch" style="background-color: #fd7e14;"></span> Orange
+                                            <span class="color-swatch orange"></span> {{ _('Orange') }}
                                         </label>
                                     </div>
                                 </div>
                             </div>
                             
-                            <button type="submit" class="btn btn-primary">Save Preferences</button>
+                            <button type="submit" class="btn btn-primary">{{ _('Save Preferences') }}</button>
                         </form>
                     </div>
                 </div>
@@ -107,16 +123,17 @@
             <div class="col-md-6 mb-4">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">Change Username</h5>
+                        <h5 class="mb-0">{{ _('Change Username') }}</h5>
                     </div>
                     <div class="card-body">
                         <form method="POST" action="{{ url_for('auth.profile') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="action" value="change_username">
                             <div class="mb-3">
-                                <label for="new_username" class="form-label">New Username</label>
+                                <label for="new_username" class="form-label">{{ _('New Username') }}</label>
                                 <input type="text" class="form-control" id="new_username" name="new_username" required>
                             </div>
-                            <button type="submit" class="btn btn-primary">Change Username</button>
+                            <button type="submit" class="btn btn-primary">{{ _('Change Username') }}</button>
                         </form>
                     </div>
                 </div>
@@ -125,24 +142,25 @@
             <div class="col-md-6 mb-4">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">Change Password</h5>
+                        <h5 class="mb-0">{{ _('Change Password') }}</h5>
                     </div>
                     <div class="card-body">
                         <form method="POST" action="{{ url_for('auth.profile') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="action" value="change_password">
                             <div class="mb-3">
-                                <label for="old_password" class="form-label">Current Password</label>
+                                <label for="old_password" class="form-label">{{ _('Current Password') }}</label>
                                 <input type="password" class="form-control" id="old_password" name="old_password" required>
                             </div>
                             <div class="mb-3">
-                                <label for="new_password" class="form-label">New Password</label>
+                                <label for="new_password" class="form-label">{{ _('New Password') }}</label>
                                 <input type="password" class="form-control" id="new_password" name="new_password" required>
                             </div>
                             <div class="mb-3">
-                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                <label for="confirm_password" class="form-label">{{ _('Confirm New Password') }}</label>
                                 <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
                             </div>
-                            <button type="submit" class="btn btn-primary">Change Password</button>
+                            <button type="submit" class="btn btn-primary">{{ _('Change Password') }}</button>
                         </form>
                     </div>
                 </div>
@@ -151,13 +169,4 @@
     </div>
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function applyTheme(theme) {
-    document.documentElement.dataset.theme = theme;
-    document.body.className = document.body.className.replace(/theme-\w+/, 'theme-' + theme);
-}
-</script>
 {% endblock %}

@@ -1,35 +1,35 @@
 {% extends "base.html" %}
 
-{% block title %}{{ customer.name }} - Profile{% endblock %}
+{% block title %}{{ customer.name }} - {{ _('Profile') }}{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="card h-100 shadow-sm">
             <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">Customer Info</h5>
+                <h5 class="mb-0">{{ _('Customer Info') }}</h5>
             </div>
             <div class="card-body">
                 <h3>{{ customer.name }}</h3>
                 <p class="text-muted"><i class="fas fa-phone me-2"></i>{{ customer.phone }}</p>
                 <hr>
-                <p><strong>Address:</strong><br>{{ customer.address or 'No address provided' }}</p>
-                <p><small class="text-muted">Registered: {{ customer.created_at.strftime('%Y-%m-%d') }}</small></p>
+                <p><strong>{{ _('Address:') }}</strong><br>{{ customer.address or _('No address provided') }}</p>
+                <p><small class="text-muted">{{ _('Registered:') }} {{ customer.created_at.strftime('%Y-%m-%d') }}</small></p>
             </div>
         </div>
     </div>
     <div class="col-md-8">
         <div class="card shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Registered Devices</h5>
+                <h5 class="mb-0">{{ _('Registered Devices') }}</h5>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>Device</th>
-                            <th>Serial</th>
-                            <th>Actions</th>
+                            <th>{{ _('Device') }}</th>
+                            <th>{{ _('Serial') }}</th>
+                            <th class="text-end">{{ _('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -37,10 +37,52 @@
                         <tr>
                             <td>{{ device.display }}</td>
                             <td>{{ device.serial_number or 'N/A' }}</td>
-                            <td>
-                                <a href="{{ url_for('device.device_detail', device_id=device.id) }}" class="btn btn-sm btn-outline-primary">View History</a>
+                            <td class="text-end">
+                                <a href="{{ url_for('device.device_detail', device_id=device.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View History') }}</a>
                             </td>
                         </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">{{ _('Recent Repair Tickets') }}</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Ticket #') }}</th>
+                            <th>{{ _('Device') }}</th>
+                            <th class="text-center">{{ _('Status') }}</th>
+                            <th>{{ _('Date') }}</th>
+                            <th class="text-end">{{ _('Action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in customer.tickets|sort(attribute='created_at', reverse=True) %}
+                        <tr>
+                            <td><strong>{{ ticket.ticket_number }}</strong></td>
+                            <td>{{ ticket.device.display }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% else %}secondary{% endif %}">
+                                    {{ _(ticket.current_phase) }}
+                                </span>
+                            </td>
+                            <td><small>{{ ticket.created_at.strftime('%Y-%m-%d') }}</small></td>
+                            <td class="text-end">
+                                <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">{{ _('No tickets found for this customer.') }}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

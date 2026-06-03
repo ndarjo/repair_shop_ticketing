@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Customers - Repair Shop{% endblock %}
+{% block title %}{{ _('Customers - Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Customer Directory</h2>
-    <a href="{{ url_for('customer.new_customer') }}" class="btn btn-primary">+ New Customer</a>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2>{{ _('Customer Directory') }}</h2>
+    <a href="{{ url_for('customer.new_customer') }}" class="btn btn-primary">{{ _('+ New Customer') }}</a>
 </div>
 
 <div class="card shadow-sm">
@@ -13,11 +13,11 @@
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Phone</th>
-                    <th>Devices</th>
-                    <th>Created</th>
-                    <th>Actions</th>
+                    <th>{{ _('Name') }}</th>
+                    <th>{{ _('Phone') }}</th>
+                    <th class="text-center">{{ _('Devices') }}</th>
+                    <th>{{ _('Created') }}</th>
+                    <th class="text-end">{{ _('Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -25,10 +25,10 @@
                 <tr>
                     <td><strong>{{ customer.name }}</strong></td>
                     <td>{{ customer.phone }}</td>
-                    <td><span class="badge bg-secondary">{{ customer.devices|length }}</span></td>
+                    <td class="text-center"><span class="badge bg-secondary">{{ customer.devices|length }}</span></td>
                     <td>{{ customer.created_at.strftime('%Y-%m-%d') }}</td>
-                    <td>
-                        <a href="{{ url_for('customer.view_customer', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary">View Profile</a>
+                    <td class="text-end">
+                        <a href="{{ url_for('customer.view_customer', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View Profile') }}</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -36,9 +36,9 @@
         </table>
     </div>
     <div class="card-footer text-center">
-        {% if customers.has_prev %}<a href="{{ url_for('customer.customers_list', page=customers.prev_num) }}" class="btn btn-sm btn-secondary">Previous</a>{% endif %}
-        <span class="mx-3">Page {{ customers.page }} of {{ customers.pages }}</span>
-        {% if customers.has_next %}<a href="{{ url_for('customer.customers_list', page=customers.next_num) }}" class="btn btn-sm btn-secondary">Next</a>{% endif %}
+        {% if customers.has_prev %}<a href="{{ url_for('customer.customers_list', page=customers.prev_num) }}" class="btn btn-sm btn-secondary">{{ _('Previous') }}</a>{% endif %}
+        <span class="mx-3">{{ _('Page') }} {{ customers.page }} {{ _('of') }} {{ customers.pages }}</span>
+        {% if customers.has_next %}<a href="{{ url_for('customer.customers_list', page=customers.next_num) }}" class="btn btn-sm btn-secondary">{{ _('Next') }}</a>{% endif %}
     </div>
 </div>
 {% endblock %}
