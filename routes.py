@@ -15,6 +15,7 @@ from functools import wraps
 import json
 import io
 import os
+from cryptography.fernet import InvalidToken
 import subprocess
 import shutil
 
@@ -244,12 +245,12 @@ def setup():
                 
             settings.setup_completed = True
             db.session.commit()
-            flash('Welcome! Your shop configuration is complete.', 'success')
+            flash(_('Welcome! Your shop configuration is complete.'), 'success')
             return redirect(url_for('main.dashboard'))
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Onboarding setup failed: {str(e)}")
-            flash('An error occurred during initial setup. Please try again.', 'error')
+            flash(_('An error occurred during initial setup. Please try again.'), 'error')
             
     return render_template('onboarding.html', settings=settings)
 
@@ -421,7 +422,11 @@ def customers_list():
     """Route for the Customers link in base.html"""
     page = request.args.get('page', 1, type=int)
     customers = Customer.query.order_by(desc(Customer.created_at)).paginate(page=page, per_page=15)
-    return render_template('customers.html', customers=customers)
+    try:
+        return render_template('customers.html', customers=customers)
+    except InvalidToken:
+        flash(_('Security Error: Unable to decrypt customer data. Please check your ENCRYPTION_KEY.'), 'error')
+        return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/devices')
 @login_required
@@ -1475,7 +1480,11 @@ def view_customer(customer_id):
     if not customer:
         flash(_('Customer not found'), 'error')
         return redirect(url_for('customer.customers_list'))
-    return render_template('customer_detail.html', customer=customer)
+    try:
+        return render_template('customer_detail.html', customer=customer)
+    except InvalidToken:
+        flash(_('Security Error: Unable to decrypt this customer\'s PII.'), 'error')
+        return redirect(url_for('customer.customers_list'))
 
 
 @customer_bp.route('/new_customer', methods=['GET', 'POST'])
@@ -1620,10 +1629,14 @@ def export_customer_data(customer_id):
         flash(_('Customer not found'), 'error')
         return redirect(url_for('customer.customers_list'))
     
-    data = customer.export_data()
-    output = io.BytesIO(json.dumps(data, indent=4).encode('utf-8'))
-    return send_file(output, mimetype='application/json', as_attachment=True,
-                     download_name=f"customer_export_{customer_id}.json")
+    try:
+        data = customer.export_data()
+        output = io.BytesIO(json.dumps(data, indent=4).encode('utf-8'))
+        return send_file(output, mimetype='application/json', as_attachment=True,
+                         download_name=f"customer_export_{customer_id}.json")
+    except InvalidToken:
+        flash(_('Security Error: Decryption failed during data export.'), 'error')
+        return redirect(url_for('customer.view_customer', customer_id=customer_id))
 
 
 @customer_bp.route('/anonymize/<int:customer_id>', methods=['POST'])
@@ -1636,11 +1649,15 @@ def anonymize_customer(customer_id):
         flash(_('Customer not found'), 'error')
         return redirect(url_for('customer.customers_list'))
     
-    customer.anonymize()
-    db.session.commit()
-    flash(_('Customer data has been anonymized successfully.'), 'success')
+    try:
+        customer.anonymize()
+        db.session.commit()
+        flash(_('Customer data has been anonymized successfully.'), 'success')
+    except InvalidToken:
+        db.session.rollback()
+        flash(_('Security Error: Decryption failed during anonymization.'), 'error')
+        
     return redirect(url_for('customer.customers_list'))
-
 
 @customer_bp.route('/new', methods=['POST'])
 @login_required

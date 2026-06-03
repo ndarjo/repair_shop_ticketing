@@ -1,5 +1,6 @@
 import unittest
 from app import create_app
+import os
 from models import db, User, Customer, Device, Ticket
 
 class BasicTests(unittest.TestCase):
@@ -33,6 +34,18 @@ class BasicTests(unittest.TestCase):
         db.session.commit()
         self.assertEqual(Customer.query.count(), 1)
 
+    def test_customer_encryption_consistency(self):
+        """Verify that customer PII can be decrypted with the current key"""
+        test_phone = "+1 (555) 000-9999"
+        c = Customer(name="Crypto Test", phone=test_phone)
+        db.session.add(c)
+        db.session.commit()
+        
+        # Fetch from DB to trigger decryption logic in the model
+        db.session.expire_all()
+        fetched = db.session.get(Customer, c.id)
+        self.assertEqual(fetched.phone, test_phone)
+
     def test_ticket_number_generation(self):
         """Ensure ticket numbers are unique and formatted correctly"""
         num1 = Ticket.generate_unique_number()
@@ -42,10 +55,11 @@ class BasicTests(unittest.TestCase):
 
     def test_login_logic(self):
         """Verify authentication flow"""
+        admin_password = os.getenv('INITIAL_ADMIN_PASSWORD', 'change-me-immediately')
         # Admin is created by default in app initialization context
         response = self.client.post('/auth/login', data=dict(
             username='admin',
-            password='REDACTED_PASSWORD'
+            password=admin_password
         ), follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Logged in successfully', response.data)

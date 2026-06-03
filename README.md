@@ -28,13 +28,15 @@ A professional, production-ready management platform for modern repair shops. Bu
 ## 📋 Prerequisites
 - **Python:** 3.8+ (Fully compatible with Python 3.13)
 - **Database:** PostgreSQL 12+
+- **Cache/NoSQL:** Redis (Optional, required if `RATELIMIT_STORAGE_URI` is set to redis)
+- **PostgreSQL Client Tools:** `pg_dump` and `pg_restore` (required for system backups).
 - **System Headers:** `libpq-dev` (Linux) or equivalent for database driver compilation.
 
 ## 🚀 Installation & Setup
 ```bash
 # 1. Clone the repository
-git clone https://github.com/ndarjo/repair-shop-REDACTED_PASSWORD.git
-cd repair-shop-REDACTED_PASSWORD
+git clone https://github.com/ndarjo/repair-shop-ticketing.git
+cd repair-shop-ticketing
 
 # 2. Setup virtual environment
 python -m venv .venv
@@ -46,7 +48,7 @@ pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
 
 # 4. Configure environment
 cp env.template env.local
-# Open env.local and update DB_PASSWORD.
+# Open env.local and update DB_PASSWORD and INITIAL_ADMIN_PASSWORD.
 
 # Generate unique security keys:
 python generate_keys.py
@@ -58,6 +60,24 @@ python app.py
 ```
 
 The application will be available at `http://localhost:5000`
+
+## 🔐 Security & Data Protection
+
+This system is designed with a "Security by Design" approach to handle sensitive customer data:
+
+### PII Encryption (AES-256)
+Customer **Phone Numbers** and **Addresses** are encrypted at rest using `cryptography.fernet` (AES-256 in CBC mode with HMAC). Even if your database is compromised, this PII remains unreadable without the `ENCRYPTION_KEY`.
+
+### Searchable Encrypted Fields (Blind Index)
+To allow technicians to search for customers by phone number without decrypting every record, the system uses a **Blind Index**. This is a one-way SHA-256 hash of the PII combined with a unique `BLIND_INDEX_SALT`. The database stores the hash, allowing for fast, exact-match searches while keeping the actual data encrypted.
+
+### ⚠️ Critical Warning: Key Persistence
+Your `ENCRYPTION_KEY` and `BLIND_INDEX_SALT` are generated during setup. 
+- **Never lose these keys:** If you lose your keys, you will be unable to decrypt existing customer data. 
+- **Key Rotation:** If you change your `ENCRYPTION_KEY` in `env.local`, existing records will become inaccessible and trigger a security error.
+- **Database Migrations:** When moving to a new server, you **must** copy your keys exactly as they are in your current `.env` file.
+
+Use `python generate_keys.py` to create your unique security credentials.
 
 ## 🌐 Internationalization (i18n)
 
@@ -87,14 +107,14 @@ python manage_translations.py compile
 
 After first run, you'll have a default superuser account:
 - **Username:** admin
-- **Password:** REDACTED_PASSWORD
+- **Password:** Value of `INITIAL_ADMIN_PASSWORD` (defaults to `change-me-immediately`)
 
 ⚠️ **Important:** Change the password immediately in production!
 
 ## 📁 Project Structure
 
 ```text
-repair-shop-REDACTED_PASSWORD/
+repair-shop-ticketing/
 ├── app.py                      # Main Flask application & initialization
 ├── models.py                   # Database models & schema
 ├── routes.py                   # Route handlers & business logic

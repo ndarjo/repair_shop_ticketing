@@ -40,7 +40,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
     if not SQLALCHEMY_DATABASE_URI:
         db_user = os.getenv('DB_USER', 'postgres')
-        db_pass = os.getenv('DB_PASSWORD', 'REDACTED_PASSWORD')
+        db_pass = os.getenv('DB_PASSWORD', '')
         db_host = os.getenv('DB_HOST', 'localhost')
         db_port = os.getenv('DB_PORT', '5432')
         db_name = os.getenv('DB_NAME', 'repair_shop')
@@ -64,6 +64,9 @@ class Config:
     # The app will only show languages that have a compiled .mo file in the translations/ folder.
     SUPPORTED_LANGUAGES = {
         'en': 'English',
+        'fr': 'Français',
+        'de': 'Deutsch',
+        'it': 'Italiano',
         'id': 'Bahasa Indonesia',
         'es': 'Español',
         'pl': 'Polski',
@@ -78,9 +81,7 @@ class Config:
         'zh': '中文'
     }
     BABEL_DEFAULT_LOCALE = 'en'
-
     BACKUP_DIR = BACKUP_DIR
-
     # SECURITY: Session Cookie protections
     SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
     SESSION_COOKIE_HTTPONLY = True
@@ -89,6 +90,10 @@ class Config:
     # Logging Configuration
     LOG_FILE = os.path.join(LOG_DIR, 'repair_shop.log')
     LOG_LEVEL = logging.INFO
+
+    # Flask-Limiter Configuration
+    # Use Redis for production-ready rate limiting
+    RATELIMIT_STORAGE_URI = os.getenv('RATELIMIT_STORAGE_URI', 'memory://')
 
 class DevelopmentConfig(Config):
     """Development configuration"""
@@ -103,17 +108,15 @@ class ProductionConfig(Config):
     # Enforce secure cookies in production by default (overridable for LAN/HTTP usage)
     SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
 
-    def __init__(self):
-        # SECURITY FIX: Prevent starting up in production with the default unsafe key
-        if Config.SECRET_KEY == 'dev-secret-key-change-in-production':
-            raise ValueError("CRITICAL SECURITY ERROR: SECRET_KEY must be set in production environment variables.")
+    # SECURITY: Fail-fast checks performed at load time to ensure production safety
+    if os.getenv('FLASK_CONFIG') == 'production':
+        if os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production') == 'dev-secret-key-change-in-production':
+            raise ValueError("CRITICAL SECURITY ERROR: SECRET_KEY must be set in production.")
 
-        # GDPR: Enforce custom encryption key in production
-        if Config.ENCRYPTION_KEY == '39iJ2h3vR5uY8_a1zX-9kL0mN2pQ4rS6tU8vW0xY2zA=':
-            raise ValueError("CRITICAL SECURITY ERROR: ENCRYPTION_KEY must be set in production to protect PII.")
-        
-        # PROD FIX: Enforce an external database engine configuration over SQLite
-        if 'sqlite' in Config.SQLALCHEMY_DATABASE_URI:
+        if os.getenv('ENCRYPTION_KEY', '39iJ2h3vR5uY8_a1zX-9kL0mN2pQ4rS6tU8vW0xY2zA=') == '39iJ2h3vR5uY8_a1zX-9kL0mN2pQ4rS6tU8vW0xY2zA=':
+            raise ValueError("CRITICAL SECURITY ERROR: ENCRYPTION_KEY must be set in production.")
+
+        if Config.SQLALCHEMY_DATABASE_URI and 'sqlite' in Config.SQLALCHEMY_DATABASE_URI:
             logging.warning("Running production environment on a fallback SQLite engine configuration.")
 
 class TestingConfig(Config):
@@ -122,7 +125,10 @@ class TestingConfig(Config):
     TESTING = True
     WTF_CSRF_ENABLED = False
     # PostgreSQL is recommended for tests to support to_char() and other PG-specific functions
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        'TEST_DATABASE_URL', 
-        'postgresql+psycopg://postgres:REDACTED_PASSWORD@localhost/repair_shop_test'
-    )
+    SQLALCHEMY_DATABASE_URI = os.getenv('TEST_DATABASE_URL')
+    if not SQLALCHEMY_DATABASE_URI:
+        t_user = os.getenv('DB_USER', 'postgres')
+        t_host = os.getenv('DB_HOST', 'localhost')
+        t_name = os.getenv('TEST_DB_NAME', 'repair_shop_test')
+        # Construct dynamically to avoid hardcoded sensitive patterns
+        SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg://{t_user}@{t_host}/{t_name}"

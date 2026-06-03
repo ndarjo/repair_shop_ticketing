@@ -8,6 +8,7 @@ from babel import Locale
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
+from cryptography.fernet import InvalidToken
 from models import db, User, Role, Permission, CommonProblem, ShopSetting
 
 # Global limiter instance for blueprint access
@@ -174,6 +175,18 @@ def create_app(config_name=None):
             
         return render_template('errors/500.html'), 500
 
+    @app.errorhandler(InvalidToken)
+    def handle_invalid_token(error):
+        """Handle PII decryption failures gracefully"""
+        app.logger.critical("PII Decryption failed! ENCRYPTION_KEY is likely mismatched with database content.")
+        
+        # Handle AJAX/JSON requests (search, modals)
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or '/search' in request.path:
+            return jsonify({'error': _('Security Error: Unable to decrypt data. Check system configuration.')}), 500
+        
+        flash(_('Security Error: Unable to decrypt customer data. Your ENCRYPTION_KEY might be incorrect or has changed since this data was saved.'), 'error')
+        return redirect(url_for('main.dashboard'))
+
     @app.errorhandler(415)
     def unsupported_media_type(error):
         # If a 415 still occurs, log it and return a clear message or redirect
@@ -220,6 +233,23 @@ def create_app(config_name=None):
         initialize_default_data()
         initialize_superuser()
     
+    @app.cli.command("reset-admin")
+    def reset_admin():
+        """CLI command to reset the default admin password from environment variable"""
+        admin = User.query.filter_by(username='admin', is_superuser=True).first()
+        if not admin:
+            print("Error: Superuser 'admin' not found.")
+            return
+        
+        new_pw = os.getenv('INITIAL_ADMIN_PASSWORD', 'change-me-immediately')
+        admin.set_password(new_pw)
+        try:
+            db.session.commit()
+            print(f"Success: Password for 'admin' reset to the value in INITIAL_ADMIN_PASSWORD.")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error resetting password: {str(e)}")
+
     return app
 
 
@@ -238,7 +268,10 @@ def initialize_superuser():
             is_superuser=True,
             is_active=True
         )
-        admin.set_password('REDACTED_PASSWORD')
+        # SECURITY: Use an environment variable for the initial password, 
+        # or a very specific placeholder that isn't a common password.
+        initial_pw = os.getenv('INITIAL_ADMIN_PASSWORD', 'change-me-immediately')
+        admin.set_password(initial_pw)
         
         # FIXED: Associates the built admin role with the master account if model supports it
         if admin_role and hasattr(admin, 'roles'):
@@ -247,9 +280,8 @@ def initialize_superuser():
         db.session.add(admin)
         db.session.commit()
         current_app.logger.info("\n" + "="*50)
-        current_app.logger.info("Superuser created successfully!")
-        current_app.logger.info("Username: admin")
-        current_app.logger.info("Password: REDACTED_PASSWORD")
+        current_app.logger.info("SECURITY: Default superuser 'admin' has been initialized.")
+        current_app.logger.info("Please use the INITIAL_ADMIN_PASSWORD defined in your environment to log in.")
         current_app.logger.info("="*50 + "\n")
 
 
@@ -377,9 +409,9 @@ if __name__ == '__main__':
     # Determine config and accessibility from environment
     env_name = os.getenv('FLASK_CONFIG', 'development')
     app = create_app(env_name)
-    
-    # Bind to 0.0.0.0 in production to allow LAN/Network access
-    host = '0.0.0.0' if env_name == 'production' else 'localhost'
-    debug_mode = (env_name == 'development')
-    
-    app.run(debug=debug_mode, host=host, port=5000)
+
+    # Configuration is now driven by environment variables.
+    # 'debug' is handled automatically by the app.config object.
+    host = os.getenv('HOST', '127.0.0.1')
+    port = int(os.getenv('PORT', 5000))
+    app.run(host=host, port=port)
