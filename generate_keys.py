@@ -9,6 +9,9 @@ def generate_keys():
     print(f"\nSECRET_KEY (for sessions):")
     print(secrets.token_urlsafe(32))
     
+    print(f"\nBLIND_INDEX_SALT (for searchable encrypted PII):")
+    print(secrets.token_urlsafe(32))
+    
     print(f"\nENCRYPTION_KEY (for PII encryption - Base64):")
     print(base64.b64encode(secrets.token_bytes(32)).decode('utf-8'))
     print("\n" + "="*50)
