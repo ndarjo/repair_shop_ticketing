@@ -17,6 +17,34 @@
     </div>
 </div>
 
+<!-- KPI Summary Cards -->
+<div class="row mb-4 g-3">
+    <div class="col-md-4">
+        <div class="card text-center bg-success text-white shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase small fw-bold">{{ _('Gross Revenue') }}</h6>
+                <h3 class="mb-0">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, total_revenue) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center bg-danger text-white shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase small fw-bold">{{ _('Hardware Costs') }}</h6>
+                <h3 class="mb-0">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, total_hardware_cost) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center bg-primary text-white shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="card-title text-uppercase small fw-bold">{{ _('Net Profit') }}</h6>
+                <h3 class="mb-0">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, net_profit) }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Quick Navigation Buttons -->
 <div class="mb-4">
     <div class="card shadow-sm border-0">
@@ -78,7 +106,7 @@
                         <small class="text-muted">{{ customer.phone }}</small>
                     </td>
                     <td>
-                        <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="badge bg-info text-dark text-decoration-none">
+                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="badge bg-info text-dark text-decoration-none">
                             {{ ticket.ticket_number }}
                         </a>
                     </td>
@@ -128,7 +156,7 @@
                     </td>
                     <td><small>{{ customer.name }}</small></td>
                     <td>
-                        <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="small text-decoration-none">
+                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="small text-decoration-none">
                             {{ ticket.ticket_number }}
                         </a>
                     </td>

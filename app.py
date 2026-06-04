@@ -1,7 +1,12 @@
+import sys
+import os
+# Bootstrap: Ensure project root is in sys.path to allow imports like 'from models import ...'
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 import logging
 import time
 from logging.handlers import RotatingFileHandler
-from flask import Flask, redirect, url_for, request, render_template, current_app, Request, jsonify, flash
+from flask import Flask, redirect, url_for, request, render_template, current_app, Request, jsonify, flash, session, has_request_context
 from flask_login import LoginManager, current_user
 from flask_wtf.csrf import CSRFProtect
 from flask_talisman import Talisman
@@ -14,9 +19,9 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_migrate import Migrate
 from whitenoise import WhiteNoise
 from flask_wtf.csrf import CSRFError
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import InvalidToken
 from models import db, User, Role, Permission, CommonProblem, ShopSetting, Location
-from core.setup import (
+from setup import (
     initialize_roles_and_permissions, 
     initialize_default_data, 
     initialize_superuser,
@@ -30,8 +35,6 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["5000 per day", "
 from config import DevelopmentConfig, ProductionConfig, TestingConfig
 from datetime import datetime, timezone
 import os
-import json
-from dotenv import load_dotenv, find_dotenv
 
 # Custom Request class to handle Flask 2.3+ strict JSON checks gracefully
 class SilentJSONRequest(Request):
@@ -39,8 +42,6 @@ class SilentJSONRequest(Request):
         # Return None instead of raising 415 when a non-JSON request is probed for JSON
         return None
 
-# Load environment variables from env.local file if it exists
-load_dotenv(find_dotenv('env.local'))
 def create_app(config_name=None):
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'development')
@@ -111,9 +112,17 @@ def create_app(config_name=None):
     
     # Initialize Multi-language support (i18n)
     def get_locale():
-        # Use user's preference if logged in, otherwise negotiate with browser headers
+            # Safety check for calls outside of a request context (e.g. startup seeding, CLI, scheduler)
+        if not has_request_context():
+            return app.config.get('BABEL_DEFAULT_LOCALE', 'en')
+            
+        # 1. Check user profile preference
         if current_user.is_authenticated and current_user.language_preference:
             return current_user.language_preference
+        # 2. Check session (for unauthenticated users who manually switched)
+        if 'language' in session:
+            return session['language']
+        # 3. Negotiate with browser headers
         return request.accept_languages.best_match(app.config['LANGUAGES'].keys()) or app.config.get('BABEL_DEFAULT_LOCALE', 'en')
     
     babel = Babel(app, locale_selector=get_locale)
@@ -147,7 +156,13 @@ def create_app(config_name=None):
         ],
         'font-src': [
             '\'self\'',
-            'https://cdnjs.cloudflare.com'
+            'https://cdnjs.cloudflare.com',
+            'data:'
+        ],
+        'img-src': [
+            '\'self\'',
+            'data:',
+            'https://cdn.jsdelivr.net'
         ]
     }
     Talisman(app, content_security_policy=csp, force_https=app.config.get('SESSION_COOKIE_SECURE', False))
@@ -178,29 +193,26 @@ def create_app(config_name=None):
             decimals = 2
         
         # SCALABILITY: Branding is now per-location
-        if current_user.is_authenticated and current_user.location_id:
-            shop_info = ShopSetting.query.filter_by(location_id=current_user.location_id).first()
+        if current_user.is_authenticated and getattr(current_user, 'location_id', None):
+            shop_info = db.session.execute(db.select(ShopSetting).filter_by(location_id=current_user.location_id)).scalar()
         else:
             # Fallback to the first available shop or global defaults
-            shop_info = db.session.query(ShopSetting).first()
+            shop_info = db.session.execute(db.select(ShopSetting)).scalar()
             
         return {
             'now': datetime.now(timezone.utc), 
+            'current_locale': get_locale(),
             'currency_symbol': symbol, 
             'currency_decimals': decimals, 
             'shop_info': shop_info,
             'languages': app.config['LANGUAGES']
         }
     
-    # Import blueprints here to avoid circular dependencies
-    from routes.main import main_bp
-    from routes.auth import auth_bp
-    from routes.ticket import ticket_bp
-    from routes.customer import customer_bp
-    from routes.device import device_bp
-    from routes.admin import admin_bp, onboarding_bp, get_logical_backup_data
-    from routes.report import report_bp
-    from services.core import BackupService
+    # Modular Blueprint Hub: Import all controllers from the routes package
+    from routes import (
+        main_bp, auth_bp, ticket_bp, customer_bp, 
+        device_bp, admin_bp, report_bp, onboarding_bp
+    )
 
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -217,14 +229,14 @@ def create_app(config_name=None):
         try:
             return render_template('errors/403.html'), 403
         except:
-            return _("403 Forbidden: Access Denied"), 403
+            return jsonify({"error": _("Forbidden: Access Denied")}), 403
 
     @app.errorhandler(404)
     def not_found_error(error):
         try:
             return render_template('errors/404.html'), 404
         except:
-            return _("404 Not Found"), 404
+            return jsonify({"error": _("Not Found")}), 404
 
     @app.errorhandler(500)
     def internal_error(error):
@@ -261,7 +273,7 @@ def create_app(config_name=None):
         # If a 415 still occurs, log it and return a clear message or redirect
         app.logger.error(f"Unsupported Media Type (415): {str(error)} at {request.path}")
         flash(_("Technical Error: Unsupported request format. Please try again."), "error")
-        return render_template('login.html'), 415
+        return render_template('Auth/login.html'), 415
 
     @app.before_request
     def check_onboarding():
@@ -269,8 +281,8 @@ def create_app(config_name=None):
         if request.endpoint and \
            not any(p in request.endpoint for p in ['static', 'auth', 'onboarding']):
             if current_user.is_authenticated and current_user.is_superuser:
-                settings = ShopSetting.query.first()
-                if settings and not settings.setup_completed:
+                settings = db.session.execute(db.select(ShopSetting)).scalar()
+                if not settings or not settings.setup_completed:
                     return redirect(url_for('onboarding.setup'))
     
     # Initialize Scheduler for automated backups

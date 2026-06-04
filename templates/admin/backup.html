@@ -8,7 +8,9 @@
 
         <div class="alert alert-info mb-4" role="alert">
             <h5 class="alert-heading"><i class="fas fa-clock me-2"></i>{{ _('Automated Daily Backups Active') }}</h5>
-            <p class="mb-0">{{ _('The system automatically performs a <strong>full database backup (PostgreSQL Dump)</strong> every day at <strong>02:00 AM UTC</strong> (with logical JSON fallback).') }}
+            <p class="mb-0">
+                {{ _('The system automatically performs a <strong>full database backup (PostgreSQL Dump)</strong> every day at <strong>%(hour)02d:%(min)02d UTC</strong> (with logical JSON fallback).', 
+                   hour=config.BACKUP_HOUR, min=config.BACKUP_MINUTE)|safe }}
             </p>
         </div>
 
@@ -50,6 +52,37 @@
                     </div>
                     <button type="submit" class="btn btn-warning confirm-action" data-confirm="{{ _('WARNING: Restoring from a backup file will overwrite all current data. Are you sure?') }}">{{ _('Upload & Restore') }}</button>
                 </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ _('Available Backups') }}</h5>
+                <span class="badge bg-secondary">{{ backups|length }} {{ _('Files') }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{{ _('Filename') }}</th>
+                                <th class="text-end">{{ _('Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in backups %}
+                            <tr>
+                                <td><code class="text-primary">{{ b }}</code></td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('admin.download_backup_file', filename=b) }}" class="btn btn-sm btn-outline-primary" title="{{ _('Download') }}"><i class="fas fa-download"></i></a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="2" class="text-center text-muted py-4">{{ _('No backup files found in the repository.') }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

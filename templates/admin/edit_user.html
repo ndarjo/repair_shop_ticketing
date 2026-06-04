@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Edit User - Admin{% endblock %}
+{% block title %}{{ _('Edit User - Admin') }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -14,7 +14,7 @@
                     <!-- Basic Info -->
                     <div class="card mb-4">
                         <div class="card-header">
-                            <h5 class="mb-0">Basic Information</h5>
+                            <h5 class="mb-0">{{ _('Basic Information') }}</h5>
                         </div>
                         <div class="card-body">
                             <div class="row">
@@ -25,6 +25,14 @@
                                 <div class="col-md-6 mb-3">
                                     <label for="email" class="form-label">{{ _('Email (Optional)') }}</label>
                                     <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="location_id" class="form-label">{{ _('Assigned Location') }} *</label>
+                                    <select name="location_id" id="location_id" class="form-select" required>
+                                        {% for loc in locations %}
+                                            <option value="{{ loc.id }}" {% if user.location_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
                             <div class="mb-3">
@@ -45,8 +53,8 @@
                         <div class="card-body">
                             <div class="mb-0">
                                 <label for="password" class="form-label">{{ _('New Password') }}</label>
-                                <input type="password" class="form-control" id="password" name="password" placeholder="{{ _('Leave blank to keep current password') }}">
-                                <small class="text-muted">{{ _('Minimum 6 characters. Use this field only if you need to override the user\'s current password.') }}</small>
+                                <input type="password" class="form-control" id="password" name="password" placeholder="{{ _('Leave blank to keep current password') }}" minlength="8">
+                                <small class="text-muted">{{ _('Minimum 8 characters. Use this field only if you need to override the user\'s current password.') }}</small>
                             </div>
                         </div>
                     </div>
@@ -57,50 +65,17 @@
                             <h5 class="mb-0">{{ _('Roles') }}</h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                {% for role in roles %}
-                                <div class="col-md-6 mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="role_{{ role.id }}" name="roles" value="{{ role.id }}" {% if role in user.roles %}checked{% endif %}>
-                                        <label class="form-check-label" for="role_{{ role.id }}"><strong>{{ _(role.name) }}</strong><br>
-                                            <small class="text-muted">{{ _(role.description) }}</small>
-                                        </label>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
+                            <div class="mb-3">
+                                <label for="role_id" class="form-label">{{ _('Primary Role') }}</label>
+                                <select name="role_id" id="role_id" class="form-select">
+                                    <option value="">{{ _('-- Select Role --') }}</option>
+                                    {% for role in roles %}
+                                        <option value="{{ role.id }}" {% if role in user.roles %}selected{% endif %}>{{ _(role.name) }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">{{ _('Permissions are derived from the assigned role.') }}</small>
                         </div>
                     </div>
-                    
-                    <!-- Permissions by Category -->
-                    {% for category, permissions in permissions_by_category.items() %}
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="mb-0">{{ _(category|title) }} {{ _('Permissions') }}</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <tbody>
-                                        {% for perm in permissions %}
-                                        <tr class="align-middle">
-                                            <td style="width: 100%">
-                                                <strong>{{ perm.name }}</strong><br>
-                                                <small class="text-muted">{{ perm.description }}</small>
-                                            </td>
-                                            <td class="text-end">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="perm_{{ perm.id }}" name="permissions" value="{{ perm.id }}" {% if perm in user.permissions %}checked{% endif %}>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
                     
                     <!-- Submit Buttons -->
                     <div class="d-flex gap-2">

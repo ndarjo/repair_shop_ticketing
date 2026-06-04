@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Dashboard - Repair Shop{% endblock %}
+{% block title %}{{ _('Admin Dashboard - Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="row g-4">
@@ -37,7 +37,7 @@
                 <i class="fas fa-exclamation-triangle fa-3x mb-3 text-primary"></i>
                 <h5 class="card-title">{{ _('Common Problems') }}</h5>
                 <p class="card-text">{{ _('Update the quick-select problem descriptions used for ticket intake.') }}</p>
-                <a href="{{ url_for('admin.manage_problems') }}" class="btn btn-primary mt-auto">{{ _('Manage Problems') }}</a>
+                <a href="{{ url_for('admin.manage_common_problems') }}" class="btn btn-primary mt-auto">{{ _('Manage Problems') }}</a>
             </div>
         </div>
     </div>
@@ -47,7 +47,7 @@
                 <i class="fas fa-boxes fa-3x mb-3 text-primary"></i>
                 <h5 class="card-title">{{ _('Parts Inventory') }}</h5>
                 <p class="card-text">{{ _('Manage the catalog of hardware and spare parts available for repair jobs.') }}</p>
-                <a href="{{ url_for('admin.manage_parts') }}" class="btn btn-primary mt-auto">{{ _('Manage Parts') }}</a>
+                <a href="{{ url_for('admin.manage_inventory') }}" class="btn btn-primary mt-auto">{{ _('Manage Parts') }}</a>
             </div>
         </div>
     </div>
@@ -67,7 +67,7 @@
                 <i class="fas fa-image fa-3x mb-3 text-primary"></i>
                 <h5 class="card-title">{{ _('Shop Branding') }}</h5>
                 <p class="card-text">{{ _('Upload your shop logo and configure contact information used on customer invoices.') }}</p>
-                <a href="{{ url_for('admin.shop_settings') }}" class="btn btn-primary mt-auto">{{ _('Branding Settings') }}</a>
+                <a href="{{ url_for('admin.settings') }}" class="btn btn-primary mt-auto">{{ _('Branding Settings') }}</a>
             </div>
         </div>
     </div>
@@ -77,7 +77,7 @@
                 <i class="fas fa-server fa-3x mb-3 text-primary"></i>
                 <h5 class="card-title">{{ _('System Status') }}</h5>
                 <p class="card-text">{{ _('Monitor database connectivity, production environment variables, and API availability.') }}</p>
-                <a href="{{ url_for('main.health_check') }}" target="_blank" class="btn btn-primary mt-auto">{{ _('Check Health') }}</a>
+                <a href="{{ url_for('admin.system_status') }}" class="btn btn-primary mt-auto">{{ _('Check System Status') }}</a>
             </div>
         </div>
     </div>

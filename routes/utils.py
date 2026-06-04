@@ -42,9 +42,13 @@ def require_superuser():
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
+                if request.mimetype == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': 'Authentication required'}), 401
                 flash(_('Please log in first.'), 'error')
                 return redirect(url_for('auth.login'))
             if not current_user.is_superuser:
+                if request.mimetype == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': 'Permission denied'}), 403
                 flash(_('You do not have permission to access this page.'), 'error')
                 return redirect(url_for('main.dashboard'))
             return f(*args, **kwargs)

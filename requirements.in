@@ -1,3 +1,4 @@
+# Web Framework & Extensions
 Flask
 Flask-SQLAlchemy
 Flask-Login
@@ -5,14 +6,17 @@ Flask-WTF
 Flask-Talisman
 Flask-Babel
 Flask-APScheduler
-Flask-Limiter
-Werkzeug
-SQLAlchemy
-psycopg[binary]
-cryptography
-reportlab
-python-dotenv
+Flask-Limiter[redis]
 Flask-Migrate
 whitenoise
-redis
-gunicorn
+
+# Database & Logic
+SQLAlchemy>=2.0
+psycopg[binary]
+python-dotenv
+cryptography
+reportlab
+
+# Utilities
+email-validator
+babel

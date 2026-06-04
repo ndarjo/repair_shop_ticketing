@@ -28,13 +28,17 @@ def dashboard():
     tickets = db.paginate(stmt, page=page, per_page=10)
     
     # Single aggregate query for status counts
-    phase_counts = db.session.query(
+    phase_counts_stmt = db.select(
         Ticket.current_phase, func.count(Ticket.id)
-    ).filter(location_filter, Ticket.is_archived == False).group_by(Ticket.current_phase).all()
+    ).where(location_filter, Ticket.is_archived == False).group_by(Ticket.current_phase)
+    phase_counts = db.session.execute(phase_counts_stmt).all()
     phase_map = dict(phase_counts)
 
     # Calculate total active tickets from the phase_map to save a DB query
     active_total = sum(count for phase, count in phase_counts if phase != 'Already Taken')
+
+    customer_filter = Customer.location_id == current_user.location_id if not current_user.is_superuser else True
+    customer_count_stmt = select(func.count(Customer.id)).where(customer_filter)
 
     stats = {
         'total_tickets': active_total,
@@ -42,17 +46,17 @@ def dashboard():
         'diagnostic': phase_map.get('Diagnostic', 0),
         'repairing': phase_map.get('Repairing', 0),
         'finished': phase_map.get('Finished', 0),
-        'total_customers': Customer.query.filter(Customer.location_id == current_user.location_id).count() if not current_user.is_superuser else Customer.query.count(),
+        'total_customers': db.session.execute(customer_count_stmt).scalar() or 0,
     }
     
-    return render_template('dashboard.html', tickets=tickets, stats=stats, current_theme=current_user.theme_preference)
+    return render_template('main/dashboard.html', tickets=tickets, stats=stats, current_theme=current_user.theme_preference)
 
 @main_bp.route('/health')
 def health_check():
     """Lightweight endpoint for monitoring and load balancers"""
     try:
         # Simple query to verify DB connectivity
-        db.session.execute(func.now())
+        db.session.execute(select(func.now())).scalar()
         return jsonify({
             'status': 'healthy',
             'timestamp': datetime.now(timezone.utc).isoformat(),

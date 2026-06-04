@@ -66,13 +66,13 @@
                         <small class="text-muted">{{ _('S/N:') }} {{ ticket.device.serial_number or 'N/A' }}</small>
                     </td>
                     <td class="text-center">
-                        <span class="badge bg-{{ 'secondary' if ticket.current_phase == 'Open' else 'primary' }}">
+                        <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
                             {{ _(ticket.current_phase) }}
                         </span>
                     </td>
                     <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td class="text-end">
-                        <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
                     </td>
                 </tr>
                 {% endfor %}

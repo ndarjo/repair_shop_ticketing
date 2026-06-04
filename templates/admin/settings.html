@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Shop Settings - Admin{% endblock %}
+{% block title %}{{ _('Shop Settings - Admin') }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -16,8 +16,8 @@
                         <div class="col-md-4 text-center">
                             <label class="form-label d-block fw-bold">{{ _('Shop Logo') }}</label>
                             <div class="mb-3">
-                                {% if settings.logo_path %}
-                                    <img src="{{ url_for('static', filename='uploads/logos/' + settings.logo_path) }}" alt="Current Logo" class="img-thumbnail" style="max-height: 120px;">
+                                {% if settings and settings.logo_path %}
+                                    <img src="{{ url_for('static', filename='uploads/logos/' + settings.logo_path) }}" alt="Current Logo" class="img-thumbnail" style="max-height: 120px; max-width: 100%; object-fit: contain;">
                                 {% else %}
                                     <div class="bg-light border rounded d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
                                         <i class="bi bi-image text-muted fs-1"></i>
@@ -30,11 +30,11 @@
                         <div class="col-md-8">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">{{ _('Shop Name') }} *</label>
-                                <input type="text" name="shop_name" class="form-control" value="{{ settings.shop_name }}" required>
+                                <input type="text" name="shop_name" class="form-control" value="{{ settings.shop_name if settings else _('Repair Shop') }}" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">{{ _('Shop Address (Location)') }}</label>
-                                <textarea name="shop_address" class="form-control" rows="3">{{ settings.shop_address or '' }}</textarea>
+                                <textarea name="shop_address" class="form-control" rows="3">{{ settings.shop_address if settings else '' }}</textarea>
                                 <small class="text-muted">{{ _('This will appear on invoices.') }}</small>
                             </div>
                         </div>
@@ -43,11 +43,11 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">{{ _('Contact Phone') }}</label>
-                            <input type="text" name="shop_phone" class="form-control" value="{{ settings.shop_phone or '' }}">
+                            <input type="text" name="shop_phone" class="form-control" value="{{ settings.shop_phone if settings else '' }}">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">{{ _('Contact Email') }}</label>
-                            <input type="email" name="shop_email" class="form-control" value="{{ settings.shop_email or '' }}">
+                            <input type="email" name="shop_email" class="form-control" value="{{ settings.shop_email if settings else '' }}">
                         </div>
                     </div>
                     

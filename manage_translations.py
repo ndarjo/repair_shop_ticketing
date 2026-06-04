@@ -34,25 +34,37 @@ def main():
 
     command = sys.argv[1].lower()
 
+    # Centralized extraction parameters to ensure integrity across commands
+    # Includes standard Flask-Babel keywords for gettext (_) and lazy_gettext (_l)
+    extract_args = ["pybabel", "extract", "-F", "babel.cfg", "-k", "_", "-k", "_l", "-o", "messages.pot", "."]
+
+    # Check if there are any actual catalogs (locales) to work with
+    has_catalogs = os.path.exists("translations") and any(os.path.isdir(os.path.join("translations", d)) for d in os.listdir("translations"))
+
     # Safety check: Ensure the translations directory exists for update and compile commands
-    if command in ["update", "compile"] and not os.path.exists("translations"):
-        print("\n[!] Error: The 'translations' directory was not found.")
-        print("    If this is a fresh installation, you must initialize at least one language first.")
-        print("    Example: python manage_translations.py init id\n")
-        sys.exit(1)
+    if not has_catalogs:
+        if command == "compile":
+            print("\n[*] No locale catalogs found in 'translations/'. Skipping compilation.")
+            print("    (The application will default to English strings from the source code.)\n")
+            return
+        elif command == "update":
+            print("\n[!] Error: No language catalogs found.")
+            print("    You must initialize at least one language (e.g., 'init id') before you can update strings.")
+            print("    Example: python manage_translations.py init id\n")
+            sys.exit(1)
 
     if command == "extract":
-        run_command(["pybabel", "extract", "-F", "babel.cfg", "-k", "_", "-k", "_l", "-o", "messages.pot", "."])
+        run_command(extract_args)
     elif command == "init":
         if len(sys.argv) < 3:
             print("[!] Error: Language code required. Example: python manage_translations.py init fr")
             sys.exit(1)
         # Automatically extract strings if messages.pot is missing
         if not os.path.exists("messages.pot"):
-            run_command(["pybabel", "extract", "-F", "babel.cfg", "-k", "_", "-k", "_l", "-o", "messages.pot", "."])
+            run_command(extract_args)
         run_command(["pybabel", "init", "-i", "messages.pot", "-d", "translations", "-l", sys.argv[2]])
     elif command == "update":
-        run_command(["pybabel", "extract", "-F", "babel.cfg", "-k", "_", "-k", "_l", "-o", "messages.pot", "."])
+        run_command(extract_args)
         run_command(["pybabel", "update", "-i", "messages.pot", "-d", "translations"])
     elif command == "compile":
         run_command(["pybabel", "compile", "-d", "translations"])

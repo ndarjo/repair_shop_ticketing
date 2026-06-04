@@ -253,11 +253,12 @@ function initNewCustomerModal() {
             
             if (response.ok) {
                 const data = await response.json();
-                // Assuming selectCustomer handles UI updates for success
-                selectCustomer(data.id, data.name);
+                
+                // Hide modal first to clear the backdrop
                 const modalElement = document.getElementById('newCustomerModal');
-                const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
-                modal.hide();
+                bootstrap.Modal.getInstance(modalElement)?.hide();
+                
+                selectCustomer(data.id, data.name);
                 form.reset();
             } else {
                 const errorData = await response.json();
@@ -300,11 +301,12 @@ function initNewDeviceModal() {
             
             if (response.ok) {
                 const data = await response.json();
-                // Assuming selectDevice handles UI updates for success
-                selectDevice(data.id, data.display);
+                
+                // Hide modal first to clear the backdrop
                 const modalElement = document.getElementById('newDeviceModal');
-                const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
-                modal.hide();
+                bootstrap.Modal.getInstance(modalElement)?.hide();
+                
+                selectDevice(data.id, data.display);
                 form.reset();
             } else {
                 const errorData = await response.json();
@@ -429,7 +431,7 @@ function initDynamicAdminModals() {
         document.querySelectorAll('.edit-part-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const data = this.dataset;
-                document.getElementById('editPartForm').action = `/admin/parts/edit/${data.id}`;
+                document.getElementById('editPartForm').action = `/admin/inventory/parts/edit/${data.id}`;
                 document.getElementById('edit_part_name').value = data.name;
                 document.getElementById('edit_part_cost').value = data.cost;
                 document.getElementById('edit_part_price').value = data.price;
@@ -452,6 +454,16 @@ function initDynamicAdminModals() {
                 document.getElementById('edit_service_active').checked = data.active === 'true';
             });
         });
+    }
+}
+
+/**
+ * Initialize generic reload button handler
+ */
+function initReloadHandler() {
+    const btn = document.getElementById('reloadPageBtn');
+    if (btn) {
+        btn.addEventListener('click', () => window.location.reload());
     }
 }
 
@@ -501,7 +513,7 @@ function initGlobalConfirmations() {
  */
 function initFinanceChart() {
     const canvas = document.getElementById('financeChart');
-    if (!canvas) return;
+    if (!canvas || typeof Chart === 'undefined') return;
 
     const theme = document.documentElement.dataset.theme || 'light';
     const isDark = theme === 'dark';
@@ -599,6 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initFinanceChart();
     initPartModalLogic();
     initDynamicAdminModals();
+    initReloadHandler();
     initPrintHandler();
     initFormAutoSubmit();
     initGlobalConfirmations();

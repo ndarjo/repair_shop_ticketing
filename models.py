@@ -3,9 +3,11 @@ from flask_login import UserMixin
 from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
+from sqlalchemy import or_
 from decimal import Decimal
 from cryptography.fernet import Fernet
 import hashlib
+import hmac
 from flask import current_app
 
 db = SQLAlchemy()
@@ -84,23 +86,24 @@ class User(UserMixin, db.Model):
         if self.is_superuser:
             return True
         
-        # Check direct permissions assigned to user
-        if any(p.name == permission_name for p in self.permissions):
-            return True
-            
-        # Check permissions inherited from assigned roles
-        for role in self.roles:
-            if any(p.name == permission_name for p in role.permissions):
-                return True
-                
-        return False
+        # Optimized check: Existence query for the specific permission name
+        # covering both direct user-permission links and role-based inheritance.
+        stmt = db.select(Permission.id).where(
+            Permission.name == permission_name,
+            or_(
+                Permission.users.any(id=self.id),
+                Permission.roles.any(Role.users.any(id=self.id))
+            )
+        )
+        return db.session.execute(stmt).scalar() is not None
     
     def has_role(self, role_name):
-        """Check if user has specific role"""
-        return db.session.query(Role).join(user_roles).filter(
+        """Check if user has specific role using modern select"""
+        stmt = db.select(Role).join(user_roles).where(
             user_roles.c.user_id == self.id,
             Role.name == role_name
-        ).first() is not None
+        )
+        return db.session.execute(stmt).scalar() is not None
     
     def __repr__(self):
         return f'<User {self.username}>'
@@ -170,7 +173,7 @@ class Customer(db.Model):
         if not value:
             return None
         salt = current_app.config.get('BLIND_INDEX_SALT', current_app.config['SECRET_KEY'])
-        return hashlib.sha256((salt + value).encode()).hexdigest()
+        return hmac.new(salt.encode(), value.encode(), hashlib.sha256).hexdigest()
 
     @property
     def phone(self):
@@ -274,7 +277,7 @@ class Ticket(db.Model):
     notes = db.relationship('Note', backref='ticket', lazy=True, cascade='all, delete-orphan')
     phase_logs = db.relationship('PhaseLog', backref='ticket', lazy=True, cascade='all, delete-orphan')
     invoices = db.relationship('Invoice', backref='ticket', lazy=True, cascade='all, delete-orphan')
-    payments = db.relationship('Payment', backref='ticket', lazy=True)
+    payments = db.relationship('Payment', backref='ticket', lazy=True, cascade='all, delete-orphan')
 
     __table_args__ = (
         # Optimization for dashboard queries filtering active/archived phases
@@ -286,7 +289,8 @@ class Ticket(db.Model):
         """Generates a unique ticket number with collision check"""
         while True:
             ticket_number = f"TKT-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
-            if not db.session.query(Ticket.id).filter_by(ticket_number=ticket_number).first():
+            stmt = db.select(Ticket.id).filter_by(ticket_number=ticket_number)
+            if not db.session.execute(stmt).scalar():
                 return ticket_number
 
     @property
@@ -314,6 +318,29 @@ class Ticket(db.Model):
         """Remaining amount to be paid"""
         return self.grand_total - self.total_paid
 
+    @property
+    def timeline(self):
+        """Combined chronological list of phase changes and notes for the Audit UI"""
+        events = []
+        for log in self.phase_logs:
+            events.append({
+                'type': 'phase',
+                'timestamp': log.changed_at,
+                'user': log.technician_user.full_name if log.technician_user else 'System',
+                'old_phase': log.old_phase,
+                'new_phase': log.new_phase
+            })
+        for note in self.notes:
+            events.append({
+                'type': 'note',
+                'timestamp': note.created_at,
+                'user': note.author.full_name if note.author else 'System',
+                'content': note.content,
+                'note_type': note.note_type,
+                'is_internal': note.is_internal
+            })
+        return sorted(events, key=lambda x: x['timestamp'], reverse=True)
+
 
 class Service(db.Model):
     """Service model"""
@@ -326,6 +353,8 @@ class Service(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (db.UniqueConstraint('name', 'location_id', name='_service_location_uc'),)
 
 
 class TicketService(db.Model):
@@ -355,6 +384,8 @@ class SparePart(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (db.UniqueConstraint('name', 'location_id', name='_part_location_uc'),)
 
 
 class CommonProblem(db.Model):
@@ -421,8 +452,7 @@ class Invoice(db.Model):
     @property
     def subtotal(self):
         """Total from services attached to the ticket"""
-        if not self.ticket: return Decimal('0.00')
-        return sum((ts.price_charged * ts.quantity for ts in self.ticket.ticket_services), Decimal('0.00'))
+        return self.ticket.services_total if self.ticket else Decimal('0.00')
 
     @property
     def spare_parts_total(self):
@@ -432,9 +462,9 @@ class Invoice(db.Model):
     @property
     def down_payment(self):
         """Amount of the first payment recorded for the ticket"""
-        if not self.ticket: return Decimal('0.00')
-        from sqlalchemy import asc
-        first_payment = Payment.query.filter_by(ticket_id=self.ticket_id).order_by(asc(Payment.paid_at)).first()
+        if not self.ticket_id: return Decimal('0.00')
+        stmt = db.select(Payment).where(Payment.ticket_id == self.ticket_id).order_by(Payment.paid_at.asc())
+        first_payment = db.session.execute(stmt).scalar()
         return first_payment.amount if first_payment else Decimal('0.00')
 
     @property

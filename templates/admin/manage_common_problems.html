@@ -22,7 +22,7 @@
                 {{ _(problem.problem_text) }}
                 {% if not problem.is_active %}<span class="badge bg-secondary ms-2">{{ _('Inactive') }}</span>{% endif %}
             </div>
-            <form method="POST" action="{{ url_for('admin.delete_problem', problem_id=problem.id) }}" onsubmit="return confirm('Are you sure you want to delete this problem?');" style="display:inline;">
+            <form method="POST" action="{{ url_for('admin.delete_problem', problem_id=problem.id) }}" class="confirm-action" data-confirm="{{ _('Are you sure you want to delete this problem?') }}" style="display:inline;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
             </form>
@@ -32,5 +32,5 @@
     {% endfor %}
 </div>
 
-{{ render_pagination(problems, 'admin.manage_problems') }}
+{{ render_pagination(problems, 'admin.manage_common_problems') }}
 {% endblock %}

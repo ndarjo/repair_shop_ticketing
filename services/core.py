@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 from decimal import Decimal
 import uuid
@@ -7,19 +8,17 @@ from flask_babel import _
 from sqlalchemy import func, or_, desc
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 import io
-import json
-
-from models import db, Ticket, PhaseLog, Payment, Note, Invoice, Service, SparePart, InvoiceItem, TicketService as TicketServiceBridge, Customer, Device, Location, ShopSetting, User
+from models import db, Ticket, Payment, Note, Invoice, Service, SparePart, InvoiceItem, TicketService as TicketServiceBridge, Customer, Device, ShopSetting
 
 class FinancialService:
     @staticmethod
     def get_or_create_invoice(ticket_id: int) -> Invoice:
         """Ensures a draft or active invoice exists for the ticket"""
-        invoice = Invoice.query.filter_by(ticket_id=ticket_id).first()
+        invoice = db.session.execute(db.select(Invoice).filter_by(ticket_id=ticket_id)).scalar()
         if not invoice:
             invoice = Invoice(
                 invoice_number=f"INV-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
@@ -29,6 +28,54 @@ class FinancialService:
             db.session.add(invoice)
             db.session.flush()
         return invoice
+
+    @staticmethod
+    def sync_invoice_status(invoice_id: int):
+        """Re-evaluates invoice status (Paid/Partial/Unpaid) based on current payments"""
+        invoice = db.session.get(Invoice, invoice_id)
+        if not invoice:
+            return
+        
+        balance = invoice.remaining_balance
+        if balance <= 0 and invoice.total_amount > 0:
+            invoice.status = 'Paid'
+        elif balance < invoice.total_amount:
+            invoice.status = 'Partial'
+        else:
+            invoice.status = 'Unpaid'
+        db.session.flush()
+
+    @staticmethod
+    def sync_ticket_summaries(ticket_id: int):
+        """Synchronizes ticket actual_cost (wholesale) with current invoice items"""
+        ticket = db.session.get(Ticket, ticket_id)
+        if not ticket:
+            return
+
+        # Aggregate wholesale costs from all parts on all invoices for this ticket
+        wholesale_sum = db.session.execute(
+            db.select(func.sum(InvoiceItem.cost_price * InvoiceItem.quantity))
+            .join(Invoice)
+            .filter(Invoice.ticket_id == ticket_id)
+        ).scalar() or Decimal('0.00')
+
+        ticket.actual_cost = wholesale_sum
+        db.session.flush()
+
+    @staticmethod
+    def void_payment(payment_id: int, user_id: int) -> Tuple[bool, str]:
+        """Voids a payment record and re-evaluates the associated invoice status"""
+        payment = db.session.get(Payment, payment_id)
+        if not payment:
+            return False, _('Payment not found')
+
+        invoice_id = payment.invoice_id
+        db.session.delete(payment)
+        db.session.flush()
+
+        if invoice_id:
+            FinancialService.sync_invoice_status(invoice_id)
+        return True, _('Payment voided successfully')
 
     @staticmethod
     def record_payment(ticket_id: int, amount: Decimal, method: str, reference: str, user_id: int) -> Tuple[bool, Any]:
@@ -49,11 +96,7 @@ class FinancialService:
         db.session.flush()
 
         invoice = FinancialService.get_or_create_invoice(ticket_id)
-        balance = invoice.remaining_balance
-        if balance <= 0:
-            invoice.status = 'Paid'
-        elif balance < invoice.total_amount:
-            invoice.status = 'Partial'
+        FinancialService.sync_invoice_status(invoice.id)
 
         symbol = current_app.jinja_env.globals.get('currency_symbol', '$')
         if callable(symbol): symbol = '$'
@@ -71,6 +114,24 @@ class FinancialService:
         )
         db.session.add(note)
         return True, payment
+
+    @staticmethod
+    def get_ticket_profitability(ticket_id: int) -> Dict[str, Any]:
+        """Calculates revenue, wholesale cost, and net profit for a specific ticket"""
+        ticket = db.session.get(Ticket, ticket_id)
+        if not ticket:
+            return {}
+
+        revenue = ticket.grand_total
+        cost = ticket.actual_cost  # Synced wholesale cost
+        profit = revenue - cost
+
+        return {
+            'revenue': revenue,
+            'cost': cost,
+            'profit': profit,
+            'margin_percentage': (profit / revenue * 100) if revenue > 0 else 0
+        }
 
 class InventoryService:
     @staticmethod
@@ -91,6 +152,8 @@ class InventoryService:
         db.session.add(ts)
         db.session.flush()
         invoice.calculate_total()
+        FinancialService.sync_ticket_summaries(ticket_id)
+        FinancialService.sync_invoice_status(invoice.id)
         return True, ts
 
     @staticmethod
@@ -103,8 +166,8 @@ class InventoryService:
         spare_part_id = None
 
         if part_id:
-            # TECHNICAL FIX: Prevent Race Condition using SELECT ... FOR UPDATE
-            part = db.session.query(SparePart).filter_by(id=part_id).with_for_update().first()
+            # Concurrency check: Lock the row for update to ensure stock integrity
+            part = db.session.execute(db.select(SparePart).filter_by(id=part_id).with_for_update()).scalar()
             if part:
                 description = part.name
                 item_price = price if price is not None else part.selling_price
@@ -137,6 +200,8 @@ class InventoryService:
         )
         db.session.add(item)
         invoice.calculate_total()
+        FinancialService.sync_ticket_summaries(ticket_id)
+        FinancialService.sync_invoice_status(invoice.id)
         return True, item
 
     @staticmethod
@@ -146,12 +211,14 @@ class InventoryService:
         if not ts:
             return False, _('Service entry not found')
             
-        invoice = Invoice.query.filter_by(ticket_id=ticket_id).first()
+        invoice = db.session.execute(db.select(Invoice).filter_by(ticket_id=ticket_id)).scalar()
         db.session.delete(ts)
         db.session.flush()
         
         if invoice:
             invoice.calculate_total()
+            FinancialService.sync_invoice_status(invoice.id)
+        FinancialService.sync_ticket_summaries(ticket_id)
         return True, None
 
     @staticmethod
@@ -171,6 +238,8 @@ class InventoryService:
         db.session.delete(item)
         db.session.flush()
         invoice.calculate_total()
+        FinancialService.sync_invoice_status(invoice.id)
+        FinancialService.sync_ticket_summaries(invoice.ticket_id)
         return True, None
 
 class CustomerService:
@@ -217,22 +286,29 @@ class DeviceService:
 
 class ReportingService:
     @staticmethod
-    def get_financial_analysis() -> List[Dict[str, Any]]:
+    def get_financial_analysis(location_id: int) -> List[Dict[str, Any]]:
         """Aggregates revenue and costs by month for financial reporting"""
-        rev_results = db.session.query(
+        rev_stmt = db.select(
             func.to_char(Payment.paid_at, 'YYYY-MM').label('month'),
             func.sum(Payment.amount)
-        ).group_by('month').all()
+        ).join(Ticket, Payment.ticket_id == Ticket.id)\
+         .filter(Ticket.location_id == location_id)\
+         .group_by('month')
+        rev_results = db.session.execute(rev_stmt).all()
 
         monthly_data = {}
         for month, total in rev_results:
             if month:
                 monthly_data[month] = {'revenue': Decimal(str(total or 0)), 'costs': Decimal('0.00'), 'profit': Decimal(str(total or 0))}
 
-        cost_results = db.session.query(
+        cost_stmt = db.select(
             func.to_char(Invoice.created_at, 'YYYY-MM').label('month'),
             func.sum(InvoiceItem.cost_price * InvoiceItem.quantity)
-        ).join(Invoice, InvoiceItem.invoice_id == Invoice.id).group_by('month').all()
+        ).join(Invoice, InvoiceItem.invoice_id == Invoice.id)\
+         .join(Ticket, Invoice.ticket_id == Ticket.id)\
+         .filter(Ticket.location_id == location_id)\
+         .group_by('month')
+        cost_results = db.session.execute(cost_stmt).all()
 
         for month, total in cost_results:
             if month:
@@ -252,25 +328,34 @@ class DocumentService:
             return False, _('Invoice not found')
         
         invoice = ticket.invoices[0]
-        shop_info = ShopSetting.query.first()
+        # Multi-tenancy: Fetch branding settings specific to the ticket's branch location
+        shop_info = db.session.execute(db.select(ShopSetting).filter_by(location_id=ticket.location_id)).scalar()
         symbol = current_app.jinja_env.globals.get('currency_symbol', '$')
         decimals = current_app.jinja_env.globals.get('currency_decimals', 2)
 
         buffer = io.BytesIO()
         page_width = 80 * mm
         item_count = len(ticket.ticket_services) + len(invoice.items)
-        page_height = (80 + (item_count * 12) + 80) * mm
+        page_height = (60 + (item_count * 12) + 40) * mm
         
         doc = SimpleDocTemplate(buffer, pagesize=(page_width, page_height),
-                                rightMargin=2*mm, leftMargin=2*mm, topMargin=5*mm, bottomMargin=5*mm)
+                                rightMargin=4*mm, leftMargin=4*mm, topMargin=5*mm, bottomMargin=5*mm)
         
         elements = []
         styles = getSampleStyleSheet()
-        title_style = ParagraphStyle('Title', parent=styles['Heading2'], alignment=1, fontSize=12, spaceAfter=5)
-        normal_style = ParagraphStyle('Normal', parent=styles['Normal'], fontSize=8, leading=10)
-        bold_style = ParagraphStyle('Bold', parent=styles['Normal'], fontSize=8, leading=10, fontName='Helvetica-Bold')
+        title_style = ParagraphStyle('Title', parent=styles['Heading2'], alignment=1, fontSize=14, spaceAfter=5, fontName='Helvetica-Bold')
+        normal_style = ParagraphStyle('Normal', parent=styles['Normal'], fontSize=9, leading=11, fontName='Courier')
+        bold_style = ParagraphStyle('Bold', parent=styles['Normal'], fontSize=9, leading=11, fontName='Courier-Bold')
         small_style = ParagraphStyle('Small', parent=styles['Normal'], fontSize=7, leading=9, alignment=1)
         
+        # Branded Logo Support
+        if shop_info and shop_info.logo_path:
+            logo_path = os.path.join(current_app.config['UPLOAD_DIR'], 'logos', shop_info.logo_path)
+            if os.path.exists(logo_path):
+                img = Image(logo_path, width=25*mm, height=25*mm)
+                img.hAlign = 'CENTER'
+                elements.append(img)
+
         elements.append(Paragraph(shop_info.shop_name if shop_info else "Repair Shop", title_style))
         if shop_info:
             if shop_info.shop_address: elements.append(Paragraph(shop_info.shop_address, small_style))
@@ -278,59 +363,29 @@ class DocumentService:
         
         elements.append(Spacer(1, 3*mm))
         elements.append(Paragraph(f"<b>{_('Invoice:')}</b> {invoice.invoice_number}", normal_style))
-        elements.append(Paragraph(f"<b>{_('Date:')}</b> {invoice.created_at.strftime('%Y-%m-%d %H:%M')}", normal_style))
+        elements.append(Paragraph(f"<b>{_('Date:')}</b> {invoice.created_at.astimezone(timezone.utc).strftime('%d/%m/%Y %H:%M')}", normal_style))
         elements.append(Paragraph(f"<b>{_('Customer:')}</b> {ticket.customer.name}", normal_style))
         elements.append(Paragraph(f"<b>{_('Device:')}</b> {ticket.device.display}", normal_style))
         elements.append(Spacer(1, 2*mm))
-        elements.append(Paragraph("-" * 55, normal_style))
+        elements.append(Paragraph("." * 40, normal_style))
         
         data = [[_('Description'), _('Qty'), _('Total')]]
         for ts in ticket.ticket_services:
-            data.append([_(ts.service.name), str(ts.quantity), f"{symbol}{'%.*f'|format(decimals, ts.price_charged * ts.quantity)}"])
+            data.append([_(ts.service.name), str(ts.quantity), f"{symbol}{ts.price_charged * ts.quantity:.{decimals}f}"])
         for item in invoice.items:
-            data.append([item.description, str(item.quantity), f"{symbol}{'%.*f'|format(decimals, item.total_price)}"])
+            data.append([item.description, str(item.quantity), f"{symbol}{item.total_price:.{decimals}f}"])
             
-        table = Table(data, colWidths=[45*mm, 10*mm, 21*mm])
-        table.setStyle(TableStyle([('FONTSIZE', (0,0), (-1,-1), 7), ('ALIGN', (1,0), (1,-1), 'CENTER'), ('ALIGN', (2,0), (2,-1), 'RIGHT'), ('LINEBELOW', (0,0), (-1,0), 0.5, colors.black)]))
+        table = Table(data, colWidths=[38*mm, 10*mm, 24*mm])
+        table.setStyle(TableStyle([('FONTNAME', (0,0), (-1,-1), 'Courier'), ('FONTSIZE', (0,0), (-1,-1), 8), ('ALIGN', (1,0), (1,-1), 'CENTER'), ('ALIGN', (2,0), (2,-1), 'RIGHT'), ('LINEBELOW', (0,0), (-1,0), 0.5, colors.black)]))
         elements.append(table)
-        elements.append(Paragraph("-" * 55, normal_style))
+        elements.append(Paragraph("." * 40, normal_style))
         elements.append(Spacer(1, 2*mm))
-        elements.append(Paragraph(f"<b>{_('Grand Total:')}</b> {symbol}{'%.*f'|format(decimals, invoice.total_amount)}", normal_style))
-        elements.append(Paragraph(f"<b>{_('Paid:')}</b> {symbol}{'%.*f'|format(decimals, invoice.full_payment_received)}", normal_style))
-        elements.append(Paragraph(f"<b>{_('Balance Due:')}</b> {symbol}{'%.*f'|format(decimals, invoice.remaining_balance)}", bold_style))
+        elements.append(Paragraph(f"<b>{_('Grand Total:')}</b> {symbol}{invoice.total_amount:.{decimals}f}", normal_style))
+        elements.append(Paragraph(f"<b>{_('Paid:')}</b> {symbol}{invoice.full_payment_received:.{decimals}f}", normal_style))
+        elements.append(Paragraph(f"<b>{_('Balance Due:')}</b> {symbol}{invoice.remaining_balance:.{decimals}f}", bold_style))
         elements.append(Spacer(1, 5*mm))
         elements.append(Paragraph(_("Thank you for your business!"), small_style))
         
         doc.build(elements)
         buffer.seek(0)
         return True, buffer
-
-class BackupService:
-    @staticmethod
-    def get_system_logical_data() -> Dict[str, Any]:
-        """Prepares a dictionary of all critical system data for export"""
-        return {
-            'locations': [{
-                'id': l.id, 'name': l.name, 'address': l.address,
-                'created_at': l.created_at.isoformat() if l.created_at else None
-            } for l in Location.query.all()],
-            'customers': [{
-                'id': c.id, 'name': c.name, 'phone': c.phone, 'address': c.address, 
-                'created_at': c.created_at.isoformat() if c.created_at else None
-            } for c in Customer.query.all()],
-            'devices': [{
-                'id': d.id, 'customer_id': d.customer_id, 'device_type': d.device_type, 
-                'brand': d.brand, 'model_number': d.model_number, 'serial_number': d.serial_number,
-                'created_at': d.created_at.isoformat() if d.created_at else None
-            } for d in Device.query.all()],
-            'tickets': [{
-                'id': t.id, 'ticket_number': t.ticket_number, 'customer_id': t.customer_id, 
-                'current_phase': t.current_phase, 'estimated_cost': str(t.estimated_cost),
-                'actual_cost': str(t.actual_cost), 'created_at': t.created_at.isoformat() if t.created_at else None
-            } for t in Ticket.query.all()],
-            'shop_settings': [{
-                'shop_name': s.shop_name, 'shop_address': s.shop_address,
-                'shop_phone': s.shop_phone, 'shop_email': s.shop_email,
-                'setup_completed': s.setup_completed
-            } for s in ShopSetting.query.all()]
-        }

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+{% set theme = 'light' %}
+{% set color = 'blue' %}
+{% if current_user.is_authenticated %}
+    {% set theme = current_user.theme_preference %}
+    {% set color = current_user.color_theme %}
+{% endif %}
+<html lang="en" data-theme="{{ theme }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{% if csrf_token is defined %}{{ csrf_token() }}{% endif %}">
+    <title>{% block title %}{{ _('Setup Wizard - Repair Shop') }}{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+          onerror="this.onerror=null;this.href='{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}';">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"
+          onerror="this.onerror=null;this.href='{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}';">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+          onerror="this.onerror=null;this.href='{{ url_for('static', filename='vendor/bootstrap-icons/bootstrap-icons.css') }}';">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="theme-{{ theme }} color-{{ color }}" data-theme-pref="{{ theme }}" data-color-pref="{{ color }}">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="{{ url_for('main.dashboard') }}">
+                {% if shop_info and shop_info.logo_path %}
+                    <img src="{{ url_for('static', filename='uploads/logos/' + shop_info.logo_path) }}" alt="{{ shop_info.shop_name }} Logo" class="brand-logo-nav me-2 rounded">
+                {% else %}
+                    <span class="me-2">🛠️</span>
+                {% endif %}
+                {{ shop_info.shop_name if shop_info else 'RepairShop' }}
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto fw-bold">
+                    {% if current_user.is_authenticated and shop_info and shop_info.setup_completed %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}" {{ 'aria-current="page"' if request.endpoint == 'main.dashboard' }}><i class="fas fa-tachometer-alt me-1"></i> {{ _('Dashboard') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'ticket.tickets_list' }}" href="{{ url_for('ticket.tickets_list') }}" {{ 'aria-current="page"' if request.endpoint == 'ticket.tickets_list' }}><i class="fas fa-ticket-alt me-1"></i> {{ _('Tickets') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'customer.customers_list' }}" href="{{ url_for('customer.customers_list') }}" {{ 'aria-current="page"' if request.endpoint == 'customer.customers_list' }}><i class="fas fa-users me-1"></i> {{ _('Customers') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'device.devices_list' }}" href="{{ url_for('device.devices_list') }}" {{ 'aria-current="page"' if request.endpoint == 'device.devices_list' }}><i class="fas fa-laptop me-1"></i> {{ _('Devices') }}</a>
+                    </li>
+                    {% if current_user.has_permission('view_reports') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('report.reports') }}"><i class="fas fa-chart-line me-1"></i> {{ _('Reports') }}</a>
+                    </li>
+                    {% endif %}
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto fw-bold">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                {{ current_user.full_name }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">{{ _('Profile & Theme') }}</a></li>
+                                {% if current_user.is_superuser and shop_info and shop_info.setup_completed %}
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">{{ _('Admin Panel') }}</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}">{{ _('Shop Branding') }}</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">{{ _('Logout') }}</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">{{ _('Login') }}</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="mt-5 py-3 text-center text-muted border-top">
+        <p>&copy; {% if now %}{{ now.year }}{% else %}2024{% endif %} {{ _('Repair Shop Ticketing System') }}</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>window.bootstrap || document.write('<script src="{{ url_for("static", filename="vendor/bootstrap/js/bootstrap.bundle.min.js") }}"><\/script>')</script>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

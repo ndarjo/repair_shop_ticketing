@@ -4,6 +4,7 @@ from typing import Tuple, Any, Optional
 from flask import current_app
 from flask_babel import _
 from models import db, Ticket, PhaseLog, Note, Payment
+from .core import FinancialService
 
 class RepairTicketService:
     @staticmethod
@@ -36,9 +37,13 @@ class RepairTicketService:
         )
         db.session.add(initial_log)
 
+        # Ensure invoice exists for intake tracking
+        invoice = FinancialService.get_or_create_invoice(ticket.id)
+
         if down_payment > 0:
             payment = Payment(
                 ticket_id=ticket.id,
+                invoice_id=invoice.id,
                 user_id=creator_id,
                 amount=down_payment,
                 payment_method=payment_method or _('Cash'),
@@ -57,6 +62,8 @@ class RepairTicketService:
                 is_internal=True
             )
             db.session.add(payment_note)
+            
+            FinancialService.sync_invoice_status(invoice.id)
 
         return ticket
 

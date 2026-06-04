@@ -6,14 +6,16 @@ def generate_keys():
     print("   Repair Shop Security Key Generator")
     print("="*50)
     
-    print(f"\nSECRET_KEY (for sessions):")
-    print(secrets.token_urlsafe(32))
+    s_key = secrets.token_urlsafe(32)
+    b_salt = secrets.token_urlsafe(32)
+    # Use urlsafe_b64encode to stay consistent with Fernet's canonical key format
+    e_key = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode('utf-8')
     
-    print(f"\nBLIND_INDEX_SALT (for searchable encrypted PII):")
-    print(secrets.token_urlsafe(32))
+    print("\nCopy and paste these lines into your env.local file:\n")
+    print(f"SECRET_KEY={s_key}")
+    print(f"BLIND_INDEX_SALT={b_salt}")
+    print(f"ENCRYPTION_KEY={e_key}")
     
-    print(f"\nENCRYPTION_KEY (for PII encryption - Base64):")
-    print(base64.b64encode(secrets.token_bytes(32)).decode('utf-8'))
     print("\n" + "="*50)
 
 if __name__ == "__main__":

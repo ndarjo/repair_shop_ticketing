@@ -10,7 +10,7 @@
     <div class="card-body">
         {% if ticket.current_phase == 'Already Taken' %}
         <div class="alert alert-warning">
-            <i class="fas fa-exclamation-triangle me-2"></i> <strong>Note:</strong> This ticket is archived (Already Taken). You are editing it with administrative privileges.
+            <i class="fas fa-exclamation-triangle me-2"></i> <strong>{{ _('Note:') }}</strong> {{ _('This ticket is archived (Already Taken). You are editing it with administrative privileges.') }}
         </div>
         {% endif %}
         <form method="POST">
@@ -46,7 +46,7 @@
                 </div>
 
                 <div class="col-12 text-end mt-4">
-                    <a href="{{ url_for('ticket.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-secondary px-4">{{ _('Cancel') }}</a>
+                    <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-secondary px-4">{{ _('Cancel') }}</a>
                     <button type="submit" class="btn btn-primary px-4">{{ _('Save Changes') }}</button>
                 </div>
             </div>

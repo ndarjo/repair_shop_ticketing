@@ -68,6 +68,10 @@
                             <input type="text" name="storage_capacity" class="form-control" placeholder="{{ _('e.g. 512GB') }}">
                         </div>
                         <div class="col-md-6">
+                            <label class="form-label">{{ _('Serial Number') }}</label>
+                            <input type="text" name="serial_number" class="form-control" placeholder="{{ _('e.g. C02ABCDEFGH') }}">
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label">{{ _('Color') }}</label>
                             <input type="text" name="color" class="form-control" placeholder="{{ _('e.g. Space Gray') }}">
                         </div>
@@ -76,7 +80,7 @@
                             <textarea name="notes" class="form-control" rows="2" placeholder="{{ _('Any additional notes about the device...') }}"></textarea>
                         </div>
                         <div class="col-12 mt-4 d-flex justify-content-end gap-2">
-                            <a href="{{ url_for('main.devices_list') }}" class="btn btn-secondary px-4">{{ _('Cancel') }}</a>
+                            <a href="{{ url_for('device.devices_list') }}" class="btn btn-secondary px-4">{{ _('Cancel') }}</a>
                             <button type="submit" class="btn btn-primary px-4">{{ _('Add Device') }}</button>
                         </div>
                     </div>

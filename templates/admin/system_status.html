@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('System Status - Admin') }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ _('System Integrity & Status') }}</h2>
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm">{{ _('Back to Dashboard') }}</a>
+</div>
+
+<div class="row g-4">
+    <!-- Database Status -->
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-database me-2"></i>{{ _('Database Engine') }}</h5>
+                <span class="badge bg-{{ 'success' if db_status == 'Online' else 'danger' }}">{{ db_status }}</span>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">{{ _('PostgreSQL Engine Version:') }}</p>
+                <code class="text-primary">{{ db_version }}</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- Directory Health -->
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-folder-open me-2"></i>{{ _('Storage & Permissions') }}</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr class="table-light">
+                            <th class="ps-3">{{ _('Volume') }}</th>
+                            <th class="text-center">{{ _('Status') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for name, info in dir_status.items() %}
+                        <tr>
+                            <td class="ps-3">
+                                <strong>{{ name }}</strong><br>
+                                <small class="text-muted">{{ info.path }}</small>
+                            </td>
+                            <td class="text-center align-middle">
+                                {% if info.writable %}
+                                    <span class="text-success"><i class="fas fa-check-circle"></i> {{ _('Writable') }}</span>
+                                {% else %}
+                                    <span class="text-danger"><i class="fas fa-times-circle"></i> {{ _('ReadOnly') }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Environment Info -->
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>{{ _('Environment Summary') }}</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for key, val in sys_info.items() %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">{{ key|upper }}</span>
+                        <span class="fw-bold">{{ val }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Config -->
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>{{ _('Active Configuration') }}</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for key, val in config_summary.items() %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">{{ key }}</span>
+                        <span class="fw-bold">{{ val }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

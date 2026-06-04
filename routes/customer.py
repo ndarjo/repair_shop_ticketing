@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file
 from flask_login import login_required, current_user
-from sqlalchemy import desc, or_
+from sqlalchemy import desc, or_, select
+from sqlalchemy.orm import selectinload
 from models import db, Customer
 from flask_babel import _
 import json
@@ -18,26 +19,31 @@ def customers_list():
     search_query = request.args.get('q', '').strip()
     page = request.args.get('page', 1, type=int)
     # Enforce multi-tenancy: users only see customers from their location
-    query = Customer.query.filter_by(location_id=current_user.location_id)
+    # Optimization: Eager load devices to prevent N+1 queries when rendering the device count column
+    stmt = select(Customer).options(selectinload(Customer.devices)).where(Customer.location_id == current_user.location_id)
+    
     if search_query:
         query_hash = Customer.get_search_hash(search_query)
-        query = query.filter(or_(Customer.name.ilike(f'%{search_query}%'), Customer.phone_hash == query_hash))
-    customers = query.order_by(desc(Customer.created_at)).paginate(page=page, per_page=15)
-    try:
-        return render_template('customers.html', customers=customers, search_query=search_query)
-    except InvalidToken:
-        flash(_('Security Error: Unable to decrypt customer data.'), 'error')
-        return redirect(url_for('main.dashboard'))
+        stmt = stmt.filter(or_(Customer.name.ilike(f'%{search_query}%'), Customer.phone_hash == query_hash))
+    customers = db.paginate(stmt.order_by(desc(Customer.created_at)), page=page, per_page=15)
+    return render_template('customers/customers.html', customers=customers, search_query=search_query)
 
 @customer_bp.route('/view/<int:customer_id>', endpoint='view_customer')
 @login_required
 @require_permission('view_customer')
 def view_customer(customer_id):
-    customer = db.session.get(Customer, customer_id)
+    # Optimization: Eager load devices and tickets for the 360-degree view
+    stmt = select(Customer).options(
+        selectinload(Customer.devices),
+        selectinload(Customer.tickets)
+    ).where(Customer.id == customer_id)
+    
+    customer = db.session.scalar(stmt)
+
     if not customer or (not current_user.is_superuser and customer.location_id != current_user.location_id):
         flash(_('Customer not found'), 'error')
         return redirect(url_for('customer.customers_list'))
-    return render_template('customer_detail.html', customer=customer)
+    return render_template('customers/customer_detail.html', customer=customer)
 
 @customer_bp.route('/new_customer', methods=['GET', 'POST'])
 @login_required
@@ -55,7 +61,7 @@ def new_customer():
             flash(_('Customer created successfully!'), 'success')
             return redirect(url_for('customer.customers_list'))
         flash(result, 'error')
-    return render_template('new_customer.html')
+    return render_template('customers/new_customer.html')
 
 @customer_bp.route('/search', methods=['GET'])
 @login_required
@@ -65,7 +71,10 @@ def search_customers():
     if len(query) < 2: return jsonify([])
     query_hash = Customer.get_search_hash(query)
     # Scope search to current location
-    customers = Customer.query.filter_by(location_id=current_user.location_id).filter(or_(Customer.name.ilike(f'%{query}%'), Customer.phone_hash == query_hash)).limit(10).all()
+    stmt = db.select(Customer).filter_by(location_id=current_user.location_id).filter(
+        or_(Customer.name.ilike(f'%{query}%'), Customer.phone_hash == query_hash)
+    ).limit(10)
+    customers = db.session.execute(stmt).scalars().all()
     return jsonify([{'id': c.id, 'name': c.name, 'phone': c.phone} for c in customers])
 
 @customer_bp.route('/export/<int:customer_id>')

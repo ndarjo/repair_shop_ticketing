@@ -21,6 +21,14 @@ os.makedirs(LOG_DIR, exist_ok=True)
 BACKUP_DIR = os.path.join(BASE_DIR, 'backups')
 os.makedirs(BACKUP_DIR, exist_ok=True)
 
+# Ensure static uploads directory exists for logos and dynamic assets
+UPLOAD_DIR = os.path.join(BASE_DIR, 'static', 'uploads')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Ensure subdirectory for shop logos exists
+LOGOS_DIR = os.path.join(UPLOAD_DIR, 'logos')
+os.makedirs(LOGOS_DIR, exist_ok=True)
+
 class Config:
     """Base configuration"""
     # SECURITY: Use a strong secret key for session signing
@@ -78,7 +86,19 @@ class Config:
         'zh': '中文'
     }
     BABEL_DEFAULT_LOCALE = 'en'
+    BABEL_TRANSLATION_DIRECTORIES = 'translations'
+
+    # SECURITY: Limit file upload size (e.g., 2MB for logos/assets)
+    MAX_CONTENT_LENGTH = 2 * 1024 * 1024
+
     BACKUP_DIR = BACKUP_DIR
+    UPLOAD_DIR = UPLOAD_DIR
+    LOGOS_DIR = LOGOS_DIR
+
+    # Scheduler Configuration
+    BACKUP_HOUR = int(os.getenv('BACKUP_HOUR', 2))
+    BACKUP_MINUTE = int(os.getenv('BACKUP_MINUTE', 0))
+
     # SECURITY: Session Cookie protections
     SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
     SESSION_COOKIE_HTTPONLY = True
@@ -87,6 +107,10 @@ class Config:
     # Logging Configuration
     LOG_FILE = os.path.join(LOG_DIR, 'repair_shop.log')
     LOG_LEVEL = logging.INFO
+    LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    
+    # Optional: External logging aggregation (e.g. Logstash/Drain)
+    LOG_AGGREGATION_URI = os.getenv('LOG_AGGREGATION_URI')
 
     # Flask-Limiter Configuration
     # Use Redis for production-ready rate limiting

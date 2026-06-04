@@ -12,7 +12,7 @@
                 {% if current_user.has_permission('update_phase') or current_user.has_permission('mark_as_paid') or current_user.has_permission('mark_as_taken') %}
                 <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#updatePhaseModal">{{ _('Update Phase') }}</button>
                 {% endif %}
-                {% if current_user.has_permission('record_payment') %}
+                {% if current_user.has_permission('process_payments') %}
                 <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">{{ _('Record Payment') }}</button>
                 {% endif %}
                 <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-warning">{{ _('Edit Ticket') }}</a>
@@ -33,7 +33,7 @@
                         </form>
                     {% else %}
                         <div class="btn-group">
-                            <a href="{{ url_for('ticket.view_invoice', invoice_id=active_invoice.id) }}" class="btn btn-sm btn-outline-info">
+                            <a href="{{ url_for('ticket.view_invoice', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-info">
                                 <i class="bi bi-eye me-1"></i> {{ _('View') }}
                             </a>
                             <a href="{{ url_for('ticket.download_invoice_pdf', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('Download PDF') }}" aria-label="{{ _('Download Invoice PDF') }}">
@@ -66,7 +66,7 @@
         <div class="row">
             <div class="col-md-6">
                 <p><strong>{{ _('Customer:') }}</strong> {{ ticket.customer.name }}</p>
-                <p><strong>{{ _('Device:') }}</strong> <a href="{{ url_for('device.device_detail', device_id=ticket.device.id) }}">{{ ticket.device.display }}</a></p>
+                <p><strong>{{ _('Device:') }}</strong> <a href="{{ url_for('device.view_device', device_id=ticket.device.id) }}">{{ ticket.device.display }}</a></p>
                 <p><strong>{{ _('S/N:') }}</strong> <code class="text-dark">{{ ticket.device.serial_number or 'N/A' }}</code></p>
                 <p><strong>{{ _('Color:') }}</strong> {{ ticket.device.color or 'N/A' }}</p>
             </div>
@@ -89,10 +89,14 @@
             <div class="col-md-8">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h5>{{ _('Services & Materials') }}</h5>
-                    {% if current_user.has_permission('add_service') and ticket.current_phase != 'Already Taken' %}
+                    {% if ticket.current_phase != 'Already Taken' %}
                     <div>
+                        {% if current_user.has_permission('add_service') %}
                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">{{ _('+ Add Service') }}</button>
+                        {% endif %}
+                        {% if current_user.has_permission('add_part') %}
                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPartModal">{{ _('+ Add Part') }}</button>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
@@ -245,7 +249,15 @@
                                 <td>{{ _(payment.payment_method) }}</td>
                                 <td>{{ payment.transaction_reference or '-' }}</td>
                                 <td>{{ payment.recorded_by_user.full_name }}</td>
-                                <td>{{ payment.paid_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td class="text-end">
+                                    {{ payment.paid_at.strftime('%Y-%m-%d %H:%M') }}
+                                    {% if current_user.has_permission('process_payments') and ticket.current_phase != 'Already Taken' %}
+                                    <form action="{{ url_for('ticket.void_payment', ticket_id=ticket.id, payment_id=payment.id) }}" method="POST" class="d-inline ms-2">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" data-confirm="{{ _('Void this payment? This will update the invoice balance.') }}"><i class="fas fa-trash-alt"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% else %}
                             <tr><td colspan="5" class="text-center text-muted">{{ _('No payments recorded yet.') }}</td></tr>
@@ -292,7 +304,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">{{ _('New Phase') }}</label>
-                        <select name="new_phase" class="form-select" required>
+                        <select name="phase" class="form-select" required>
                             <option value="" disabled selected>{{ _('-- Select Phase --') }}</option>
                             <option value="Open" {% if ticket.current_phase == 'Open' or not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Open') }}</option>
                             <option value="Diagnostic" {% if ticket.current_phase == 'Diagnostic' or not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Diagnostic') }}</option>
@@ -373,7 +385,7 @@
 
                     <div class="mb-3">
                         <label class="form-label">{{ _('Payment Method') }}</label>
-                        <select name="payment_method" class="form-select">
+                        <select name="method" class="form-select">
                             <option value="Cash">{{ _('Cash') }}</option>
                             <option value="Card">{{ _('Card') }}</option>
                             <option value="Transfer">{{ _('Bank Transfer') }}</option>
@@ -440,7 +452,7 @@
                         <label class="form-label">{{ _('Choice from Inventory') }}</label>
                         <select name="part_id" id="partSelect" class="form-select">
                             <option value="">{{ _('-- Or type manually below --') }}</option>
-                            {% for part in spare_parts %}
+                            {% for part in parts %}
                             <option value="{{ part.id }}">{{ _(part.name) }} ({{ _('Stock:') }} {{ part.stock_quantity }})</option>
                             {% endfor %}
                         </select>

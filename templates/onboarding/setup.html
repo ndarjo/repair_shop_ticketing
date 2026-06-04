@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "onboarding/base.html" %}
 {% block title %}{{ _('Initial Setup - Repair Shop') }}{% endblock %}
 {% block content %}
 <div class="container py-3 py-md-5">
@@ -22,7 +22,7 @@
                                 <label class="form-label">{{ _('Shop Name') }}</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-heading"></i></span>
-                                    <input type="text" name="shop_name" class="form-control" value="{{ settings.shop_name }}" required placeholder="{{ _('e.g., QuickFix Tech Solutions') }}">
+                                    <input type="text" name="shop_name" class="form-control" required placeholder="{{ _('e.g., QuickFix Tech Solutions') }}">
                                 </div>
                             </div>
                             <div class="mb-3">

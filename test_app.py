@@ -1,7 +1,7 @@
 import unittest
 from app import create_app
 import os
-from models import db, User, Customer, Device, Ticket
+from models import db, User, Customer, Device, Ticket, Location, Note, func
 
 class BasicTests(unittest.TestCase):
     def setUp(self):
@@ -9,7 +9,6 @@ class BasicTests(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
         self.client = self.app.test_client()
-        db.create_all()
 
     def tearDown(self):
         db.session.remove()
@@ -23,7 +22,7 @@ class BasicTests(unittest.TestCase):
 
     def test_superuser_creation(self):
         """Verify that the superuser initialization works"""
-        user = User.query.filter_by(username='admin').first()
+        user = db.session.execute(db.select(User).filter_by(username='admin')).scalar()
         self.assertIsNotNone(user)
         self.assertTrue(user.is_superuser)
 
@@ -32,7 +31,7 @@ class BasicTests(unittest.TestCase):
         c = Customer(name="Test User", phone="123456789")
         db.session.add(c)
         db.session.commit()
-        self.assertEqual(Customer.query.count(), 1)
+        self.assertEqual(db.session.execute(db.select(func.count(Customer.id))).scalar(), 1)
 
     def test_customer_encryption_consistency(self):
         """Verify that customer PII can be decrypted with the current key"""
@@ -63,6 +62,53 @@ class BasicTests(unittest.TestCase):
         ), follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Logged in successfully', response.data)
+
+    def test_location_scoping_integrity(self):
+        """Verify that records are logically separated by location_id for multi-tenancy"""
+        # Clear seeded location to control test state
+        db.session.execute(db.delete(Location))
+        
+        loc1 = Location(name="Branch North")
+        loc2 = Location(name="Branch South")
+        db.session.add_all([loc1, loc2])
+        db.session.flush()
+        
+        cust_a = Customer(name="North Client", phone="111", location_id=loc1.id)
+        cust_b = Customer(name="South Client", phone="222", location_id=loc2.id)
+        db.session.add_all([cust_a, cust_b])
+        db.session.commit()
+        
+        # Verify that a query scoped to Location 1 does not leak Location 2 data
+        results = db.session.execute(db.select(Customer).filter_by(location_id=loc1.id)).scalars().all()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].name, "North Client")
+
+    def test_ticket_timeline_aggregation(self):
+        """Verify the Ticket.timeline property merges phase logs and notes correctly"""
+        from services.ticket import RepairTicketService
+        
+        loc = db.session.execute(db.select(Location)).scalar()
+        cust = Customer(name="Timeline Test", phone="555", location_id=loc.id)
+        dev = Device(customer=cust, device_type="Phone", brand="TestBrand")
+        db.session.add_all([cust, dev])
+        db.session.flush()
+        
+        # Use the service to ensure initial phase logs are created
+        ticket = RepairTicketService.create_ticket(
+            customer_id=cust.id, device_id=dev.id, location_id=loc.id,
+            creator_id=1, items_included="None", problem_description="Broken Screen"
+        )
+        
+        # Add a manual note
+        note = Note(ticket=ticket, user_id=1, content="Started diagnostic", note_type="Technical")
+        db.session.add(note)
+        db.session.commit()
+        
+        # Timeline should have 2 events: 1 Phase Log (Open) and 1 Note
+        self.assertEqual(len(ticket.timeline), 2)
+        event_types = [e['type'] for e in ticket.timeline]
+        self.assertIn('phase', event_types)
+        self.assertIn('note', event_types)
 
 if __name__ == "__main__":
     unittest.main()
