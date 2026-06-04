@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+
 {% block title %}Manage Common Problems{% endblock %}
 {% block content %}
 <h3>{{ _('Manage Common Problems') }}</h3>
@@ -13,8 +15,8 @@
         </form>
     </div>
 </div>
-<div class="list-group">
-    {% for problem in problems %}
+<div class="list-group mb-3">
+    {% for problem in problems.items %}
         <div class="list-group-item d-flex justify-content-between align-items-center">
             <div>
                 {{ _(problem.problem_text) }}
@@ -29,4 +31,6 @@
         <p class="text-center text-muted">{{ _('No common problems defined yet.') }}</p>
     {% endfor %}
 </div>
+
+{{ render_pagination(problems, 'admin.manage_problems') }}
 {% endblock %}

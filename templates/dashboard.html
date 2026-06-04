@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
 
 {% block title %}{{ _('Dashboard - Repair Shop') }}{% endblock %}
 
@@ -78,11 +79,8 @@
             </tbody>
         </table>
     </div>
-    <!-- Simple Pagination -->
-    <div class="card-footer text-center">
-        {% if tickets.has_prev %}<a href="{{ url_for('main.dashboard', page=tickets.prev_num) }}" class="btn btn-sm btn-secondary">{{ _('Previous') }}</a>{% endif %}
-        <span class="mx-3">{{ _('Page') }} {{ tickets.page }} {{ _('of') }} {{ tickets.pages }}</span>
-        {% if tickets.has_next %}<a href="{{ url_for('main.dashboard', page=tickets.next_num) }}" class="btn btn-sm btn-secondary">{{ _('Next') }}</a>{% endif %}
+    <div class="card-footer">
+        {{ render_pagination(tickets, 'main.dashboard') }}
     </div>
 </div>
 {% endblock %}

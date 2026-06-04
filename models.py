@@ -26,6 +26,24 @@ role_permissions = db.Table('role_permissions',
     db.Column('permission_id', db.Integer, db.ForeignKey('permissions.id', ondelete='CASCADE'), primary_key=True)
 )
 
+class Location(db.Model):
+    """Represents a physical shop location/branch"""
+    __tablename__ = 'locations'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    address = db.Column(db.Text)
+    phone = db.Column(db.String(20))
+    email = db.Column(db.String(120))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships for logical multi-tenancy and data isolation
+    users = db.relationship('User', backref='location', lazy=True)
+    customers = db.relationship('Customer', backref='location', lazy=True)
+    tickets = db.relationship('Ticket', backref='location', lazy=True)
+    services = db.relationship('Service', backref='location', lazy=True)
+    spare_parts = db.relationship('SparePart', backref='location', lazy=True)
+    settings = db.relationship('ShopSetting', backref='location', uselist=False)
+
 class User(UserMixin, db.Model):
     """User model for staff/technicians"""
     __tablename__ = 'users'
@@ -44,6 +62,9 @@ class User(UserMixin, db.Model):
     currency_decimals = db.Column(db.Integer, default=2)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
+    # Multi-tenancy: Link user to a specific branch
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
+
     # Relationships
     roles = db.relationship('Role', secondary=user_roles, backref=db.backref('users', lazy='dynamic'))
     permissions = db.relationship('Permission', secondary=user_permissions, backref=db.backref('users', lazy='dynamic'))
@@ -124,6 +145,9 @@ class Customer(db.Model):
     # while Phone and Address are encrypted using AES-256.
     name = db.Column(db.String(120), nullable=False, index=True)
     _phone_encrypted = db.Column('phone', db.Text, nullable=False)
+
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
+
     _address_encrypted = db.Column('address', db.Text, nullable=True)
     
     # GDPR Blind Index: A hash of the phone number used for exact searches 
@@ -140,6 +164,14 @@ class Customer(db.Model):
         """Internal helper to get the Fernet cipher"""
         return Fernet(current_app.config['ENCRYPTION_KEY'].encode())
 
+    @staticmethod
+    def get_search_hash(value):
+        """Generates a SHA-256 blind index for searching encrypted data"""
+        if not value:
+            return None
+        salt = current_app.config.get('BLIND_INDEX_SALT', current_app.config['SECRET_KEY'])
+        return hashlib.sha256((salt + value).encode()).hexdigest()
+
     @property
     def phone(self):
         if not self._phone_encrypted: return ""
@@ -149,8 +181,7 @@ class Customer(db.Model):
     def phone(self, value):
         if value:
             self._phone_encrypted = self._get_cipher().encrypt(value.encode()).decode()
-            # SECURITY: Use a dedicated salt for the blind index to prevent rainbow table attacks
-            self.phone_hash = hashlib.sha256((current_app.config['BLIND_INDEX_SALT'] + value).encode()).hexdigest()
+            self.phone_hash = self.get_search_hash(value)
         else:
             self._phone_encrypted = ""
             self.phone_hash = None
@@ -191,7 +222,7 @@ class Device(db.Model):
     __tablename__ = 'devices'
     
     id = db.Column(db.Integer, primary_key=True)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False, index=True)
     device_type = db.Column(db.String(100), nullable=False)
     brand = db.Column(db.String(80))
     model_number = db.Column(db.String(100))
@@ -221,15 +252,17 @@ class Ticket(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     ticket_number = db.Column(db.String(20), unique=True, nullable=False)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
-    device_id = db.Column(db.Integer, db.ForeignKey('devices.id'), nullable=False)
-    assigned_to = db.Column(db.Integer, db.ForeignKey('users.id'))
+    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False, index=True)
+    device_id = db.Column(db.Integer, db.ForeignKey('devices.id'), nullable=False, index=True)
+    assigned_to = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=False, index=True)
+
     items_included = db.Column(db.Text, nullable=False)
     problem_description = db.Column(db.Text, nullable=False)
-    current_phase = db.Column(db.String(40), default='Open', nullable=False)
+    current_phase = db.Column(db.String(40), default='Open', nullable=False, index=True)
     
-    is_archived = db.Column(db.Boolean, default=False)
+    is_archived = db.Column(db.Boolean, default=False, index=True)
     device_picked_up = db.Column(db.Boolean, default=False)
     picked_up_date = db.Column(db.DateTime)
     estimated_cost = db.Column(db.Numeric(10, 2), default=Decimal('0.00'))
@@ -242,6 +275,11 @@ class Ticket(db.Model):
     phase_logs = db.relationship('PhaseLog', backref='ticket', lazy=True, cascade='all, delete-orphan')
     invoices = db.relationship('Invoice', backref='ticket', lazy=True, cascade='all, delete-orphan')
     payments = db.relationship('Payment', backref='ticket', lazy=True)
+
+    __table_args__ = (
+        # Optimization for dashboard queries filtering active/archived phases
+        db.Index('idx_ticket_phase_archived', 'current_phase', 'is_archived'),
+    )
 
     @staticmethod
     def generate_unique_number():
@@ -286,6 +324,7 @@ class Service(db.Model):
     description = db.Column(db.Text)
     price = db.Column(db.Numeric(10, 2), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -314,6 +353,7 @@ class SparePart(db.Model):
     selling_price = db.Column(db.Numeric(10, 2), nullable=False)
     stock_quantity = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -322,9 +362,12 @@ class CommonProblem(db.Model):
     __tablename__ = 'common_problems'
     
     id = db.Column(db.Integer, primary_key=True)
-    problem_text = db.Column(db.String(255), nullable=False, unique=True)
+    problem_text = db.Column(db.String(255), nullable=False)
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (db.UniqueConstraint('problem_text', 'location_id', name='_problem_location_uc'),)
 
 
 class Note(db.Model):
@@ -332,7 +375,7 @@ class Note(db.Model):
     __tablename__ = 'notes'
     
     id = db.Column(db.Integer, primary_key=True)
-    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id', ondelete='CASCADE'), nullable=False)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id', ondelete='CASCADE'), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     note_type = db.Column(db.String(50), default='General') # e.g., 'General', 'Phase Update', 'Payment Received'
     content = db.Column(db.Text, nullable=False)
@@ -345,7 +388,7 @@ class PhaseLog(db.Model):
     __tablename__ = 'phase_logs'
     
     id = db.Column(db.Integer, primary_key=True)
-    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id', ondelete='CASCADE'), nullable=False)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id', ondelete='CASCADE'), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     old_phase = db.Column(db.String(40))
     new_phase = db.Column(db.String(40), nullable=False)
@@ -360,7 +403,7 @@ class Invoice(db.Model):
     invoice_number = db.Column(db.String(50), unique=True, nullable=False)
     
     # FIXED: Added db.ForeignKey constraint linking this column directly to the tickets table
-    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id', ondelete='CASCADE'), nullable=False)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id', ondelete='CASCADE'), nullable=False, index=True)
     
     total_amount = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
     status = db.Column(db.String(20), default='Unpaid') # Unpaid, Partial, Paid
@@ -410,8 +453,8 @@ class Payment(db.Model):
     __tablename__ = 'payments'
     
     id = db.Column(db.Integer, primary_key=True)
-    invoice_id = db.Column(db.Integer, db.ForeignKey('invoices.id'), nullable=True)
-    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id'), nullable=True)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('invoices.id'), nullable=True, index=True)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id'), nullable=True, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     payment_method = db.Column(db.String(40), nullable=False) # Cash, Card, Transfer
@@ -420,7 +463,7 @@ class Payment(db.Model):
 class InvoiceItem(db.Model):
     __tablename__ = 'invoice_items'
     id = db.Column(db.Integer, primary_key=True)
-    invoice_id = db.Column(db.Integer, db.ForeignKey('invoices.id', ondelete='CASCADE'), nullable=False)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('invoices.id', ondelete='CASCADE'), nullable=False, index=True)
     spare_part_id = db.Column(db.Integer, db.ForeignKey('spare_parts.id'), nullable=True)
     description = db.Column(db.String(255), nullable=False)
     quantity = db.Column(db.Integer, default=1)
@@ -435,6 +478,7 @@ class ShopSetting(db.Model):
     """Global shop configuration for invoices and branding"""
     __tablename__ = 'shop_settings'
     id = db.Column(db.Integer, primary_key=True)
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), unique=True)
     shop_name = db.Column(db.String(120), default='Repair Shop')
     shop_address = db.Column(db.Text)
     shop_phone = db.Column(db.String(20))

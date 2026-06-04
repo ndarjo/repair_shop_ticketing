@@ -419,6 +419,43 @@ function initPartModalLogic() {
 }
 
 /**
+ * Initialize dynamic modals for inventory and services
+ * This prevents DOM bloating by using a single modal for all items
+ */
+function initDynamicAdminModals() {
+    // Handle Parts Edit Modal
+    const editPartModal = document.getElementById('editPartModal');
+    if (editPartModal) {
+        document.querySelectorAll('.edit-part-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const data = this.dataset;
+                document.getElementById('editPartForm').action = `/admin/parts/edit/${data.id}`;
+                document.getElementById('edit_part_name').value = data.name;
+                document.getElementById('edit_part_cost').value = data.cost;
+                document.getElementById('edit_part_price').value = data.price;
+                document.getElementById('edit_part_stock').value = data.stock;
+                document.getElementById('edit_part_active').checked = data.active === 'true';
+            });
+        });
+    }
+
+    // Handle Services Edit Modal
+    const editServiceModal = document.getElementById('editServiceModal');
+    if (editServiceModal) {
+        document.querySelectorAll('.edit-service-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const data = this.dataset;
+                document.getElementById('editServiceForm').action = `/admin/services/edit/${data.id}`;
+                document.getElementById('edit_service_name').value = data.name;
+                document.getElementById('edit_service_description').value = data.description;
+                document.getElementById('edit_service_price').value = data.price;
+                document.getElementById('edit_service_active').checked = data.active === 'true';
+            });
+        });
+    }
+}
+
+/**
  * Initialize generic print button handler
  */
 function initPrintHandler() {
@@ -561,6 +598,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTicketDetail();
     initFinanceChart();
     initPartModalLogic();
+    initDynamicAdminModals();
     initPrintHandler();
     initFormAutoSubmit();
     initGlobalConfirmations();

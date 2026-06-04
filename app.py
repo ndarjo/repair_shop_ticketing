@@ -1,3 +1,6 @@
+import logging
+import time
+from logging.handlers import RotatingFileHandler
 from flask import Flask, redirect, url_for, request, render_template, current_app, Request, jsonify, flash
 from flask_login import LoginManager, current_user
 from flask_wtf.csrf import CSRFProtect
@@ -8,8 +11,18 @@ from babel import Locale
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
-from cryptography.fernet import InvalidToken
-from models import db, User, Role, Permission, CommonProblem, ShopSetting
+from flask_migrate import Migrate
+from whitenoise import WhiteNoise
+from flask_wtf.csrf import CSRFError
+from cryptography.fernet import Fernet, InvalidToken
+from models import db, User, Role, Permission, CommonProblem, ShopSetting, Location
+from core.setup import (
+    initialize_roles_and_permissions, 
+    initialize_default_data, 
+    initialize_superuser,
+    register_cli_commands,
+    register_scheduler_tasks
+)
 
 # Global limiter instance for blueprint access
 limiter = Limiter(key_func=get_remote_address, default_limits=["5000 per day", "1000 per hour"])
@@ -42,6 +55,35 @@ def create_app(config_name=None):
     else:
         app.config.from_object(DevelopmentConfig)
     
+    # Initialize proper file logging with rotation
+    if not app.testing:
+        if not os.path.exists(os.path.dirname(app.config['LOG_FILE'])):
+            os.makedirs(os.path.dirname(app.config['LOG_FILE']))
+            
+        file_handler = RotatingFileHandler(
+            app.config['LOG_FILE'], 
+            maxBytes=10 * 1024 * 1024, # 10MB
+            backupCount=10
+        )
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(app.config['LOG_LEVEL'])
+        app.logger.addHandler(file_handler)
+        app.logger.setLevel(app.config['LOG_LEVEL'])
+        app.logger.info('Repair Shop system starting up...')
+
+        # Initialize external logging aggregation if URI is provided
+        if app.config.get('LOG_AGGREGATION_URI'):
+            from logging.handlers import HTTPHandler
+            # Example: points to a log drain or central aggregator
+            aggregator_handler = HTTPHandler(
+                host=app.config['LOG_AGGREGATION_URI'],
+                url='/log',
+                method='POST'
+            )
+            app.logger.addHandler(aggregator_handler)
+
     # Discover available translations based on compiled .mo files
     translations_path = os.path.join(app.root_path, 'translations')
     discovered = {'en': app.config.get('SUPPORTED_LANGUAGES', {}).get('en', 'English')}
@@ -60,6 +102,10 @@ def create_app(config_name=None):
                 discovered[code] = name
     app.config['LANGUAGES'] = discovered
 
+    # Initialize WhiteNoise for static files
+    app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(app.root_path, 'static'))
+    app.wsgi_app.add_files(os.path.join(app.root_path, 'static', 'uploads')) # For logos etc.
+
     # Initialize extensions safely
     db.init_app(app)
     
@@ -71,6 +117,9 @@ def create_app(config_name=None):
         return request.accept_languages.best_match(app.config['LANGUAGES'].keys()) or app.config.get('BABEL_DEFAULT_LOCALE', 'en')
     
     babel = Babel(app, locale_selector=get_locale)
+
+    # Initialize Flask-Migrate
+    migrate = Migrate(app, db)
 
     # SECURITY: Initialize CSRF protection using Flask-WTF
     csrf = CSRFProtect(app)
@@ -87,6 +136,7 @@ def create_app(config_name=None):
         'default-src': '\'self\'',
         'script-src': [
             '\'self\'',
+            '\'unsafe-inline\'',
             'https://cdn.jsdelivr.net',
             'https://cdnjs.cloudflare.com'
         ],
@@ -118,16 +168,21 @@ def create_app(config_name=None):
         """Provides the current time to all templates for footers and headers"""
         currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
         
-        # Use safe defaults if no superuser or settings exist yet
-        try:
-            shop_admin = User.query.filter_by(is_superuser=True).first()
-            shop_info = ShopSetting.query.first()
-        except Exception:
-            shop_admin = None
-            shop_info = None
+        # Optimization: Pull from current_user if authenticated to avoid redundant Admin queries
+        if current_user.is_authenticated:
+            symbol = currency_map.get(current_user.currency, '$')
+            decimals = current_user.currency_decimals
+        else:
+            # Safe defaults for login/onboarding pages
+            symbol = '$'
+            decimals = 2
         
-        symbol = currency_map.get(shop_admin.currency, '$') if shop_admin else '$'
-        decimals = shop_admin.currency_decimals if shop_admin else 2
+        # SCALABILITY: Branding is now per-location
+        if current_user.is_authenticated and current_user.location_id:
+            shop_info = ShopSetting.query.filter_by(location_id=current_user.location_id).first()
+        else:
+            # Fallback to the first available shop or global defaults
+            shop_info = db.session.query(ShopSetting).first()
             
         return {
             'now': datetime.now(timezone.utc), 
@@ -138,7 +193,14 @@ def create_app(config_name=None):
         }
     
     # Import blueprints here to avoid circular dependencies
-    from routes import auth_bp, main_bp, ticket_bp, customer_bp, admin_bp, report_bp, device_bp, onboarding_bp, get_logical_backup_data
+    from routes.main import main_bp
+    from routes.auth import auth_bp
+    from routes.ticket import ticket_bp
+    from routes.customer import customer_bp
+    from routes.device import device_bp
+    from routes.admin import admin_bp, onboarding_bp, get_logical_backup_data
+    from routes.report import report_bp
+    from services.core import BackupService
 
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -155,14 +217,14 @@ def create_app(config_name=None):
         try:
             return render_template('errors/403.html'), 403
         except:
-            return "403 Forbidden: CSRF token missing or invalid.", 403
+            return _("403 Forbidden: Access Denied"), 403
 
     @app.errorhandler(404)
     def not_found_error(error):
         try:
             return render_template('errors/404.html'), 404
         except:
-            return "404 Not Found", 404
+            return _("404 Not Found"), 404
 
     @app.errorhandler(500)
     def internal_error(error):
@@ -174,6 +236,13 @@ def create_app(config_name=None):
             return jsonify({"error": "Internal server error"}), 500
             
         return render_template('errors/500.html'), 500
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        """Handle expired sessions or missing CSRF tokens gracefully"""
+        app.logger.warning(f"CSRF Failure: {e.description} at {request.path}")
+        flash(_("Your session has expired or the form is no longer valid. Please try again."), "info")
+        return redirect(request.referrer or url_for('main.dashboard'))
 
     @app.errorhandler(InvalidToken)
     def handle_invalid_token(error):
@@ -207,202 +276,19 @@ def create_app(config_name=None):
     # Initialize Scheduler for automated backups
     scheduler = APScheduler()
     scheduler.init_app(app)
-    
-    @scheduler.task('cron', id='daily_logical_backup', hour=2, minute=0)
-    def scheduled_backup():
-        """Automated daily logical backup task"""
-        with app.app_context():
-            app.logger.info("Executing scheduled system backup...")
-            try:
-                data = get_logical_backup_data()
-                filename = f"auto_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
-                backup_path = os.path.join(app.config['BACKUP_DIR'], filename)
-                with open(backup_path, 'w') as f:
-                    json.dump(data, f, indent=4, default=str)
-                app.logger.info(f"System backup saved successfully to {backup_path}")
-            except Exception as e:
-                app.logger.error(f"Scheduled backup failed: {str(e)}")
-    
+    register_scheduler_tasks(scheduler, app)
     scheduler.start()
 
     # Create tables and initialize system parameters inside isolated contexts
     with app.app_context():
         db.create_all()
-        # FIXED: Core roles and permissions must be built BEFORE creating users
         initialize_roles_and_permissions()
         initialize_default_data()
         initialize_superuser()
     
-    @app.cli.command("reset-admin")
-    def reset_admin():
-        """CLI command to reset the default admin password from environment variable"""
-        admin = User.query.filter_by(username='admin', is_superuser=True).first()
-        if not admin:
-            print("Error: Superuser 'admin' not found.")
-            return
-        
-        new_pw = os.getenv('INITIAL_ADMIN_PASSWORD', 'change-me-immediately')
-        admin.set_password(new_pw)
-        try:
-            db.session.commit()
-            print(f"Success: Password for 'admin' reset to the value in INITIAL_ADMIN_PASSWORD.")
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error resetting password: {str(e)}")
+    register_cli_commands(app)
 
     return app
-
-
-def initialize_superuser():
-    """Create default superuser admin account if it doesn't exist"""
-    # FIXED: Check if any superuser exists, rather than just checking for username 'admin'
-    superuser_exists = User.query.filter_by(is_superuser=True).first()
-    if not superuser_exists:
-        # Fetch the system admin role to correctly assign to the superuser
-        admin_role = Role.query.filter_by(name='admin').first()
-        
-        admin = User(
-            username='admin',
-            email='admin@repairshop.local',
-            full_name='Administrator',
-            is_superuser=True,
-            is_active=True
-        )
-        # SECURITY: Use an environment variable for the initial password, 
-        # or a very specific placeholder that isn't a common password.
-        initial_pw = os.getenv('INITIAL_ADMIN_PASSWORD', 'change-me-immediately')
-        admin.set_password(initial_pw)
-        
-        # FIXED: Associates the built admin role with the master account if model supports it
-        if admin_role and hasattr(admin, 'roles'):
-            admin.roles.append(admin_role)
-            
-        db.session.add(admin)
-        db.session.commit()
-        current_app.logger.info("\n" + "="*50)
-        current_app.logger.info("SECURITY: Default superuser 'admin' has been initialized.")
-        current_app.logger.info("Please use the INITIAL_ADMIN_PASSWORD defined in your environment to log in.")
-        current_app.logger.info("="*50 + "\n")
-
-
-def initialize_roles_and_permissions():
-    """Initialize default roles and permissions"""
-    
-    # Define roles
-    roles_data = [
-        ('admin', 'System Administrator'),
-        ('technician', 'Repair Technician'),
-        ('receptionist', 'Receptionist/Customer Service'),
-        ('manager', 'Store Manager'),
-    ]
-    
-    for role_name, description in roles_data:
-        if not Role.query.filter_by(name=role_name).first():
-            role = Role(name=role_name, description=description)
-            db.session.add(role)
-    
-    db.session.commit()
-    
-    # Define permissions grouped by category
-    permissions_data = [
-        # Ticket permissions
-        ('create_ticket', 'Create new repair tickets', 'tickets'),
-        ('view_ticket', 'View ticket details', 'tickets'),
-        ('edit_ticket', 'Edit ticket information', 'tickets'),
-        ('delete_ticket', 'Delete tickets', 'tickets'),
-        ('add_note', 'Add notes to tickets', 'tickets'),
-        ('update_phase', 'Update ticket phase', 'tickets'),
-        ('add_service', 'Add services to tickets', 'tickets'),
-        ('mark_as_paid', 'Mark tickets as fully paid', 'tickets'),
-        ('mark_as_taken', 'Mark devices as collected by customer', 'tickets'),
-        ('archive_ticket', 'Archive completed repair tickets', 'tickets'),
-        ('create_invoice', 'Create invoices', 'tickets'),
-        
-        # Customer permissions
-        ('create_customer', 'Create new customers', 'customers'),
-        ('view_customer', 'View customer details', 'customers'),
-        ('edit_customer', 'Edit customer information', 'customers'),
-        ('delete_customer', 'Delete customers', 'customers'),
-        ('create_device', 'Add devices to customers', 'customers'),
-        ('edit_device', 'Edit device information', 'customers'),
-        ('delete_device', 'Delete devices', 'customers'),
-        
-        # Payment permissions
-        ('record_payment', 'Record payments', 'payments'),
-        ('view_payment', 'View payment history', 'payments'),
-        ('delete_payment', 'Delete payment records', 'payments'),
-        
-        # User management permissions
-        ('create_user', 'Create new user accounts', 'users'),
-        ('view_user', 'View user details', 'users'),
-        ('edit_user', 'Edit user information', 'users'),
-        ('delete_user', 'Delete user accounts', 'users'),
-        ('manage_permissions', 'Manage user permissions and roles', 'users'),
-        
-        # Report permissions
-        ('view_reports', 'View reports and analytics', 'reports'),
-        ('export_data', 'Export data', 'reports'),
-
-        # Admin/Service permissions
-        ('manage_services', 'Manage repair services and pricing', 'admin'),
-    ]
-    
-    for perm_name, description, category in permissions_data:
-        if not Permission.query.filter_by(name=perm_name).first():
-            permission = Permission(name=perm_name, description=description, category=category)
-            db.session.add(permission)
-    
-    db.session.commit()
-
-    # Optional: Map default permissions to roles
-    tech_role = Role.query.filter_by(name='technician').first()
-    if tech_role:
-        tech_perms = ['view_ticket', 'add_note', 'update_phase', 'add_service', 'view_customer', 'view_payment']
-        for p_name in tech_perms:
-            perm = Permission.query.filter_by(name=p_name).first()
-            if perm and perm not in tech_role.permissions:
-                tech_role.permissions.append(perm)
-        db.session.commit()
-
-    # Receptionist permissions
-    reception_role = Role.query.filter_by(name='receptionist').first()
-    if reception_role:
-        reception_perms = ['create_ticket', 'create_customer', 'view_customer', 'view_ticket', 'record_payment', 'mark_as_paid']
-        for p_name in reception_perms:
-            perm = Permission.query.filter_by(name=p_name).first()
-            if perm and perm not in reception_role.permissions:
-                reception_role.permissions.append(perm)
-        db.session.commit()
-
-    # Manager permissions
-    manager_role = Role.query.filter_by(name='manager').first()
-    if manager_role:
-        manager_perms = ['view_reports', 'manage_services', 'view_ticket', 'view_customer', 'record_payment', 'mark_as_paid', 'mark_as_taken', 'update_phase', 'archive_ticket', 'create_invoice']
-        for p_name in manager_perms:
-            perm = Permission.query.filter_by(name=p_name).first()
-            if perm and perm not in manager_role.permissions:
-                manager_role.permissions.append(perm)
-        db.session.commit()
-
-
-def initialize_default_data():
-    """Seed the database with default common problems if empty"""
-    defaults = [
-        "Screen cracked/broken",
-        "Battery not charging",
-        "Water damage",
-        "Operating system error",
-        "Keyboard/Touchpad issue"
-    ]
-    if not CommonProblem.query.first():
-        for text in defaults:
-            db.session.add(CommonProblem(problem_text=text))
-
-    # Initialize shop settings
-    if not ShopSetting.query.first():
-        db.session.add(ShopSetting(shop_name="Repair Shop Ticketing"))
-
-        db.session.commit()
 
 
 if __name__ == '__main__':

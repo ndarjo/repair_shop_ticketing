@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
 
 {% block title %}Manage Services - Admin{% endblock %}
 
@@ -21,7 +22,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for service in services %}
+                {% for service in services.items %}
                 <tr>
                     <td><strong>{{ service.name }}</strong></td>
                     <td><small class="text-muted">{{ service.description or '-' }}</small></td>
@@ -32,59 +33,69 @@
                         </span>
                     </td>
                     <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary" 
+                        {% if current_user.has_permission('manage_services') %}
+                        <button class="btn btn-sm btn-outline-primary edit-service-btn" 
                                 data-bs-toggle="modal" 
-                                data-bs-target="#editServiceModal{{ service.id }}">
+                                data-bs-target="#editServiceModal"
+                                data-id="{{ service.id }}"
+                                data-name="{{ service.name }}"
+                                data-description="{{ service.description or '' }}"
+                                data-price="{{ '%.*f'|format(currency_decimals, service.price) }}"
+                                data-active="{{ 'true' if service.is_active else 'false' }}">
                             {{ _('Edit') }}
                         </button>
-                        <form action="{{ url_for('admin.delete_service_admin', service_id=service.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to permanently delete this service?');">
+                        <form action="{{ url_for('admin.delete_service_admin', service_id=service.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this service?') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                         </form>
+                        {% endif %}
                     </td>
                 </tr>
-
-                <!-- Edit Modal for each service -->
-                <div class="modal fade" id="editServiceModal{{ service.id }}" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <form action="{{ url_for('admin.edit_service_admin', service_id=service.id) }}" method="POST">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <div class="modal-header"><h5>Edit Service</h5></div>
-                                <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label class="form-label">{{ _('Service Name') }}</label>
-                                        <input type="text" name="name" class="form-control" value="{{ service.name }}" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">{{ _('Description') }}</label>
-                                        <textarea name="description" class="form-control" rows="2">{{ service.description }}</textarea>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">{{ _('Price') }}</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">{{ currency_symbol }}</span>
-                                            <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="price" class="form-control" value="{{ '%.*f'|format(currency_decimals, service.price) }}" required>
-                                        </div>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="is_active" id="active{{ service.id }}" {% if service.is_active %}checked{% endif %}>
-                                        <label class="form-check-label" for="active{{ service.id }}">{{ _('Active') }}</label>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                                    <button type="submit" class="btn btn-primary">{{ _('Save Changes') }}</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
                 {% else %}
                 <tr><td colspan="5" class="text-center text-muted py-4">{{ _('No services defined.') }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+    <div class="card-footer">
+        {{ render_pagination(services, 'admin.manage_services') }}
+    </div>
+</div>
+
+<!-- Single Shared Edit Modal (Prevents DOM Bloating) -->
+<div class="modal fade" id="editServiceModal" tabindex="-1" aria-labelledby="editServiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editServiceForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header"><h5 id="editServiceModalLabel">{{ _('Edit Service') }}</h5></div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">{{ _('Service Name') }}</label>
+                        <input type="text" name="name" id="edit_service_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ _('Description') }}</label>
+                        <textarea name="description" id="edit_service_description" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ _('Price') }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text">{{ currency_symbol }}</span>
+                            <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="price" id="edit_service_price" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_active" id="edit_service_active">
+                        <label class="form-check-label" for="edit_service_active">{{ _('Active') }}</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ _('Save Changes') }}</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 

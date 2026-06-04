@@ -9,12 +9,12 @@ A professional, production-ready management platform for modern repair shops. Bu
 ### 🛠️ Repair Management
 - **Lifecycle Tracking:** 8 distinct phases (from Intake to Pickup) with automated audit logs.
 - **Smart Intake:** AJAX-powered search for customers/devices and quick-select "Common Problems."
-- **Timeline:** Technical notes, phase logs, and internal team communications.
+- **Multi-Tenancy:** Physical branch isolation ensures technicians only access tickets for their specific location.
 
 ### 💼 CRM & Inventory
-- **Customer Profiles:** Comprehensive management with encrypted PII (Personally Identifiable Information).
-- **Hardware Specs:** Detailed tracking of CPU, RAM, and Serial Numbers linked to repair history.
-- **Catalog:** Standardized services and spare parts with retail vs. wholesale pricing.
+- **Encrypted CRM:** Customer data is protected via AES-256 encryption (PII) with Blind Indexing for high-performance searchable encrypted fields.
+- **Device Repository:** Detailed hardware specs (CPU, RAM, Serial Numbers) linked to customer history and specific repair tickets.
+- **Inventory Control:** Managed catalog of services and spare parts with location-based pricing and stock tracking.
 
 ### 📈 Financial Intelligence
 - **Net Profit:** Real-time calculation of revenue minus actual hardware wholesale costs.
@@ -23,13 +23,12 @@ A professional, production-ready management platform for modern repair shops. Bu
 
 ### 🔐 Security & Compliance
 - **RBAC:** Granular Role-Based Access Control (Admin, Manager, Tech, Reception).
-- **Web Hardening:** CSRF protection, secure HTTP headers (HSTS), and automated daily backups.
+- **Web Hardening:** CSRF protection, secure HTTP headers via Talisman (HSTS, CSP), and rate limiting.
+- **Data Privacy:** AES-256 PII encryption and HMAC-SHA256 blind indexing for secure, searchable data.
 
 ## 📋 Prerequisites
 - **Python:** 3.8+ (Fully compatible with Python 3.13)
 - **Database:** PostgreSQL 12+
-- **Cache/NoSQL:** Redis (Optional, required if `RATELIMIT_STORAGE_URI` is set to redis)
-- **PostgreSQL Client Tools:** `pg_dump` and `pg_restore` (required for system backups).
 - **System Headers:** `libpq-dev` (Linux) or equivalent for database driver compilation.
 
 ## 🚀 Installation & Setup
@@ -44,7 +43,16 @@ source .venv/bin/activate  # Linux/macOS
 # .venv\Scripts\activate     # Windows
 
 # 3. Install dependencies
-pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
+pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
+
+### 📦 Dependency Management
+We use `pip-tools` to manage dependencies.
+- **requirements.in**: Direct project dependencies.
+- **requirements.txt**: Compiled lock file with pinned versions.
+
+To update the lock file after adding a package to `requirements.in`:
+`pip install pip-tools && pip-compile requirements.in`
 
 # 4. Configure environment
 cp env.template env.local
@@ -60,24 +68,6 @@ python app.py
 ```
 
 The application will be available at `http://localhost:5000`
-
-## 🔐 Security & Data Protection
-
-This system is designed with a "Security by Design" approach to handle sensitive customer data:
-
-### PII Encryption (AES-256)
-Customer **Phone Numbers** and **Addresses** are encrypted at rest using `cryptography.fernet` (AES-256 in CBC mode with HMAC). Even if your database is compromised, this PII remains unreadable without the `ENCRYPTION_KEY`.
-
-### Searchable Encrypted Fields (Blind Index)
-To allow technicians to search for customers by phone number without decrypting every record, the system uses a **Blind Index**. This is a one-way SHA-256 hash of the PII combined with a unique `BLIND_INDEX_SALT`. The database stores the hash, allowing for fast, exact-match searches while keeping the actual data encrypted.
-
-### ⚠️ Critical Warning: Key Persistence
-Your `ENCRYPTION_KEY` and `BLIND_INDEX_SALT` are generated during setup. 
-- **Never lose these keys:** If you lose your keys, you will be unable to decrypt existing customer data. 
-- **Key Rotation:** If you change your `ENCRYPTION_KEY` in `env.local`, existing records will become inaccessible and trigger a security error.
-- **Database Migrations:** When moving to a new server, you **must** copy your keys exactly as they are in your current `.env` file.
-
-Use `python generate_keys.py` to create your unique security credentials.
 
 ## 🌐 Internationalization (i18n)
 
@@ -109,24 +99,34 @@ After first run, you'll have a default superuser account:
 - **Username:** admin
 - **Password:** Value of `INITIAL_ADMIN_PASSWORD` (defaults to `change-me-immediately`)
 
-⚠️ **Important:** Change the password immediately in production!
+⚠️ **Security:** Always set a unique, strong password in your environment configuration before deployment.
 
 ## 📁 Project Structure
 
 ```text
 repair-shop-ticketing/
-├── app.py                      # Main Flask application & initialization
-├── models.py                   # Database models & schema
-├── routes.py                   # Route handlers & business logic
-├── config.py                   # Configuration settings
-├── requirements.txt            # Python dependencies
-├── test_app.py                 # Automated test suite
-├── README.md                   # This file
-├── templates/                  # HTML templates
-│   └── ...                    # Organized views (auth, admin, ticket, etc.)
-└── static/                     # Static files
-    ├── css/style.css          # Theme-aware stylesheet
-    └── js/main.js             # AJAX search & theme engine
+├── app.py              # Application factory & extension registry
+├── models.py           # SQLAlchemy domain models & encryption logic
+├── config.py           # Environment-based configuration profiles
+├── routes/             # Blueprint-based controllers
+│   ├── auth.py         # Session management & user profiles
+│   ├── ticket.py       # Repair lifecycle & financial actions
+│   └── utils.py        # RBAC decorators & type-safe helpers
+├── services/           # Business logic & system orchestration
+│   ├── core.py         # Financial, Inventory, Reporting, and Backup services
+│   ├── ticket.py       # Specialized repair ticket lifecycle services
+│   └── setup.py        # Database seeding, CLI commands, & scheduler tasks
+├── static/             # Static assets
+│   ├── css/style.css   # Theme-aware stylesheet
+│   └── js/main.js      # AJAX search & theme engine
+├── templates/          # Jinja2 templates organized by feature
+├── translations/       # i18n message catalogs
+├── requirements.in     # Direct project dependencies
+├── requirements.txt    # Pinned production dependencies
+├── env.template        # Template for environment variables
+├── generate_keys.py    # Utility to generate security & encryption keys
+├── manage_translations.py # Translation workflow automation script
+└── instance/           # Instance-specific data (logs, backups, local DB)
 ```
 
 
@@ -170,17 +170,33 @@ python -c "from app import create_app; app = create_app(); app.run(port=5001)"
 
 ## 📦 Deployment
 
-### Production Checklist
-- [ ] Change `SECRET_KEY` in `config.py`
-- [ ] Set `DEBUG = False`
-- [ ] Generate unique `ENCRYPTION_KEY`
-- [ ] Use PostgreSQL instead of SQLite
-- [ ] Set up proper logging
-- [ ] Configure HTTPS
-- [ ] Set strong passwords
-- [ ] Create database backups regularly
-- [ ] Set up email notifications (optional)
+### 🚀 Final Checklist
 
+#### 1. Security & Secrets
+- [ ] **Rotate Keys:** Run `python generate_keys.py` and update `SECRET_KEY`, `ENCRYPTION_KEY`, and `BLIND_INDEX_SALT` in `env.local`.
+- [ ] **Re-encrypt PII:** If `ENCRYPTION_KEY` is changed, run `flask reencrypt-pii <OLD_ENCRYPTION_KEY>` to update existing customer data.
+- [ ] **Admin Password:** Set a unique `INITIAL_ADMIN_PASSWORD` in environment variables before the first run.
+- [ ] **Disable Debug:** Ensure `FLASK_CONFIG=production` is set in the environment.
+
+#### 2. Database (PostgreSQL)
+- [ ] **Dedicated User:** Avoid using the `postgres` superuser. Create a specific user with `GRANT` only on the `repair_shop` database.
+- [ ] **Client Tools:** Verify `pg_dump` is in the system path for the automated backup scheduler.
+- [ ] **Migrations:** If you have existing data, ensure you have initialized `Flask-Migrate` for schema updates.
+- [ ] **Initialize Migrations:** Run `flask db init`, `flask db migrate`, `flask db upgrade` to set up database versioning.
+
+#### 3. Networking & Web Server
+- [ ] **WSGI Server:** Use **Gunicorn** or **Waitress** instead of the built-in Flask development server.
+  - *Example:* `gunicorn -w 4 -b 0.0.0.0:5000 "app:create_app()"`
+- [ ] **Reverse Proxy:** Use **Nginx** or **Apache** to handle SSL termination and static file serving.
+- [ ] **SSL (Online):** If public-facing, set `SESSION_COOKIE_SECURE=True` and install a certificate (e.g., Let's Encrypt).
+- [ ] **LAN Access:** If local-only without SSL, set `SESSION_COOKIE_SECURE=False` and `HOST=0.0.0.0`.
+
+#### 4. System Maintenance
+- [ ] **Redis:** Ensure Redis is running and `RATELIMIT_STORAGE_URI` is configured to prevent in-memory limit resets.
+- [ ] **Translations:** Run `python manage_translations.py compile` to build your `.mo` files.
+- [ ] **Logging:** Configure external logging aggregation if `LOG_AGGREGATION_URI` is set.
+- [ ] **Logs:** Check the `/logs` directory and ensure the system user has write permissions.
+- [ ] **Cron:** Verify the `backups/` folder is writeable by the app for the 2:00 AM daily task.
 
 ## 📄 License
 
@@ -189,8 +205,8 @@ GNU General Public License v3.0 - See LICENSE file for details
 ## 🎯 Roadmap
 
 Planned features:
-- **PDF Invoice Generation** (currently placeholder)
-- **Database Migrations:** Integrate `Flask-Migrate` for non-destructive schema updates.
+- **PDF Invoice Generation:** Fully implemented receipt-style PDF engine.
+- **Database Migrations:** Integrated `Flask-Migrate` for non-destructive schema updates.
 
 ## 📝 Changelog
 

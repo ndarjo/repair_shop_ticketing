@@ -61,5 +61,25 @@
             </div>
         </div>
     </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-primary">
+            <div class="card-body text-center d-flex flex-column justify-content-between">
+                <i class="fas fa-image fa-3x mb-3 text-primary"></i>
+                <h5 class="card-title">{{ _('Shop Branding') }}</h5>
+                <p class="card-text">{{ _('Upload your shop logo and configure contact information used on customer invoices.') }}</p>
+                <a href="{{ url_for('admin.shop_settings') }}" class="btn btn-primary mt-auto">{{ _('Branding Settings') }}</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-primary">
+            <div class="card-body text-center d-flex flex-column justify-content-between">
+                <i class="fas fa-server fa-3x mb-3 text-primary"></i>
+                <h5 class="card-title">{{ _('System Status') }}</h5>
+                <p class="card-text">{{ _('Monitor database connectivity, production environment variables, and API availability.') }}</p>
+                <a href="{{ url_for('main.health_check') }}" target="_blank" class="btn btn-primary mt-auto">{{ _('Check Health') }}</a>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

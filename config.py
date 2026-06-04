@@ -64,9 +64,6 @@ class Config:
     # The app will only show languages that have a compiled .mo file in the translations/ folder.
     SUPPORTED_LANGUAGES = {
         'en': 'English',
-        'fr': 'Français',
-        'de': 'Deutsch',
-        'it': 'Italiano',
         'id': 'Bahasa Indonesia',
         'es': 'Español',
         'pl': 'Polski',
@@ -115,6 +112,10 @@ class ProductionConfig(Config):
 
         if os.getenv('ENCRYPTION_KEY', '39iJ2h3vR5uY8_a1zX-9kL0mN2pQ4rS6tU8vW0xY2zA=') == '39iJ2h3vR5uY8_a1zX-9kL0mN2pQ4rS6tU8vW0xY2zA=':
             raise ValueError("CRITICAL SECURITY ERROR: ENCRYPTION_KEY must be set in production.")
+
+        # Ensure database is not running without a password in production
+        if not os.getenv('DB_PASSWORD') and not os.getenv('DATABASE_URL'):
+            logging.warning("SECURITY: DB_PASSWORD is empty. Ensure PostgreSQL is using peer auth or local trust.")
 
         if Config.SQLALCHEMY_DATABASE_URI and 'sqlite' in Config.SQLALCHEMY_DATABASE_URI:
             logging.warning("Running production environment on a fallback SQLite engine configuration.")

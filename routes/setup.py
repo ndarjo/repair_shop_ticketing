@@ -1,0 +1,1 @@
+# Content moved to core/setup.py to match app.py imports.
