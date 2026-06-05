@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
 
-{% block title %}Manage Parts - Admin{% endblock %}
+{% block title %}{{ _('Manage Parts - Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -56,7 +56,7 @@
                                 data-active="{{ 'true' if part.is_active else 'false' }}">
                             {{ _('Edit') }}
                         </button>
-                            <form action="{{ url_for('admin.delete_part_admin', part_id=part.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this part?') }}">
+                        <form action="{{ url_for('main.delete_part', part_id=part.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this part?') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Delete') }}</button>
                         </form>
@@ -70,7 +70,7 @@
         </table>
     </div>
     <div class="card-footer">
-        {{ render_pagination(parts, 'admin.manage_inventory') }}
+        {{ render_pagination(parts, 'main.manage_inventory') }}
     </div>
 </div>
 
@@ -119,7 +119,7 @@
 <div class="modal fade" id="addPartModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ url_for('admin.add_part_admin') }}" method="POST">
+            <form action="{{ url_for('main.add_part') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header"><h5>{{ _('Add New Inventory Item') }}</h5></div>
                 <div class="modal-body">

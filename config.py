@@ -149,6 +149,7 @@ class TestingConfig(Config):
     DEBUG = True
     TESTING = True
     WTF_CSRF_ENABLED = False
+    RATELIMIT_ENABLED = False
     # PostgreSQL is recommended for tests to support to_char() and other PG-specific functions
     SQLALCHEMY_DATABASE_URI = os.getenv('TEST_DATABASE_URL')
     if not SQLALCHEMY_DATABASE_URI:

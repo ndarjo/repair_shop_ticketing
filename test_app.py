@@ -1,7 +1,8 @@
 import unittest
 from app import create_app
 import os
-from models import db, User, Customer, Device, Ticket, Location, Note, func
+from sqlalchemy import func
+from models import db, User, Customer, Device, Ticket, Location, Note, ShopSetting
 
 class BasicTests(unittest.TestCase):
     def setUp(self):
@@ -9,6 +10,12 @@ class BasicTests(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
         self.client = self.app.test_client()
+
+        # Seed ShopSetting to mark setup as completed so tests don't redirect to onboarding
+        loc = db.session.execute(db.select(Location)).scalar()
+        setting = ShopSetting(location_id=loc.id if loc else 1, shop_name="Test Shop", setup_completed=True)
+        db.session.add(setting)
+        db.session.commit()
 
     def tearDown(self):
         db.session.remove()
@@ -109,6 +116,24 @@ class BasicTests(unittest.TestCase):
         event_types = [e['type'] for e in ticket.timeline]
         self.assertIn('phase', event_types)
         self.assertIn('note', event_types)
+
+    def test_inventory_and_services_views(self):
+        """Verify that the inventory and services templates render correctly for admin"""
+        admin_password = os.getenv('INITIAL_ADMIN_PASSWORD', 'change-me-immediately')
+        self.client.post('/auth/login', data=dict(
+            username='admin',
+            password=admin_password
+        ), follow_redirects=True)
+        
+        # Access inventory
+        response = self.client.get('/inventory')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Spare Parts', response.data)
+        
+        # Access services
+        response = self.client.get('/services')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Service Types', response.data)
 
 if __name__ == "__main__":
     unittest.main()
