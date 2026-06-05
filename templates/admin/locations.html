@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Manage Locations - Admin') }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ _('Manage Locations') }}</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">{{ _('+ Add New Location') }}</button>
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>{{ _('Location Name') }}</th>
+                    <th>{{ _('Address') }}</th>
+                    <th>{{ _('Phone') }}</th>
+                    <th>{{ _('Email') }}</th>
+                    <th>{{ _('Created') }}</th>
+                    <th class="text-end">{{ _('Actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for loc in locations %}
+                <tr>
+                    <td><strong>{{ loc.name }}</strong></td>
+                    <td>{{ loc.address or 'N/A' }}</td>
+                    <td>{{ loc.phone or 'N/A' }}</td>
+                    <td>{{ loc.email or 'N/A' }}</td>
+                    <td>{{ loc.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td class="text-end">
+                        {# Future: Add Edit/Delete actions here #}
+                        <button class="btn btn-sm btn-outline-secondary" disabled>{{ _('Edit') }}</button>
+                        <button class="btn btn-sm btn-outline-danger" disabled>{{ _('Delete') }}</button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-4">{{ _('No locations defined yet.') }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Location Modal -->
+<div class="modal fade" id="addLocationModal" tabindex="-1" aria-labelledby="addLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('admin.manage_locations') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addLocationModalLabel">{{ _('Add New Location') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="locationName" class="form-label">{{ _('Location Name') }} *</label>
+                        <input type="text" class="form-control" id="locationName" name="name" required placeholder="{{ _('e.g., Downtown Branch') }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="locationAddress" class="form-label">{{ _('Address') }}</label>
+                        <textarea class="form-control" id="locationAddress" name="address" rows="2" placeholder="{{ _('Street, City, State, Zip') }}"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="locationPhone" class="form-label">{{ _('Phone') }}</label>
+                        <input type="tel" class="form-control" id="locationPhone" name="phone" placeholder="{{ _('+1 (555) 123-4567') }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="locationEmail" class="form-label">{{ _('Email') }}</label>
+                        <input type="email" class="form-control" id="locationEmail" name="email" placeholder="{{ _('branch@example.com') }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ _('Create Location') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

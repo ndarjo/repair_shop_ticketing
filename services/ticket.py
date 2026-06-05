@@ -1,9 +1,9 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from typing import Tuple, Any, Optional
 from flask import current_app
 from flask_babel import _
-from models import db, Ticket, PhaseLog, Note, Payment
+from models import db, Ticket, PhaseLog, Note, Payment, User
 from .core import FinancialService
 
 class RepairTicketService:
@@ -14,7 +14,7 @@ class RepairTicketService:
                       payment_method: Optional[str] = None) -> Ticket:
         """Core logic for creating a repair ticket, handling logs and down payments"""
         if created_at is None:
-            created_at = datetime.now(timezone.utc)
+            created_at = datetime.now()
         
         ticket = Ticket(
             ticket_number=Ticket.generate_unique_number(),
@@ -51,14 +51,16 @@ class RepairTicketService:
             )
             db.session.add(payment)
             
-            symbol = current_app.jinja_env.globals.get('currency_symbol', '$')
-            if callable(symbol): symbol = '$'
+            creator = db.session.get(User, creator_id)
+            currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
+            symbol = currency_map.get(creator.currency, '$') if creator else '$'
+            decimals = creator.currency_decimals if creator else 2
             
             payment_note = Note(
                 ticket_id=ticket.id,
                 user_id=creator_id,
-                content=_('Initial down payment of %(symbol)s%(amount)s received via %(method)s.', 
-                          symbol=symbol, amount=down_payment, method=payment_method or _('Cash')),
+                content=_('Initial down payment of %(symbol)s%(amount)s received via %(method)s.',
+                          symbol=symbol, amount=f"{down_payment:.{decimals}f}", method=payment_method or _('Cash')),
                 is_internal=True
             )
             db.session.add(payment_note)
@@ -82,7 +84,7 @@ class RepairTicketService:
 
         if new_phase == 'Already Taken':
             ticket.device_picked_up = True
-            ticket.picked_up_date = datetime.now(timezone.utc)
+            ticket.picked_up_date = datetime.now()
 
         log = PhaseLog(
             ticket_id=ticket.id,

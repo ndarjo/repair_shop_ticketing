@@ -2,7 +2,7 @@ import click
 import os
 from flask.cli import with_appcontext
 from models import db, Role, Permission, User, Location, CommonProblem, Customer
-from datetime import datetime, timezone
+from datetime import datetime
 from flask_babel import _
 from cryptography.fernet import Fernet
 

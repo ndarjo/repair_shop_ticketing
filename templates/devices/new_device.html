@@ -16,7 +16,9 @@
                         <div class="col-md-12">
                             <div class="d-flex justify-content-between align-items-baseline">
                                 <label class="form-label">{{ _('Owner (Customer)') }} *</label>
+                                {% if current_user.has_permission('create_customer') %}
                                 <a href="{{ url_for('customer.new_customer') }}" class="btn btn-link btn-sm p-0">{{ _('Add New Customer') }}</a>
+                                {% endif %}
                             </div>
                             <select name="customer_id" class="form-select" required>
                                 <option value="">{{ _('-- Select Customer --') }}</option>

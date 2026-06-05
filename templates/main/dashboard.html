@@ -53,7 +53,7 @@
                     <th>{{ _('Device') }}</th>
                     <th class="text-center">{{ _('Phase') }}</th>
                     <th>{{ _('Created') }}</th>
-                    <th class="text-end">{{ _('Action') }}</th>
+                    <th class="text-end">{{ _('Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -83,4 +83,8 @@
         {{ render_pagination(tickets, 'main.dashboard') }}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}

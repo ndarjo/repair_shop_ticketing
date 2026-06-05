@@ -15,6 +15,23 @@
                 <hr>
                 <p><strong>{{ _('Address:') }}</strong><br>{{ customer.address or _('No address provided') }}</p>
                 <p><small class="text-muted">{{ _('Registered:') }} {{ customer.created_at.strftime('%Y-%m-%d') }}</small></p>
+                
+                <hr>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('customer.export_customer_data', customer_id=customer.id) }}" class="btn btn-sm btn-outline-info">
+                        <i class="fas fa-file-export me-1"></i> {{ _('Export Data (GDPR)') }}
+                    </a>
+                    
+                    {% if current_user.has_permission('delete_customer') %}
+                    <div class="mt-2 pt-2 border-top">
+                        <h6 class="small text-danger fw-bold text-uppercase">{{ _('Danger Zone') }}</h6>
+                        <form method="POST" action="{{ url_for('customer.anonymize_customer', customer_id=customer.id) }}" class="confirm-action" data-confirm="{{ _('Anonymize this customer? This will scrub all PII (name, phone, address) but keep ticket history for financial reports. This cannot be undone.') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger w-100">{{ _('Anonymize Profile') }}</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

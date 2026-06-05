@@ -6,7 +6,9 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h2>{{ _('Customer Directory') }}</h2>
+    {% if current_user.has_permission('create_customer') %}
     <a href="{{ url_for('customer.new_customer') }}" class="btn btn-primary">{{ _('+ New Customer') }}</a>
+    {% endif %}
 </div>
 
 <div class="row mb-4">
@@ -49,7 +51,7 @@
         </table>
     </div>
     <div class="card-footer">
-        {{ render_pagination(customers, 'customer.customers_list', search_query) }}
+        {{ render_pagination(customers, 'customer.customers_list', q=search_query) }}
     </div>
 </div>
 {% endblock %}

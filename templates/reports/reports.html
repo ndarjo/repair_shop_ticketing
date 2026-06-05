@@ -7,8 +7,8 @@
     <h1 class="mb-0">{{ _('Reports & Analytics') }}</h1>
     <div class="d-flex gap-3 align-items-center">
         <form action="{{ url_for('report.reports') }}" method="GET" class="d-flex gap-2 align-items-center">
-            <label class="small fw-bold text-muted text-uppercase mb-0">{{ _('Period:') }}</label>
-            <select name="month" class="form-select form-select-sm w-auto auto-submit">
+            <label for="month-select" class="small fw-bold text-muted text-uppercase mb-0">{{ _('Period:') }}</label>
+            <select id="month-select" name="month" class="form-select form-select-sm w-auto auto-submit">
                 <option value="">{{ _('All Time') }}</option>
                 {% for m in available_months %}
                 <option value="{{ m }}" {{ 'selected' if m == monthly_stats.selected_month }}>{{ m }}</option>
@@ -110,4 +110,8 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}

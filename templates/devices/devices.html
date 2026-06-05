@@ -33,7 +33,9 @@
                     <td class="text-center"><span class="badge bg-info text-dark">{{ device.tickets|length }}</span></td>
                     <td class="text-end">
                         <a href="{{ url_for('device.view_device', device_id=device.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                        {% if current_user.has_permission('edit_device') %}
                         <a href="{{ url_for('device.edit_device', device_id=device.id) }}" class="btn btn-sm btn-outline-secondary">{{ _('Edit') }}</a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}

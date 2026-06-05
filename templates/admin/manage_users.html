@@ -47,14 +47,14 @@
                             </td>
                             <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
                             <td>
-                                {% if current_user.has_permission('edit_user') %}
+                                {% if current_user.is_superuser %}
                                 <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-warning">{{ _('Edit') }}</a>
-                                {% endif %}
-                                {% if not user.is_superuser and current_user.has_permission('delete_user') %}
+                                {% if not user.is_superuser %}
                                 <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to delete this user?') }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                 </form>
+                                {% endif %}
                                 {% endif %}
                             </td>
                         </tr>

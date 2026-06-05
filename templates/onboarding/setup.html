@@ -56,7 +56,7 @@
                                 <label class="form-label">{{ _('System Language') }}</label>
                                 <select name="language" class="form-select">
                                     {% for code, name in languages.items() %}
-                                    <option value="{{ code }}" {% if current_user.language_preference == code %}selected{% endif %}>{{ name }}</option>
+                                    <option value="{{ code }}" {% if current_locale == code %}selected{% endif %}>{{ name }}</option>
                                     {% endfor %}
                                 </select>
                                 <div class="form-text">{{ _('Select the primary language for the application interface.') }}</div>

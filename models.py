@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
-from datetime import datetime, timezone
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
 from sqlalchemy import or_
@@ -36,7 +36,7 @@ class Location(db.Model):
     address = db.Column(db.Text)
     phone = db.Column(db.String(20))
     email = db.Column(db.String(120))
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.now)
     
     # Relationships for logical multi-tenancy and data isolation
     users = db.relationship('User', backref='location', lazy=True)
@@ -62,7 +62,7 @@ class User(UserMixin, db.Model):
     language_preference = db.Column(db.String(5), default='en')
     currency = db.Column(db.String(10), default='USD')
     currency_decimals = db.Column(db.Integer, default=2)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.now)
     
     # Multi-tenancy: Link user to a specific branch
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
@@ -116,7 +116,7 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
     description = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.now)
     
     permissions = db.relationship('Permission', secondary=role_permissions, backref=db.backref('roles', lazy='dynamic'))
 
@@ -132,7 +132,7 @@ class Permission(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text)
     category = db.Column(db.String(50))
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.now)
     
     def __repr__(self):
         return f'<Permission {self.name}>'
@@ -157,8 +157,8 @@ class Customer(db.Model):
     # without revealing the actual number to the database engine.
     phone_hash = db.Column(db.String(64), index=True)
 
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     devices = db.relationship('Device', backref='customer', lazy=True, cascade='all, delete-orphan')
     tickets = db.relationship('Ticket', backref='customer', lazy=True)
@@ -236,7 +236,7 @@ class Device(db.Model):
     serial_number = db.Column(db.String(100), index=True)
     color = db.Column(db.String(50))
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.now)
     
     tickets = db.relationship('Ticket', backref='device', lazy=True, cascade='all, delete-orphan')
     
@@ -270,7 +270,7 @@ class Ticket(db.Model):
     picked_up_date = db.Column(db.DateTime)
     estimated_cost = db.Column(db.Numeric(10, 2), default=Decimal('0.00'))
     actual_cost = db.Column(db.Numeric(10, 2), default=Decimal('0.00'))
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.now)
     
     # FIXED: Restored truncated cascading children connections down below
     ticket_services = db.relationship('TicketService', backref='ticket', lazy=True, cascade='all, delete-orphan')
@@ -288,7 +288,7 @@ class Ticket(db.Model):
     def generate_unique_number():
         """Generates a unique ticket number with collision check"""
         while True:
-            ticket_number = f"TKT-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+            ticket_number = f"TKT-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
             stmt = db.select(Ticket.id).filter_by(ticket_number=ticket_number)
             if not db.session.execute(stmt).scalar():
                 return ticket_number
@@ -352,7 +352,7 @@ class Service(db.Model):
     price = db.Column(db.Numeric(10, 2), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
     __table_args__ = (db.UniqueConstraint('name', 'location_id', name='_service_location_uc'),)
 
@@ -383,7 +383,7 @@ class SparePart(db.Model):
     stock_quantity = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
     __table_args__ = (db.UniqueConstraint('name', 'location_id', name='_part_location_uc'),)
 
@@ -396,7 +396,7 @@ class CommonProblem(db.Model):
     problem_text = db.Column(db.String(255), nullable=False)
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
     __table_args__ = (db.UniqueConstraint('problem_text', 'location_id', name='_problem_location_uc'),)
 
@@ -411,7 +411,7 @@ class Note(db.Model):
     note_type = db.Column(db.String(50), default='General') # e.g., 'General', 'Phase Update', 'Payment Received'
     content = db.Column(db.Text, nullable=False)
     is_internal = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
 
 class PhaseLog(db.Model):
@@ -423,7 +423,7 @@ class PhaseLog(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     old_phase = db.Column(db.String(40))
     new_phase = db.Column(db.String(40), nullable=False)
-    changed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    changed_at = db.Column(db.DateTime, default=datetime.now)
 
 
 class Invoice(db.Model):
@@ -438,7 +438,7 @@ class Invoice(db.Model):
     
     total_amount = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
     status = db.Column(db.String(20), default='Unpaid') # Unpaid, Partial, Paid
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=datetime.now)
     
     # Cascade relationships remain intact
     items = db.relationship('InvoiceItem', backref='invoice', lazy=True, cascade='all, delete-orphan')
@@ -489,7 +489,7 @@ class Payment(db.Model):
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     payment_method = db.Column(db.String(40), nullable=False) # Cash, Card, Transfer
     transaction_reference = db.Column(db.String(100))
-    paid_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    paid_at = db.Column(db.DateTime, default=datetime.now)
 class InvoiceItem(db.Model):
     __tablename__ = 'invoice_items'
     id = db.Column(db.Integer, primary_key=True)

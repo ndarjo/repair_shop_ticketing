@@ -1,7 +1,7 @@
 import os
 import json
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, send_file
 from flask_login import login_required, current_user
 from models import db, User, Role, Location, ShopSetting, Permission, CommonProblem, Service, SparePart
@@ -168,6 +168,15 @@ def add_part_admin():
         flash(_('Part name is required.'), 'error')
         return redirect(url_for('admin.manage_inventory'))
 
+    # Integrity: Check for duplicate names at this location
+    exists = db.session.execute(db.select(SparePart).filter_by(
+        name=name, 
+        location_id=current_user.location_id
+    )).scalar()
+    if exists:
+        flash(_('A part with this name already exists in your inventory.'), 'warning')
+        return redirect(url_for('admin.manage_inventory'))
+
     if stock < 0:
         flash(_('Stock quantity cannot be negative.'), 'error')
         return redirect(url_for('admin.manage_inventory'))
@@ -200,6 +209,16 @@ def edit_part_admin(part_id):
     if not name:
         flash(_('Part name is required.'), 'error')
         return redirect(url_for('admin.manage_inventory'))
+
+    # Integrity: Check for duplicate names if the name was changed
+    if name != part.name:
+        exists = db.session.execute(db.select(SparePart).filter_by(
+            name=name, 
+            location_id=current_user.location_id
+        )).scalar()
+        if exists:
+            flash(_('Another part already uses this name.'), 'warning')
+            return redirect(url_for('admin.manage_inventory'))
 
     if stock < 0:
         flash(_('Stock quantity cannot be negative.'), 'error')
@@ -247,6 +266,15 @@ def add_service_admin():
         flash(_('Service name is required.'), 'error')
         return redirect(url_for('admin.manage_services'))
 
+    # Integrity: Check for duplicate services at this location
+    exists = db.session.execute(db.select(Service).filter_by(
+        name=name, 
+        location_id=current_user.location_id
+    )).scalar()
+    if exists:
+        flash(_('A service with this name already exists in your catalog.'), 'warning')
+        return redirect(url_for('admin.manage_services'))
+
     new_service = Service(
         name=name,
         description=request.form.get('description'),
@@ -258,7 +286,7 @@ def add_service_admin():
     flash(_('Service added to catalog.'), 'success')
     return redirect(url_for('admin.manage_services'))
 
-@admin_bp.route('/services/edit/<int:service_id>', methods=['POST'])
+@admin_bp.route('/inventory/services/edit/<int:service_id>', methods=['POST'])
 @login_required
 @require_permission('manage_settings')
 def edit_service_admin(service_id):
@@ -272,6 +300,16 @@ def edit_service_admin(service_id):
     if not name:
         flash(_('Service name is required.'), 'error')
         return redirect(url_for('admin.manage_services'))
+
+    # Integrity: Check for duplicate names if changed
+    if name != service.name:
+        exists = db.session.execute(db.select(Service).filter_by(
+            name=name, 
+            location_id=current_user.location_id
+        )).scalar()
+        if exists:
+            flash(_('Another service already uses this name.'), 'warning')
+            return redirect(url_for('admin.manage_services'))
 
     service.name = name
     service.description = request.form.get('description')
@@ -293,37 +331,6 @@ def delete_service_admin(service_id):
         db.session.commit()
         flash(_('Service deleted.'), 'success')
     return redirect(url_for('admin.manage_services'))
-
-@admin_bp.route('/common-problems', methods=['GET', 'POST'])
-@login_required
-@require_permission('manage_settings')
-def manage_common_problems():
-    if request.method == 'POST':
-        problem_text = request.form.get('problem_text')
-        if problem_text:
-            new_prob = CommonProblem(problem_text=problem_text, location_id=current_user.location_id)
-            db.session.add(new_prob)
-            db.session.commit()
-            flash(_('Common problem added.'), 'success')
-            return redirect(url_for('admin.manage_common_problems'))
-    
-    page = request.args.get('page', 1, type=int)
-    stmt = db.select(CommonProblem).filter_by(location_id=current_user.location_id).order_by(CommonProblem.created_at.desc())
-    problems = db.paginate(stmt, page=page, per_page=15)
-    
-    return render_template('admin/manage_common_problems.html', problems=problems)
-
-@admin_bp.route('/common-problems/delete/<int:problem_id>', methods=['POST'])
-@login_required
-@require_permission('manage_settings')
-def delete_problem(problem_id):
-    """Dedicated route for removing common problems"""
-    prob = db.session.get(CommonProblem, problem_id)
-    if prob and (current_user.is_superuser or prob.location_id == current_user.location_id):
-        db.session.delete(prob)
-        db.session.commit()
-        flash(_('Problem removed.'), 'success')
-    return redirect(url_for('admin.manage_common_problems'))
 
 @admin_bp.route('/status')
 @login_required
@@ -361,7 +368,7 @@ def system_status():
         'os': f"{platform.system()} {platform.release()}",
         'python': sys.version.split()[0],
         'flask_env': os.getenv('FLASK_CONFIG', 'development'),
-        'timezone': datetime.now(timezone.utc).astimezone().tzname()
+        'timezone': datetime.now().astimezone().tzname()
     }
 
     # 4. Config Summary (Masked)
@@ -386,13 +393,13 @@ def backup():
         backup_type = request.form.get('backup_type')
         if backup_type == 'json_data':
             data = BackupService.get_system_logical_data()
-            filename = f"manual_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+            filename = f"manual_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             path = os.path.join(current_app.config['BACKUP_DIR'], filename)
             with open(path, 'w') as f:
                 json.dump(data, f)
             flash(_('Logical backup created successfully: %(name)s', name=filename), 'success')
         elif backup_type == 'full_db':
-            filename = f"full_dump_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.dump"
+            filename = f"full_dump_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dump"
             path = os.path.join(current_app.config['BACKUP_DIR'], filename)
             
             try:

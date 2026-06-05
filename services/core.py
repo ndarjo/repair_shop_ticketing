@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 import uuid
 from typing import Tuple, Any, Optional, Dict, List
@@ -12,7 +12,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 import io
-from models import db, Ticket, Payment, Note, Invoice, Service, SparePart, InvoiceItem, TicketService as TicketServiceBridge, Customer, Device, ShopSetting
+from models import db, Ticket, Payment, Note, Invoice, Service, SparePart, InvoiceItem, TicketService as TicketServiceBridge, Customer, Device, ShopSetting, User
 
 class FinancialService:
     @staticmethod
@@ -21,7 +21,7 @@ class FinancialService:
         invoice = db.session.execute(db.select(Invoice).filter_by(ticket_id=ticket_id)).scalar()
         if not invoice:
             invoice = Invoice(
-                invoice_number=f"INV-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
+                invoice_number=f"INV-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
                 ticket_id=ticket_id,
                 status='Draft'
             )
@@ -90,20 +90,22 @@ class FinancialService:
             amount=amount,
             payment_method=method,
             transaction_reference=reference,
-            paid_at=datetime.now(timezone.utc)
+            paid_at=datetime.now()
         )
         db.session.add(payment)
         db.session.flush()
 
+        user = db.session.get(User, user_id)
+        currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
+        symbol = currency_map.get(user.currency, '$') if user else '$'
+        decimals = user.currency_decimals if user else 2
+
         invoice = FinancialService.get_or_create_invoice(ticket_id)
         FinancialService.sync_invoice_status(invoice.id)
 
-        symbol = current_app.jinja_env.globals.get('currency_symbol', '$')
-        if callable(symbol): symbol = '$'
-
         note_type = _('Payment Received') if amount > 0 else _('Change Given / Refund')
         note_content = _('%(type)s: %(symbol)s%(amount)s. Method: %(method)s. Ref: %(ref)s', 
-                         type=note_type, symbol=symbol, amount=abs(amount), method=method, ref=reference)
+                         type=note_type, symbol=symbol, amount=f"{abs(amount):.{decimals}f}", method=method, ref=reference)
 
         note = Note(
             ticket_id=ticket.id,
@@ -330,8 +332,13 @@ class DocumentService:
         invoice = ticket.invoices[0]
         # Multi-tenancy: Fetch branding settings specific to the ticket's branch location
         shop_info = db.session.execute(db.select(ShopSetting).filter_by(location_id=ticket.location_id)).scalar()
-        symbol = current_app.jinja_env.globals.get('currency_symbol', '$')
-        decimals = current_app.jinja_env.globals.get('currency_decimals', 2)
+        
+        # UI Integrity: Ensure PDF matches the viewing admin's currency settings
+        from flask_login import current_user
+        currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
+        # Safely get currency info from current user (PDF is generated in request context)
+        symbol = currency_map.get(getattr(current_user, 'currency', 'USD'), '$')
+        decimals = getattr(current_user, 'currency_decimals', 2)
 
         buffer = io.BytesIO()
         page_width = 80 * mm
@@ -363,7 +370,7 @@ class DocumentService:
         
         elements.append(Spacer(1, 3*mm))
         elements.append(Paragraph(f"<b>{_('Invoice:')}</b> {invoice.invoice_number}", normal_style))
-        elements.append(Paragraph(f"<b>{_('Date:')}</b> {invoice.created_at.astimezone(timezone.utc).strftime('%d/%m/%Y %H:%M')}", normal_style))
+        elements.append(Paragraph(f"<b>{_('Date:')}</b> {invoice.created_at.strftime('%d/%m/%Y %H:%M')}", normal_style))
         elements.append(Paragraph(f"<b>{_('Customer:')}</b> {ticket.customer.name}", normal_style))
         elements.append(Paragraph(f"<b>{_('Device:')}</b> {ticket.device.display}", normal_style))
         elements.append(Spacer(1, 2*mm))

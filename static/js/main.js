@@ -431,7 +431,7 @@ function initDynamicAdminModals() {
         document.querySelectorAll('.edit-part-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const data = this.dataset;
-                document.getElementById('editPartForm').action = `/admin/inventory/parts/edit/${data.id}`;
+                document.getElementById('editPartForm').action = `/inventory/edit/${data.id}`;
                 document.getElementById('edit_part_name').value = data.name;
                 document.getElementById('edit_part_cost').value = data.cost;
                 document.getElementById('edit_part_price').value = data.price;
@@ -447,7 +447,7 @@ function initDynamicAdminModals() {
         document.querySelectorAll('.edit-service-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const data = this.dataset;
-                document.getElementById('editServiceForm').action = `/admin/services/edit/${data.id}`;
+                document.getElementById('editServiceForm').action = `/services/edit/${data.id}`;
                 document.getElementById('edit_service_name').value = data.name;
                 document.getElementById('edit_service_description').value = data.description;
                 document.getElementById('edit_service_price').value = data.price;

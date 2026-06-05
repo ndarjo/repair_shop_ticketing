@@ -1,9 +1,9 @@
-{% macro render_pagination(pagination, endpoint, q=None) %}
+{% macro render_pagination(pagination, endpoint) %}
 <nav aria-label="{{ _('Page navigation') }}">
     <ul class="pagination justify-content-center mb-0">
         {# Previous Button #}
         <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
-            <a class="page-link" href="{{ url_for(endpoint, page=pagination.prev_num, q=q) if pagination.has_prev else '#' }}" aria-label="{{ _('Previous') }}">
+            <a class="page-link" href="{{ url_for(endpoint, page=pagination.prev_num, **kwargs) if pagination.has_prev else '#' }}" aria-label="{{ _('Previous') }}">
                 <span aria-hidden="true">&laquo;</span>
             </a>
         </li>
@@ -11,8 +11,8 @@
         {# Page Numbers with Ellipsis logic #}
         {% for page in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
             {% if page %}
-                <li class="page-item {{ 'active' if page == pagination.page }}">
-                    <a class="page-link" href="{{ url_for(endpoint, page=page, q=q) }}">{{ page }}</a>
+                <li class="page-item {{ 'active' if page == pagination.page }}" {{ 'aria-current="page"' if page == pagination.page }}>
+                    <a class="page-link" href="{{ url_for(endpoint, page=page, **kwargs) if page != pagination.page else '#' }}">{{ page }}</a>
                 </li>
             {% else %}
                 <li class="page-item disabled"><span class="page-link">...</span></li>
@@ -21,7 +21,7 @@
 
         {# Next Button #}
         <li class="page-item {{ 'disabled' if not pagination.has_next }}">
-            <a class="page-link" href="{{ url_for(endpoint, page=pagination.next_num, q=q) if pagination.has_next else '#' }}" aria-label="{{ _('Next') }}">
+            <a class="page-link" href="{{ url_for(endpoint, page=pagination.next_num, **kwargs) if pagination.has_next else '#' }}" aria-label="{{ _('Next') }}">
                 <span aria-hidden="true">&raquo;</span>
             </a>
         </li>

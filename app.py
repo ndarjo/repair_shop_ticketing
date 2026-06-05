@@ -33,7 +33,7 @@ from setup import (
 limiter = Limiter(key_func=get_remote_address, default_limits=["5000 per day", "1000 per hour"])
 
 from config import DevelopmentConfig, ProductionConfig, TestingConfig
-from datetime import datetime, timezone
+from datetime import datetime
 import os
 
 # Custom Request class to handle Flask 2.3+ strict JSON checks gracefully
@@ -200,7 +200,7 @@ def create_app(config_name=None):
             shop_info = db.session.execute(db.select(ShopSetting)).scalar()
             
         return {
-            'now': datetime.now(timezone.utc), 
+            'now': datetime.now(), 
             'current_locale': get_locale(),
             'currency_symbol': symbol, 
             'currency_decimals': decimals, 

@@ -6,7 +6,9 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>{{ _('Spare Parts & Hardware') }}</h2>
+    {% if current_user.has_permission('manage_inventory') %}
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPartModal">{{ _('+ New Inventory Item') }}</button>
+    {% endif %}
 </div>
 
 <div class="card shadow-sm">
@@ -42,7 +44,7 @@
                         </span>
                     </td>
                     <td class="text-end">
-                        {% if current_user.has_permission('manage_services') %}
+                        {% if current_user.has_permission('manage_inventory') %}
                         <button class="btn btn-sm btn-outline-primary edit-part-btn" 
                                 data-bs-toggle="modal" 
                                 data-bs-target="#editPartModal"
@@ -54,7 +56,7 @@
                                 data-active="{{ 'true' if part.is_active else 'false' }}">
                             {{ _('Edit') }}
                         </button>
-                        <form action="{{ url_for('admin.delete_part_admin', part_id=part.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this part?') }}">
+                            <form action="{{ url_for('admin.delete_part_admin', part_id=part.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this part?') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Delete') }}</button>
                         </form>
@@ -72,6 +74,7 @@
     </div>
 </div>
 
+{% if current_user.has_permission('manage_inventory') %}
 <!-- Single Shared Edit Modal (Prevents DOM Bloating) -->
 <div class="modal fade" id="editPartModal" tabindex="-1" aria-labelledby="editPartModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -147,4 +150,5 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}

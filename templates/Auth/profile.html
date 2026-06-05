@@ -5,7 +5,10 @@
 {% block content %}
 <div class="row">
     <div class="col-md-8 offset-md-2">
-        <h1 class="mb-4">{{ _('My Profile') }}</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">{{ _('My Profile') }}</h1>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm">{{ _('Back to Dashboard') }}</a>
+        </div>
         
         <div class="row">
             <div class="col-md-6 mb-4">
@@ -19,10 +22,10 @@
                         <p><strong>{{ _('Email') }}:</strong> {{ current_user.email or _('Not set') }}</p>
                         <p><strong>{{ _('Roles') }}:</strong> 
                             {% if current_user.is_superuser %}
-                                <span class="badge bg-danger">{{ _('Superuser') }}</span>
-                            {% else %}
-                                {% for role in current_user.roles %}<span class="badge bg-primary me-1">{{ _(role.name) }}</span>{% endfor %}
+                                <span class="badge bg-danger me-1">{{ _('Superuser') }}</span>
                             {% endif %}
+                            {% for role in current_user.roles %}<span class="badge bg-primary me-1">{{ _(role.name) }}</span>{% endfor %}
+                            {% if not current_user.is_superuser and not current_user.roles %}<span class="text-muted small"><em>{{ _('No roles assigned') }}</em></span>{% endif %}
                         </p>
                     </div>
                 </div>
@@ -50,12 +53,12 @@
                                 <label for="language" class="form-label">{{ _('Language') }}</label>
                                 <select class="form-control" id="language" name="language">
                                     {% for code, name in languages.items() %}
-                                    <option value="{{ code }}" {% if current_user.language_preference == code %}selected{% endif %}>{{ name }}</option>
+                                    <option value="{{ code }}" {% if current_locale == code %}selected{% endif %}>{{ name }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
 
-                            {% if current_user.is_superuser or current_user.has_role('manager') %}
+                            {% if current_user.has_permission('view_reports') %}
                             <div class="mb-3">
                                 <label for="currency" class="form-label">{{ _('Currency') }}</label>
                                 <select class="form-control" id="currency" name="currency">
@@ -71,7 +74,7 @@
                                 <select class="form-control" id="currency_decimals" name="currency_decimals">
                                     <option value="0" {% if current_user.currency_decimals == 0 %}selected{% endif %}>{{ _('0 (e.g. Rp 1500)') }}</option>
                                     <option value="2" {% if current_user.currency_decimals == 2 %}selected{% endif %}>{{ _('2 (e.g. $15.00)') }}</option>
-                                    <option value="3" {% if current_user.currency_decimals == 3 %}selected{% endif %}>3</option>
+                                    <option value="3" {% if current_user.currency_decimals == 3 %}selected{% endif %}>{{ _('3') }}</option>
                                 </select>
                             </div>
                             {% endif %}
@@ -154,11 +157,11 @@
                             </div>
                             <div class="mb-3">
                                 <label for="new_password" class="form-label">{{ _('New Password') }}</label>
-                                <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8">
                             </div>
                             <div class="mb-3">
                                 <label for="confirm_password" class="form-label">{{ _('Confirm New Password') }}</label>
-                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="8">
                             </div>
                             <button type="submit" class="btn btn-primary">{{ _('Change Password') }}</button>
                         </form>

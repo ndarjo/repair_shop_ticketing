@@ -14,8 +14,13 @@ report_bp = Blueprint('report', __name__)
 @require_permission('view_reports')
 def reports():
     selected_month = request.args.get('month')
-    # Scoped financial reporting
-    rev_stmt = select(func.sum(Payment.amount)).join(Ticket).where(Ticket.location_id == current_user.location_id)
+    
+    # Scoped financial reporting with filter synchronization
+    rev_stmt = select(func.sum(Payment.amount)).join(Ticket).where(
+        Ticket.location_id == current_user.location_id,
+        Ticket.is_archived == False
+    )
+    
     if selected_month:
         rev_stmt = rev_stmt.where(func.to_char(Payment.paid_at, 'YYYY-MM') == selected_month)
     gross_revenue = db.session.scalar(rev_stmt) or Decimal('0.00')
@@ -38,10 +43,12 @@ def reports():
     if selected_month:
         completed_stmt = completed_stmt.where(func.to_char(Ticket.created_at, 'YYYY-MM') == selected_month)
 
+    total_stmt = select(func.count(Ticket.id)).where(Ticket.is_archived == False, Ticket.location_id == current_user.location_id)
+    if selected_month:
+        total_stmt = total_stmt.where(func.to_char(Ticket.created_at, 'YYYY-MM') == selected_month)
+
     monthly_stats = {
-        'total_tickets': db.session.execute(
-            select(func.count(Ticket.id)).where(Ticket.is_archived == False, Ticket.location_id == current_user.location_id)
-        ).scalar() or 0,
+        'total_tickets': db.session.execute(total_stmt).scalar() or 0,
         'completed_tickets': db.session.execute(completed_stmt).scalar() or 0,
         'gross_revenue': gross_revenue,
         'hardware_cost': hardware_cost,
@@ -74,9 +81,14 @@ def finance_report():
     selected_month = request.args.get('month')
     monthly_analysis = ReportingService.get_financial_analysis(current_user.location_id)
     
-    # Integrity Fix: Aggregate totals from the monthly analysis data
-    total_revenue = sum(m['revenue'] for m in monthly_analysis)
-    total_hardware_cost = sum(m['costs'] for m in monthly_analysis)
+    # Integrity Fix: KPIs must respect the selected filter
+    if selected_month:
+        filtered_data = next((m for m in monthly_analysis if m['month'] == selected_month), {'revenue': 0, 'costs': 0})
+        total_revenue = filtered_data['revenue']
+        total_hardware_cost = filtered_data['costs']
+    else:
+        total_revenue = sum(m['revenue'] for m in monthly_analysis)
+        total_hardware_cost = sum(m['costs'] for m in monthly_analysis)
 
     # Fetch detailed payment history for the table
     payment_stmt = select(Payment, Ticket, Customer).join(Ticket, Payment.ticket_id == Ticket.id).join(Customer, Ticket.customer_id == Customer.id).where(Ticket.location_id == current_user.location_id)

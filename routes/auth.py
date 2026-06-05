@@ -105,7 +105,7 @@ def profile():
             if language in current_app.config['LANGUAGES']:
                 current_user.language_preference = language
 
-            if current_user.is_superuser or current_user.has_role('manager'):
+            if current_user.has_permission('view_reports'):
                 currency = request.form.get('currency')
                 if currency in ['USD', 'IDR', 'EUR', 'GBP']:
                     current_user.currency = currency

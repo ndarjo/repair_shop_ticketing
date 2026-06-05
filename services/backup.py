@@ -1,7 +1,7 @@
 import os
 import json
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Dict, Any, Tuple
 from flask import current_app
 from models import db, Location, Customer, Device, Ticket, ShopSetting
@@ -44,7 +44,7 @@ class BackupService:
         Performs both a full binary dump (if PostgreSQL) and a logical JSON export.
         Used by the scheduler.
         """
-        now_str = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+        now_str = datetime.now().strftime('%Y%m%d_%H%M%S')
         backup_dir = current_app.config['BACKUP_DIR']
         
         # 1. Full Database Snapshot

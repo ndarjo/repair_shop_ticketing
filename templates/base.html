@@ -50,6 +50,19 @@
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if 'device' in request.endpoint }}" href="{{ url_for('device.devices_list') }}"><i class="fas fa-laptop me-1"></i> {{ _('Devices') }}</a>
                     </li>
+                    {% if current_user.has_permission('manage_inventory') %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if 'inventory' in request.endpoint }}" href="{{ url_for('main.manage_inventory') }}"><i class="fas fa-boxes me-1"></i> {{ _('Inventory') }}</a>
+                    </li>
+                    {% endif %}
+                    {% if current_user.has_permission('manage_settings') %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if 'services' in request.endpoint }}" href="{{ url_for('main.manage_services') }}"><i class="fas fa-hand-holding-usd me-1"></i> {{ _('Services') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if 'common_problems' in request.endpoint }}" href="{{ url_for('main.manage_common_problems') }}"><i class="fas fa-exclamation-triangle me-1"></i> {{ _('Problems') }}</a>
+                    </li>
+                    {% endif %}
                     {% if current_user.has_permission('view_reports') %}
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if 'report' in request.endpoint }}" href="{{ url_for('report.reports') }}"><i class="fas fa-chart-line me-1"></i> {{ _('Reports') }}</a>
@@ -98,7 +111,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
