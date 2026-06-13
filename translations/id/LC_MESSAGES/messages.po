@@ -1,0 +1,3266 @@
+# Indonesian translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-06-12 16:53+0700\n"
+"PO-Revision-Date: 2026-06-12 17:12+0700\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: id <LL@li.org>\n"
+"Language: id\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Generated-By: Babel 2.15.0\n"
+
+#: app.py:176 app.py:184
+msgid "Please log in to access this page."
+msgstr "Silakan masuk untuk mengakses halaman ini."
+
+#: app.py:182 app.py:245 app.py:249
+msgid "Unauthorized: Please log in"
+msgstr "Tidak Sah: Silakan masuk"
+
+#: app.py:224 templates/Auth/login.html:3 templates/Auth/profile.html:3
+#: templates/admin/settings.html:33 templates/base.html:13
+#: templates/base.html:33 templates/customers/customer_detail.html:3
+#: templates/customers/customers.html:4
+#: templates/customers/new_customer.html:3
+#: templates/devices/device_detail.html:3 templates/devices/devices.html:4
+#: templates/devices/edit_device.html:3 templates/devices/new_device.html:3
+#: templates/errors/400.html:2 templates/errors/401.html:2
+#: templates/errors/403.html:2 templates/errors/404.html:2
+#: templates/errors/413.html:2 templates/errors/415.html:2
+#: templates/errors/500.html:2 templates/errors/503.html:2
+#: templates/main/dashboard.html:4 templates/onboarding/base.html:13
+#: templates/onboarding/base.html:34 templates/onboarding/setup.html:2
+#: templates/tickets/invoice.html:22
+msgid "Repair Shop"
+msgstr "Bengkel"
+
+#: app.py:258
+msgid "Bad Request: The server could not understand your request."
+msgstr "Permintaan Buruk: Server tidak dapat memahami permintaan Anda."
+
+#: app.py:260
+msgid ""
+"Bad Request: The server could not understand your request due to invalid "
+"syntax or malformed data."
+msgstr ""
+"Permintaan Buruk: Server tidak dapat memahami permintaan Anda karena "
+"sintaksis yang tidak valid atau format data yang salah."
+
+#: app.py:295 app.py:299
+msgid "Forbidden: Access Denied"
+msgstr "Dilarang: Akses Ditolak"
+
+#: app.py:306 app.py:310
+msgid "Not Found"
+msgstr "Tidak Ditemukan"
+
+#: app.py:322 app.py:327
+msgid "Internal Server Error"
+msgstr "Kesalahan Server Internal"
+
+#: app.py:336 app.py:338
+msgid ""
+"Your session has expired or the form is no longer valid. Please try again."
+msgstr ""
+"Sesi Anda telah kedaluwarsa atau formulir tidak valid lagi. Silakan coba "
+"lagi."
+
+#: app.py:355
+msgid "Security Error: Unable to decrypt data. Check system configuration."
+msgstr ""
+"Kesalahan Keamanan: Tidak dapat mendekripsi data. Periksa konfigurasi "
+"sistem."
+
+#: app.py:357
+msgid ""
+"Security Error: Unable to decrypt customer data. Your ENCRYPTION_KEY might "
+"be incorrect or has changed since this data was saved."
+msgstr ""
+"Kesalahan Keamanan: Tidak dapat mendekripsi data pelanggan. ENCRYPTION_KEY "
+"Anda mungkin salah atau telah berubah sejak data ini disimpan."
+
+#: app.py:366 app.py:368
+msgid "The uploaded file is too large. Maximum size is 2MB."
+msgstr "File yang diunggah terlalu besar. Ukuran maksimalnya adalah 2MB."
+
+#: app.py:389
+msgid "Technical Error: Unsupported request format."
+msgstr "Kesalahan Teknis: Format permintaan tidak didukung."
+
+#: app.py:391
+msgid "Technical Error: Unsupported request format. Please try again."
+msgstr ""
+"Kesalahan Teknis: Format permintaan tidak didukung. Silakan coba lagi."
+
+#: app.py:412 app.py:417
+msgid ""
+"Service Unavailable: The server is temporarily busy. Please try again later."
+msgstr ""
+"Layanan Tidak Tersedia: Server sedang sibuk untuk sementara. Silakan coba "
+"lagi nanti."
+
+#: routes/admin.py:57
+msgid "All fields are required."
+msgstr "Semua bidang wajib diisi."
+
+#: routes/admin.py:59 routes/admin.py:119 routes/auth.py:102
+msgid "Password must be at least 8 characters"
+msgstr "Kata sandi minimal harus 8 karakter"
+
+#: routes/admin.py:61 routes/auth.py:85
+msgid "Username already exists"
+msgstr "Nama pengguna sudah ada"
+
+#: routes/admin.py:68 routes/admin.py:126
+msgid "Selected location is invalid."
+msgstr "Lokasi yang dipilih tidak valid."
+
+#: routes/admin.py:70 routes/admin.py:128
+msgid "Selected role is invalid."
+msgstr "Peran yang dipilih tidak valid."
+
+#: routes/admin.py:78
+msgid "User created successfully"
+msgstr "Pengguna berhasil dibuat"
+
+#: routes/admin.py:83
+msgid "A database error occurred while creating the user."
+msgstr "Terjadi kesalahan database saat membuat pengguna."
+
+#: routes/admin.py:101 routes/admin.py:172
+msgid "User not found."
+msgstr "Pengguna tidak ditemukan."
+
+#: routes/admin.py:113
+msgid "Full name and email are required."
+msgstr "Nama lengkap dan email diperlukan."
+
+#: routes/admin.py:116
+msgid "Security Error: You cannot deactivate your own administrative account."
+msgstr ""
+"Kesalahan Keamanan: Anda tidak dapat menonaktifkan akun administratif Anda "
+"sendiri."
+
+#: routes/admin.py:130
+msgid ""
+"Security Error: You cannot demote your own account from the superuser role."
+msgstr ""
+"Kesalahan Keamanan: Anda tidak dapat menurunkan akun Anda sendiri dari peran"
+" pengguna super."
+
+#: routes/admin.py:143
+msgid "User updated"
+msgstr "Pengguna diperbarui"
+
+#: routes/admin.py:148
+msgid "A database error occurred while updating the user."
+msgstr "Terjadi kesalahan basis data saat memperbarui pengguna."
+
+#: routes/admin.py:167
+msgid "Security Error: You cannot delete your own account."
+msgstr "Kesalahan Keamanan: Anda tidak dapat menghapus akun Anda sendiri."
+
+#: routes/admin.py:182
+#, python-format
+msgid ""
+"Cannot delete user: This account is linked to %(count)s tickets. Deactivate "
+"the account instead to preserve history."
+msgstr ""
+"Tidak dapat menghapus pengguna: Akun ini terhubung dengan tiket %(count)s. "
+"Nonaktifkan akun untuk menyimpan riwayat."
+
+#: routes/admin.py:188
+msgid "User account permanently removed."
+msgstr "Akun pengguna dihapus secara permanen."
+
+#: routes/admin.py:192
+msgid "Error removing user from database."
+msgstr "Terjadi kesalahan saat menghapus pengguna dari database."
+
+#: routes/admin.py:207
+msgid "Location name is required."
+msgstr "Nama lokasi wajib diisi."
+
+#: routes/admin.py:209
+msgid "A location with this name already exists."
+msgstr "Lokasi dengan nama ini sudah ada."
+
+#: routes/admin.py:215
+#, python-format
+msgid "New location \"%(name)s\" created successfully."
+msgstr "Lokasi baru \" %(name)s \" berhasil dibuat."
+
+#: routes/admin.py:220
+msgid "Error saving new location."
+msgstr "Terjadi kesalahan saat menyimpan lokasi baru."
+
+#: routes/admin.py:243
+msgid "Non-PostgreSQL Database"
+msgstr "Basis Data Non-PostgreSQL"
+
+#: routes/admin.py:298
+#, python-format
+msgid "Logical backup created successfully: %(name)s"
+msgstr "Cadangan logis berhasil dibuat: %(name)s"
+
+#: routes/admin.py:301
+msgid "Error: Failed to generate logical backup file."
+msgstr "Kesalahan: Gagal membuat file cadangan logis."
+
+#: routes/admin.py:318
+#, python-format
+msgid "Full database snapshot created successfully: %(name)s"
+msgstr "Snapshot database lengkap berhasil dibuat: %(name)s"
+
+#: routes/admin.py:320
+msgid "Full snapshots are only supported for PostgreSQL installations."
+msgstr "Snapshot lengkap hanya didukung untuk instalasi PostgreSQL."
+
+#: routes/admin.py:322
+msgid "Process returned non-zero exit status."
+msgstr "Proses mengembalikan status keluar bukan nol."
+
+#: routes/admin.py:323
+#, python-format
+msgid "Error: pg_dump failed. %(msg)s"
+msgstr "Kesalahan: pg_dump gagal.  %(msg)s"
+
+#: routes/admin.py:325
+msgid ""
+"Error: pg_dump utility not found. Please ensure PostgreSQL client tools are "
+"installed."
+msgstr ""
+"Kesalahan: utilitas pg_dump tidak ditemukan. Harap pastikan alat klien "
+"PostgreSQL diinstal."
+
+#: routes/admin.py:329
+msgid "An unexpected error occurred during the backup process."
+msgstr "Terjadi kesalahan tak terduga selama proses pencadangan."
+
+#: routes/admin.py:346
+msgid "File not found."
+msgstr "Berkas tidak ditemukan."
+
+#: routes/admin.py:354
+msgid "No file uploaded."
+msgstr "Tidak ada file yang diunggah."
+
+#: routes/admin.py:359
+msgid "No file selected."
+msgstr "Tidak ada berkas yang dipilih."
+
+#: routes/admin.py:370
+msgid "Database restored successfully. System state has been reverted."
+msgstr "Basis data berhasil dipulihkan. Status sistem telah dikembalikan."
+
+#: routes/admin.py:376
+msgid ""
+"Only .dump files (PostgreSQL binary) are supported for automated restore."
+msgstr ""
+"Hanya file .dump (biner PostgreSQL) yang didukung untuk pemulihan otomatis."
+
+#: routes/admin.py:396 routes/setup.py:28
+msgid "Shop name is required."
+msgstr "Nama toko wajib diisi."
+
+#: routes/admin.py:422
+msgid "Settings updated successfully!"
+msgstr "Pengaturan berhasil diperbarui!"
+
+#: routes/admin.py:427
+msgid "Failed to save settings."
+msgstr "Gagal menyimpan pengaturan."
+
+#: routes/auth.py:22
+msgid "Username and password are required"
+msgstr "Nama pengguna dan kata sandi diperlukan"
+
+#: routes/auth.py:32
+msgid "Logged in successfully!"
+msgstr "Berhasil masuk!"
+
+#: routes/auth.py:40
+msgid "Your account is deactivated. Please contact an administrator."
+msgstr "Akun Anda dinonaktifkan. Silakan hubungi administrator."
+
+#: routes/auth.py:43
+msgid "Invalid username or password"
+msgstr "Nama pengguna atau kata sandi tidak valid"
+
+#: routes/auth.py:69
+msgid "You have been logged out."
+msgstr "Anda telah keluar."
+
+#: routes/auth.py:81
+msgid "Username is required"
+msgstr "Nama pengguna diperlukan"
+
+#: routes/auth.py:89
+msgid "Username changed successfully!"
+msgstr "Nama pengguna berhasil diubah!"
+
+#: routes/auth.py:97
+msgid "Current password is incorrect"
+msgstr "Kata sandi saat ini salah"
+
+#: routes/auth.py:99
+msgid "New passwords do not match"
+msgstr "Kata sandi baru tidak cocok"
+
+#: routes/auth.py:106
+msgid "Password changed successfully!"
+msgstr "Kata sandi berhasil diubah!"
+
+#: routes/auth.py:130
+msgid "Preferences updated successfully!"
+msgstr "Preferensi berhasil diperbarui!"
+
+#: routes/customer.py:46
+msgid "Customer not found"
+msgstr "Pelanggan tidak ditemukan"
+
+#: routes/customer.py:60 routes/customer.py:139
+msgid "Name and phone are required."
+msgstr "Nama dan telepon diperlukan."
+
+#: routes/customer.py:72
+msgid "Customer created successfully!"
+msgstr "Pelanggan berhasil dibuat!"
+
+#: routes/customer.py:77 routes/customer.py:154
+msgid "A database error occurred while creating the customer."
+msgstr "Terjadi kesalahan database saat membuat pelanggan."
+
+#: routes/customer.py:107
+msgid "Access denied or customer not found."
+msgstr "Akses ditolak atau pelanggan tidak ditemukan."
+
+#: routes/customer.py:123
+msgid "Customer data anonymized."
+msgstr "Data pelanggan dianonimkan."
+
+#: routes/customer.py:127
+msgid "A database error occurred during anonymization."
+msgstr "Terjadi kesalahan basis data selama anonimisasi."
+
+#: routes/device.py:42 routes/device.py:117 routes/device.py:158
+msgid "Device not found"
+msgstr "Perangkat tidak ditemukan"
+
+#: routes/device.py:46 routes/device.py:122 routes/device.py:162
+msgid "Access denied."
+msgstr "Akses ditolak."
+
+#: routes/device.py:61 routes/ticket.py:40
+msgid "Invalid customer selection."
+msgstr "Pilihan pelanggan tidak valid."
+
+#: routes/device.py:79
+msgid "Device added successfully!"
+msgstr "Perangkat berhasil ditambahkan!"
+
+#: routes/device.py:84
+msgid "A database error occurred while saving the device."
+msgstr "Terjadi kesalahan basis data saat menyimpan perangkat."
+
+#: routes/device.py:139
+msgid "Device type and brand are required."
+msgstr "Jenis dan merek perangkat wajib diisi."
+
+#: routes/device.py:144
+msgid "Device updated."
+msgstr "Perangkat diperbarui."
+
+#: routes/device.py:149
+msgid "An error occurred while updating the device."
+msgstr "Terjadi kesalahan saat memperbarui perangkat."
+
+#: routes/device.py:168
+#, python-format
+msgid ""
+"Cannot delete device: It is linked to %(count)s tickets. Archive it instead."
+msgstr ""
+"Tidak dapat menghapus perangkat: Ini terkait dengan tiket %(count)s. "
+"Arsipkan saja."
+
+#: routes/device.py:175
+msgid "Device deleted successfully."
+msgstr "Perangkat berhasil dihapus."
+
+#: routes/device.py:180
+msgid "An error occurred while deleting the device."
+msgstr "Terjadi kesalahan saat menghapus perangkat."
+
+#: routes/device.py:208
+msgid "Invalid customer."
+msgstr "Pelanggan tidak valid."
+
+#: routes/device.py:230
+msgid "A database error occurred."
+msgstr "Terjadi kesalahan basis data."
+
+#: routes/main.py:85
+msgid "This problem description already exists."
+msgstr "Deskripsi masalah ini sudah ada."
+
+#: routes/main.py:92
+msgid "Common problem added."
+msgstr "Masalah umum ditambahkan."
+
+#: routes/main.py:96
+msgid "Error adding problem to database."
+msgstr "Kesalahan menambahkan masalah ke database."
+
+#: routes/main.py:116
+msgid "Problem removed."
+msgstr "Masalah dihilangkan."
+
+#: routes/main.py:120
+msgid "Error removing problem."
+msgstr "Kesalahan saat menghapus masalah."
+
+#: routes/main.py:143 routes/main.py:195
+msgid "Part name is required."
+msgstr "Nama bagian wajib diisi."
+
+#: routes/main.py:154
+msgid "A part with this name already exists in your inventory."
+msgstr "Bagian dengan nama ini sudah ada di inventaris Anda."
+
+#: routes/main.py:161 routes/main.py:212
+msgid "Stock, cost, and price cannot be negative."
+msgstr "Stok, biaya, dan harga tidak boleh negatif."
+
+#: routes/main.py:174
+msgid "New part added to inventory."
+msgstr "Bagian baru ditambahkan ke inventaris."
+
+#: routes/main.py:178
+msgid "Error adding part to inventory."
+msgstr "Terjadi kesalahan saat menambahkan komponen ke inventaris."
+
+#: routes/main.py:188
+msgid "Part not found."
+msgstr "Bagian tidak ditemukan."
+
+#: routes/main.py:205
+msgid "Another part already uses this name."
+msgstr "Bagian lain sudah menggunakan nama ini."
+
+#: routes/main.py:223
+msgid "Inventory item updated."
+msgstr "Item inventaris diperbarui."
+
+#: routes/main.py:227
+msgid "Error updating inventory item."
+msgstr "Terjadi kesalahan saat memperbarui item inventaris."
+
+#: routes/main.py:240
+msgid "Part deleted."
+msgstr "Sebagian dihapus."
+
+#: routes/main.py:244
+msgid "Error deleting part. It may be linked to existing tickets."
+msgstr ""
+"Terjadi kesalahan saat menghapus bagian. Ini mungkin terkait dengan tiket "
+"yang ada."
+
+#: routes/main.py:265 routes/main.py:312
+msgid "Service name is required."
+msgstr "Nama layanan wajib diisi."
+
+#: routes/main.py:276
+msgid "A service with this name already exists in your catalog."
+msgstr "Layanan dengan nama ini sudah ada di katalog Anda."
+
+#: routes/main.py:281 routes/main.py:327
+msgid "Service price cannot be negative."
+msgstr "Harga layanan tidak boleh negatif."
+
+#: routes/main.py:293
+msgid "Service added to catalog."
+msgstr "Layanan ditambahkan ke katalog."
+
+#: routes/main.py:297
+msgid "Error adding service to catalog."
+msgstr "Terjadi kesalahan saat menambahkan layanan ke katalog."
+
+#: routes/main.py:307
+msgid "Service not found."
+msgstr "Layanan tidak ditemukan."
+
+#: routes/main.py:322
+msgid "Another service already uses this name."
+msgstr "Layanan lain sudah menggunakan nama ini."
+
+#: routes/main.py:337
+msgid "Service updated."
+msgstr "Layanan diperbarui."
+
+#: routes/main.py:341
+msgid "Error updating service."
+msgstr "Terjadi kesalahan saat memperbarui layanan."
+
+#: routes/main.py:354
+msgid "Service deleted."
+msgstr "Layanan dihapus."
+
+#: routes/main.py:358
+msgid "Error deleting service. It may be linked to existing tickets."
+msgstr ""
+"Terjadi kesalahan saat menghapus layanan. Ini mungkin terkait dengan tiket "
+"yang ada."
+
+#: routes/report.py:29 routes/report.py:113
+msgid "You are not assigned to a location. Please contact an administrator."
+msgstr "Anda tidak ditugaskan ke suatu lokasi. Silakan hubungi administrator."
+
+#: routes/setup.py:41
+msgid "Main Branch"
+msgstr "Cabang Utama"
+
+#: routes/setup.py:69
+msgid "Welcome! Shop setup is complete."
+msgstr "Selamat datang! Penyiapan toko selesai."
+
+#: routes/setup.py:74
+msgid "An error occurred during setup. Please try again."
+msgstr "Terjadi kesalahan saat pengaturan. Silakan coba lagi."
+
+#: routes/ticket.py:42
+msgid "Invalid device selection."
+msgstr "Pemilihan perangkat tidak valid."
+
+#: routes/ticket.py:44
+msgid "Invalid device selection for this customer."
+msgstr "Pemilihan perangkat tidak valid untuk pelanggan ini."
+
+#: routes/ticket.py:46
+msgid "Down payment cannot be negative."
+msgstr "Uang muka tidak boleh negatif."
+
+#: routes/ticket.py:54 routes/ticket.py:184
+msgid "Invalid technician assignment."
+msgstr "Penugasan teknisi tidak valid."
+
+#: routes/ticket.py:83
+#, python-format
+msgid "Ticket %(num)s created successfully!"
+msgstr "Tiket %(num)s berhasil dibuat!"
+
+#: routes/ticket.py:88
+msgid "An error occurred while creating the ticket."
+msgstr "Terjadi kesalahan saat membuat tiket."
+
+#: routes/ticket.py:124 routes/ticket.py:165 routes/ticket.py:242
+#: routes/ticket.py:273 routes/ticket.py:592 services/core.py:92
+#: services/core.py:352 services/ticket.py:81
+msgid "Ticket not found"
+msgstr "Tiket tidak ditemukan"
+
+#: routes/ticket.py:194
+msgid "Ticket intake data updated successfully."
+msgstr "Data asupan tiket berhasil diperbarui."
+
+#: routes/ticket.py:199
+msgid "Error updating ticket data."
+msgstr "Terjadi kesalahan saat memperbarui data tiket."
+
+#: routes/ticket.py:218 routes/ticket.py:296 routes/ticket.py:343
+#: routes/ticket.py:405 routes/ticket.py:442 routes/ticket.py:478
+#: routes/ticket.py:517
+msgid "Access denied or ticket not found."
+msgstr "Akses ditolak atau tiket tidak ditemukan."
+
+#: routes/ticket.py:225
+#, python-format
+msgid "Ticket status updated to %(phase)s"
+msgstr "Status tiket diperbarui menjadi %(phase)s"
+
+#: routes/ticket.py:231
+msgid "An unexpected error occurred during status update."
+msgstr "Terjadi kesalahan tak terduga selama pembaruan status."
+
+#: routes/ticket.py:300
+msgid "Please select a service."
+msgstr "Silakan pilih layanan."
+
+#: routes/ticket.py:304 routes/ticket.py:348
+msgid "Quantity must be at least 1."
+msgstr "Jumlahnya minimal harus 1."
+
+#: routes/ticket.py:309
+msgid "Invalid service selection."
+msgstr "Pilihan layanan tidak valid."
+
+#: routes/ticket.py:327
+msgid "Service added."
+msgstr "Layanan ditambahkan."
+
+#: routes/ticket.py:331
+msgid "Error saving service addition."
+msgstr "Terjadi kesalahan saat menyimpan penambahan layanan."
+
+#: routes/ticket.py:352
+msgid "Please select a part or enter a manual description."
+msgstr "Silakan pilih bagian atau masukkan deskripsi manual."
+
+#: routes/ticket.py:359
+msgid "Invalid part selection."
+msgstr "Pemilihan bagian tidak valid."
+
+#: routes/ticket.py:385
+msgid "Part added."
+msgstr "Bagian ditambahkan."
+
+#: routes/ticket.py:389
+msgid "Error saving part addition."
+msgstr "Terjadi kesalahan saat menyimpan penambahan bagian."
+
+#: routes/ticket.py:409
+msgid "Payment amount must be greater than zero."
+msgstr "Jumlah pembayaran harus lebih besar dari nol."
+
+#: routes/ticket.py:426
+msgid "Payment recorded successfully."
+msgstr "Pembayaran berhasil dicatat."
+
+#: routes/ticket.py:430
+msgid "An error occurred while recording the payment."
+msgstr "Terjadi kesalahan saat mencatat pembayaran."
+
+#: routes/ticket.py:447
+msgid "Invalid payment record."
+msgstr "Catatan pembayaran tidak valid."
+
+#: routes/ticket.py:467
+msgid "Error voiding payment."
+msgstr "Terjadi kesalahan saat membatalkan pembayaran."
+
+#: routes/ticket.py:484
+msgid "Invalid service selection for this ticket."
+msgstr "Pilihan layanan untuk tiket ini tidak valid."
+
+#: routes/ticket.py:502
+msgid "Service removed."
+msgstr "Layanan dihapus."
+
+#: routes/ticket.py:506
+msgid "Error removing service."
+msgstr "Terjadi kesalahan saat menghapus layanan."
+
+#: routes/ticket.py:523
+msgid "Invalid part selection for this ticket."
+msgstr "Pemilihan bagian untuk tiket ini tidak valid."
+
+#: routes/ticket.py:541
+msgid "Part removed and stock restored."
+msgstr "Sebagian dihapus dan stok dipulihkan."
+
+#: routes/ticket.py:545
+msgid "Error removing part."
+msgstr "Terjadi kesalahan saat menghapus bagian."
+
+#: routes/ticket.py:559
+msgid "Ticket archived."
+msgstr "Tiket diarsipkan."
+
+#: routes/ticket.py:563
+msgid "Error archiving ticket."
+msgstr "Kesalahan saat mengarsipkan tiket."
+
+#: routes/ticket.py:576
+msgid "Ticket permanently erased."
+msgstr "Tiket dihapus secara permanen."
+
+#: routes/ticket.py:580
+msgid "Error deleting ticket. It may have linked records."
+msgstr ""
+"Terjadi kesalahan saat menghapus tiket. Ini mungkin memiliki catatan yang "
+"tertaut."
+
+#: routes/ticket.py:583
+msgid "Ticket not found or access denied."
+msgstr "Tiket tidak ditemukan atau akses ditolak."
+
+#: routes/ticket.py:605
+msgid "Invoice generated successfully."
+msgstr "Faktur berhasil dibuat."
+
+#: routes/ticket.py:609
+msgid "Error generating invoice."
+msgstr "Terjadi kesalahan saat membuat faktur."
+
+#: routes/utils.py:26 routes/utils.py:46
+msgid "Authentication required"
+msgstr "Diperlukan otentikasi"
+
+#: routes/utils.py:27 routes/utils.py:47
+msgid "Please log in first."
+msgstr "Silakan login terlebih dahulu."
+
+#: routes/utils.py:32 routes/utils.py:52
+msgid "Permission denied"
+msgstr "Izin ditolak"
+
+#: routes/utils.py:33 routes/utils.py:53
+msgid "You do not have permission to access this page."
+msgstr "Anda tidak memiliki izin untuk mengakses halaman ini."
+
+#: services/backup.py:145
+#, python-format
+msgid "Automated backup completed. Logical: %(json)s"
+msgstr "Pencadangan otomatis selesai. Logis: %(json)s"
+
+#: services/backup.py:147
+#, python-format
+msgid ", Full: %(dump)s"
+msgstr ", Penuh: %(dump)s"
+
+#: services/backup.py:161
+msgid "Restore is only supported for PostgreSQL."
+msgstr "Pemulihan hanya didukung untuk PostgreSQL."
+
+#: services/backup.py:184
+msgid "Success"
+msgstr "Kesuksesan"
+
+#: services/core.py:77
+msgid "Payment not found"
+msgstr "Pembayaran tidak ditemukan"
+
+#: services/core.py:85
+msgid "Payment voided successfully"
+msgstr "Pembayaran berhasil dibatalkan"
+
+#: services/core.py:115
+msgid "Payment Received"
+msgstr "Pembayaran Diterima"
+
+#: services/core.py:115
+msgid "Change Given / Refund"
+msgstr "Perubahan Diberikan / Pengembalian Dana"
+
+#: services/core.py:117
+#, python-format
+msgid "%(type)s: %(symbol)s%(amount)s. Method: %(method)s. Ref: %(ref)s"
+msgstr ""
+"%(type)s : %(symbol)s %(amount)s . Metode: %(method)s . Referensi: %(ref)s"
+
+#: services/core.py:153
+msgid "Service not found"
+msgstr "Layanan tidak ditemukan"
+
+#: services/core.py:190
+#, python-format
+msgid "Insufficient stock for \"%(name)s\". Current: %(qty)s"
+msgstr "Stok tidak mencukupi untuk \" %(name)s \". Saat ini: %(qty)s"
+
+#: services/core.py:199
+msgid "Invalid part details"
+msgstr "Detail bagian tidak valid"
+
+#: services/core.py:224
+msgid "Service entry not found"
+msgstr "Entri layanan tidak ditemukan"
+
+#: services/core.py:241
+msgid "Part entry not found"
+msgstr "Entri bagian tidak ditemukan"
+
+#: services/core.py:264
+msgid "Name and phone are required"
+msgstr "Nama dan telepon diperlukan"
+
+#: services/core.py:272
+msgid "Failed to create customer record"
+msgstr "Gagal membuat catatan pelanggan"
+
+#: services/core.py:279
+msgid "Customer, Type, and Brand are required"
+msgstr "Pelanggan, Jenis, dan Merek wajib diisi"
+
+#: services/core.py:299
+msgid "Failed to create device record"
+msgstr "Gagal membuat catatan perangkat"
+
+#: services/core.py:392
+msgid "Tel:"
+msgstr "Telp:"
+
+#: services/core.py:395
+msgid "Invoice:"
+msgstr "Faktur:"
+
+#: services/core.py:396 templates/tickets/invoice.html:33
+msgid "Date:"
+msgstr "Tanggal:"
+
+#: services/core.py:397 templates/tickets/ticket_detail.html:70
+msgid "Customer:"
+msgstr "Pelanggan:"
+
+#: services/core.py:398 templates/tickets/ticket_detail.html:71
+msgid "Device:"
+msgstr "Perangkat:"
+
+#: services/core.py:402 templates/parts/manage_parts.html:95
+#: templates/parts/manage_parts.html:148
+#: templates/services/manage_services.html:92
+#: templates/services/manage_services.html:132
+#: templates/tickets/invoice.html:45 templates/tickets/ticket_detail.html:109
+msgid "Description"
+msgstr "Keterangan"
+
+#: services/core.py:402 templates/reports/finance_report.html:153
+#: templates/tickets/invoice.html:46 templates/tickets/ticket_detail.html:110
+msgid "Qty"
+msgstr "Jumlah"
+
+#: services/core.py:402 templates/reports/finance_report.html:156
+#: templates/tickets/invoice.html:47 templates/tickets/ticket_detail.html:112
+msgid "Total"
+msgstr "Total"
+
+#: services/core.py:413 templates/tickets/ticket_detail.html:179
+msgid "Grand Total:"
+msgstr "Jumlah Keseluruhan:"
+
+#: services/core.py:414 templates/tickets/ticket_detail.html:183
+msgid "Paid:"
+msgstr "Dibayar:"
+
+#: services/core.py:415 templates/tickets/invoice.html:84
+#: templates/tickets/ticket_detail.html:191
+msgid "Balance Due:"
+msgstr "Saldo Jatuh Tempo:"
+
+#: services/core.py:417
+msgid "Thank you for your business!"
+msgstr "Terima kasih atas bisnis Anda!"
+
+#: services/ticket.py:50 services/ticket.py:66
+#: templates/tickets/new_ticket.html:83
+#: templates/tickets/ticket_detail.html:391
+msgid "Cash"
+msgstr "Uang tunai"
+
+#: services/ticket.py:64 templates/tickets/new_ticket.html:73
+msgid "Down Payment"
+msgstr "Uang Muka"
+
+#: services/ticket.py:65
+#, python-format
+msgid "Initial down payment of %(symbol)s%(amount)s received via %(method)s."
+msgstr "Uang muka awal %(symbol)s %(amount)s diterima melalui %(method)s ."
+
+#: services/ticket.py:88
+msgid "This ticket is locked and cannot be modified."
+msgstr "Tiket ini terkunci dan tidak dapat diubah."
+
+#: services/ticket.py:107
+msgid "Phase Update"
+msgstr "Pembaruan Fase"
+
+#: services/ticket.py:109
+#, python-format
+msgid "Phase update to %(phase)s: %(comment)s"
+msgstr "Pembaruan fase ke %(phase)s : %(comment)s"
+
+#: services/ticket.py:111
+#, python-format
+msgid "Ticket phase moved from %(old)s to %(new)s."
+msgstr "Fase tiket dipindahkan dari %(old)s ke %(new)s ."
+
+#: templates/base.html:35
+msgid "Toggle navigation"
+msgstr "Alihkan navigasi"
+
+#: templates/base.html:42 templates/main/dashboard.html:4
+#: templates/onboarding/base.html:43
+msgid "Dashboard"
+msgstr "Dasbor"
+
+#: templates/base.html:45 templates/devices/devices.html:35
+#: templates/onboarding/base.html:46
+msgid "Tickets"
+msgstr "Tiket"
+
+#: templates/base.html:48 templates/customers/customers.html:4
+#: templates/main/dashboard.html:35 templates/onboarding/base.html:49
+msgid "Customers"
+msgstr "Pelanggan"
+
+#: templates/base.html:51 templates/customers/customers.html:34
+#: templates/devices/devices.html:4 templates/onboarding/base.html:52
+msgid "Devices"
+msgstr "Perangkat"
+
+#: templates/base.html:55 templates/reports/finance_report.html:165
+msgid "Inventory"
+msgstr "Inventaris"
+
+#: templates/base.html:60
+msgid "Services"
+msgstr "Layanan"
+
+#: templates/base.html:63
+msgid "Problems"
+msgstr "Masalah"
+
+#: templates/base.html:68 templates/onboarding/base.html:56
+msgid "Reports"
+msgstr "Laporan"
+
+#: templates/base.html:80 templates/onboarding/base.html:68
+msgid "Profile & Theme"
+msgstr "Profil & Tema"
+
+#: templates/base.html:82 templates/onboarding/base.html:70
+msgid "Admin Panel"
+msgstr "Panel Admin"
+
+#: templates/base.html:85 templates/onboarding/base.html:74
+msgid "Logout"
+msgstr "Keluar"
+
+#: templates/Auth/login.html:3 templates/base.html:90
+#: templates/onboarding/base.html:79
+msgid "Login"
+msgstr "Login"
+
+#: templates/base.html:104
+msgid "Close"
+msgstr "Menutup"
+
+#: templates/Auth/login.html:12 templates/onboarding/base.html:30
+msgid "Shop"
+msgstr "Toko"
+
+#: templates/Auth/login.html:14
+msgid "Staff Login"
+msgstr "Login Staf"
+
+#: templates/Auth/login.html:15
+msgid "Enter credentials to continue"
+msgstr "Masukkan kredensial untuk melanjutkan"
+
+#: templates/Auth/login.html:20 templates/Auth/login.html:22
+#: templates/Auth/profile.html:20 templates/admin/create_user.html:17
+#: templates/admin/manage_users.html:19
+msgid "Username"
+msgstr "Nama belakang"
+
+#: templates/Auth/login.html:25 templates/Auth/login.html:26
+#: templates/admin/create_user.html:30
+msgid "Password"
+msgstr "Kata sandi"
+
+#: templates/Auth/login.html:28 templates/errors/401.html:13
+msgid "Sign In"
+msgstr "Masuk"
+
+#: templates/Auth/profile.html:3 templates/Auth/profile.html:9
+msgid "My Profile"
+msgstr "Profil Saya"
+
+#: templates/Auth/profile.html:10 templates/admin/system_status.html:8
+#: templates/errors/400.html:16 templates/errors/403.html:12
+#: templates/errors/404.html:12 templates/errors/413.html:16
+#: templates/errors/415.html:16 templates/errors/500.html:16
+#: templates/errors/503.html:16
+msgid "Back to Dashboard"
+msgstr "Kembali ke Dasbor"
+
+#: templates/Auth/profile.html:17
+msgid "Account Information"
+msgstr "Informasi Akun"
+
+#: templates/Auth/profile.html:21 templates/admin/create_user.html:26
+#: templates/admin/manage_users.html:20
+#: templates/customers/new_customer.html:16
+#: templates/tickets/ticket_form.html:13 templates/tickets/ticket_form.html:14
+msgid "Full Name"
+msgstr "Nama Lengkap"
+
+#: templates/Auth/profile.html:21 templates/Auth/profile.html:22
+msgid "Not set"
+msgstr "Tidak disetel"
+
+#: templates/Auth/profile.html:22 templates/admin/create_user.html:21
+#: templates/admin/locations.html:19 templates/admin/locations.html:70
+#: templates/admin/manage_users.html:21 templates/onboarding/setup.html:44
+msgid "Email"
+msgstr "E-mail"
+
+#: templates/Auth/profile.html:23 templates/admin/manage_users.html:23
+msgid "Roles"
+msgstr "Peran"
+
+#: templates/Auth/profile.html:25 templates/admin/manage_users.html:38
+msgid "Superuser"
+msgstr "Pengguna Super"
+
+#: templates/Auth/profile.html:28
+msgid "No roles assigned"
+msgstr "Tidak ada peran yang ditetapkan"
+
+#: templates/Auth/profile.html:37
+msgid "Appearance Settings"
+msgstr "Pengaturan Penampilan"
+
+#: templates/Auth/profile.html:45
+msgid "Theme"
+msgstr "Tema"
+
+#: templates/Auth/profile.html:47
+msgid "☀️ Light"
+msgstr "☀️ Ringan"
+
+#: templates/Auth/profile.html:48
+msgid "🌙 Dark"
+msgstr "🌙 Gelap"
+
+#: templates/Auth/profile.html:53
+msgid "Language"
+msgstr "Bahasa"
+
+#: templates/Auth/profile.html:63
+msgid "Currency"
+msgstr "Mata uang"
+
+#: templates/Auth/profile.html:65 templates/onboarding/setup.html:68
+msgid "US Dollar ($)"
+msgstr "Dolar Amerika ($)"
+
+#: templates/Auth/profile.html:66 templates/onboarding/setup.html:69
+msgid "Indonesian Rupiah (Rp)"
+msgstr "Indonesian Rupiah (Rp)"
+
+#: templates/Auth/profile.html:67 templates/onboarding/setup.html:70
+msgid "Euro (€)"
+msgstr "Euro (€)"
+
+#: templates/Auth/profile.html:68 templates/onboarding/setup.html:71
+msgid "British Pound (£)"
+msgstr "Pound Inggris (£)"
+
+#: templates/Auth/profile.html:73
+msgid "Currency Decimals"
+msgstr "Desimal Mata Uang"
+
+#: templates/Auth/profile.html:75
+msgid "0 (e.g. Rp 1500)"
+msgstr "0 (e.g. Rp 1500)"
+
+#: templates/Auth/profile.html:76
+msgid "2 (e.g. $15.00)"
+msgstr "2 (misalnya $15,00)"
+
+#: templates/Auth/profile.html:77
+msgid "3"
+msgstr "3"
+
+#: templates/Auth/profile.html:83
+msgid "Color Scheme"
+msgstr "Skema Warna"
+
+#: templates/Auth/profile.html:88
+msgid "Blue"
+msgstr "Biru"
+
+#: templates/Auth/profile.html:94
+msgid "Green"
+msgstr "Hijau"
+
+#: templates/Auth/profile.html:100
+msgid "Purple"
+msgstr "Ungu"
+
+#: templates/Auth/profile.html:106
+msgid "Red"
+msgstr "Merah"
+
+#: templates/Auth/profile.html:112
+msgid "Orange"
+msgstr "Oranye"
+
+#: templates/Auth/profile.html:118
+msgid "Save Preferences"
+msgstr "Simpan Preferensi"
+
+#: templates/Auth/profile.html:129 templates/Auth/profile.html:139
+msgid "Change Username"
+msgstr "Ubah Nama Pengguna"
+
+#: templates/Auth/profile.html:136 templates/Auth/profile.html:137
+msgid "New Username"
+msgstr "Nama Pengguna Baru"
+
+#: templates/Auth/profile.html:148 templates/Auth/profile.html:166
+msgid "Change Password"
+msgstr "Ubah Kata Sandi"
+
+#: templates/Auth/profile.html:155 templates/Auth/profile.html:156
+msgid "Current Password"
+msgstr "Kata Sandi Saat Ini"
+
+#: templates/Auth/profile.html:159
+msgid "New Password"
+msgstr "Kata Sandi Baru"
+
+#: templates/Auth/profile.html:160
+msgid "Min. 8 characters"
+msgstr "Minimal. 8 karakter"
+
+#: templates/Auth/profile.html:163
+msgid "Confirm New Password"
+msgstr "Konfirmasi Kata Sandi Baru"
+
+#: templates/Auth/profile.html:164
+msgid "Repeat New Password"
+msgstr "Ulangi Kata Sandi Baru"
+
+#: templates/admin/backup.html:2
+msgid "System Backups - Admin"
+msgstr "Pencadangan Sistem - Admin"
+
+#: templates/admin/backup.html:6 templates/admin/dashboard.html:70
+msgid "System Backups"
+msgstr "Pencadangan Sistem"
+
+#: templates/admin/backup.html:7
+msgid "Manage your application's data backups."
+msgstr "Kelola cadangan data aplikasi Anda."
+
+#: templates/admin/backup.html:10
+msgid "Automated Daily Backups Active"
+msgstr "Pencadangan Harian Otomatis Aktif"
+
+#: templates/admin/backup.html:12
+#, python-format
+msgid ""
+"The system automatically performs a <strong>full database backup (PostgreSQL"
+" Dump)</strong> every day at <strong>%(hour)02d:%(min)02d</strong> (UTC) "
+"(with logical JSON fallback)."
+msgstr ""
+"Sistem secara otomatis melakukan <strong>pencadangan database lengkap "
+"(PostgreSQL Dump)</strong> setiap hari pada "
+"<strong>%(hour)02d:%(min)02d</strong> (UTC) (dengan fallback JSON logis)."
+
+#: templates/admin/backup.html:19
+msgid "Create New Backup"
+msgstr "Buat Cadangan Baru"
+
+#: templates/admin/backup.html:25
+msgid "Select Backup Type:"
+msgstr "Pilih Jenis Cadangan:"
+
+#: templates/admin/backup.html:29
+msgid "Logical Data Backup (JSON)"
+msgstr "Pencadangan Data Logis (JSON)"
+
+#: templates/admin/backup.html:29
+msgid ""
+"Exports system data including users, customers, and tickets into a portable "
+"format."
+msgstr ""
+"Mengekspor data sistem termasuk pengguna, pelanggan, dan tiket ke dalam "
+"format portabel."
+
+#: templates/admin/backup.html:35
+msgid "Full Database Snapshot"
+msgstr "Cuplikan Basis Data Lengkap"
+
+#: templates/admin/backup.html:35
+msgid ""
+"Exports a compressed dump for PostgreSQL (.dump) using native system "
+"utilities."
+msgstr ""
+"Mengekspor dump terkompresi untuk PostgreSQL (.dump) menggunakan utilitas "
+"sistem asli."
+
+#: templates/admin/backup.html:39
+msgid "Generate Backup"
+msgstr "Hasilkan Cadangan"
+
+#: templates/admin/backup.html:45
+msgid "Restore from Backup"
+msgstr "Pulihkan dari Cadangan"
+
+#: templates/admin/backup.html:47
+msgid ""
+"Upload a <strong>.dump</strong> file (PostgreSQL binary) for a full system "
+"restore."
+msgstr ""
+"Unggah file <strong>.dump</strong> (biner PostgreSQL) untuk pemulihan sistem"
+" penuh."
+
+#: templates/admin/backup.html:48
+msgid ""
+"WARNING: Restoring from a backup file will overwrite all current data. Are "
+"you sure?"
+msgstr ""
+"PERINGATAN: Memulihkan dari file cadangan akan menimpa semua data saat ini. "
+"Apa kamu yakin?"
+
+#: templates/admin/backup.html:53
+msgid "Upload & Restore"
+msgstr "Unggah & Pulihkan"
+
+#: templates/admin/backup.html:60
+msgid "Available Backups"
+msgstr "Cadangan yang Tersedia"
+
+#: templates/admin/backup.html:61
+msgid "Files"
+msgstr "File"
+
+#: templates/admin/backup.html:68
+msgid "Filename"
+msgstr "Nama file"
+
+#: templates/admin/backup.html:69 templates/customers/customer_detail.html:54
+#: templates/customers/customer_detail.html:90
+#: templates/customers/customers.html:36
+#: templates/devices/device_detail.html:62 templates/devices/devices.html:36
+#: templates/main/dashboard.html:58 templates/parts/manage_parts.html:24
+#: templates/reports/reports.html:82
+#: templates/services/manage_services.html:27
+#: templates/tickets/tickets_list.html:32
+msgid "Actions"
+msgstr "Tindakan"
+
+#: templates/admin/backup.html:77
+msgid "Download"
+msgstr "Unduh"
+
+#: templates/admin/backup.html:81
+msgid "No backup files found in the repository."
+msgstr "Tidak ada file cadangan yang ditemukan di repositori."
+
+#: templates/admin/create_user.html:3
+msgid "Create User - Repair Shop"
+msgstr "Buat Pengguna - Bengkel"
+
+#: templates/admin/create_user.html:10
+msgid "Create New User Account"
+msgstr "Buat Akun Pengguna Baru"
+
+#: templates/admin/create_user.html:35
+msgid "Primary Role"
+msgstr "Peran Utama"
+
+#: templates/admin/create_user.html:37
+msgid "-- Select Role --"
+msgstr "-- Pilih Peran --"
+
+#: templates/admin/create_user.html:44
+msgid "Assigned Location"
+msgstr "Lokasi yang Ditugaskan"
+
+#: templates/admin/create_user.html:46
+msgid "-- Select Location --"
+msgstr "-- Pilih Lokasi --"
+
+#: templates/admin/create_user.html:54
+msgid "Create User"
+msgstr "Buat Pengguna"
+
+#: templates/admin/create_user.html:55 templates/admin/locations.html:75
+#: templates/admin/settings.html:56 templates/customers/new_customer.html:29
+#: templates/devices/edit_device.html:82 templates/devices/new_device.html:90
+#: templates/parts/manage_parts.html:124 templates/parts/manage_parts.html:173
+#: templates/services/manage_services.html:108
+#: templates/services/manage_services.html:144
+#: templates/tickets/edit_ticket.html:50 templates/tickets/new_ticket.html:101
+#: templates/tickets/ticket_detail.html:327
+#: templates/tickets/ticket_detail.html:404
+#: templates/tickets/ticket_detail.html:440
+#: templates/tickets/ticket_detail.html:503
+#: templates/tickets/ticket_form.html:27
+#: templates/tickets/ticket_form.html:100
+msgid "Cancel"
+msgstr "Membatalkan"
+
+#: templates/admin/dashboard.html:3
+msgid "Admin Dashboard - Repair Shop"
+msgstr "Dasbor Admin - Bengkel"
+
+#: templates/admin/dashboard.html:8
+msgid "Admin Control Panel"
+msgstr "Panel Kontrol Admin"
+
+#: templates/admin/dashboard.html:9
+msgid "Manage system users, permissions, and shop settings."
+msgstr "Kelola pengguna sistem, izin, dan pengaturan toko."
+
+#: templates/admin/dashboard.html:18
+msgid "Service Pricing"
+msgstr "Harga Layanan"
+
+#: templates/admin/dashboard.html:19
+msgid ""
+"Define repair service types and manage global pricing charged to customers."
+msgstr ""
+"Tentukan jenis layanan perbaikan dan kelola harga global yang dibebankan "
+"kepada pelanggan."
+
+#: templates/admin/dashboard.html:20
+msgid "Manage Services"
+msgstr "Kelola Layanan"
+
+#: templates/admin/dashboard.html:28
+msgid "Shop Locations"
+msgstr "Lokasi Toko"
+
+#: templates/admin/dashboard.html:29
+msgid ""
+"Manage physical branch locations, addresses, and contact details for the "
+"shop."
+msgstr "Kelola lokasi cabang fisik, alamat, dan detail kontak toko."
+
+#: templates/admin/dashboard.html:30 templates/admin/locations.html:7
+msgid "Manage Locations"
+msgstr "Kelola Lokasi"
+
+#: templates/admin/dashboard.html:38
+msgid "User Management"
+msgstr "Manajemen Pengguna"
+
+#: templates/admin/dashboard.html:39
+msgid "Create staff accounts, assign roles, and manage granular permissions."
+msgstr "Buat akun staf, tetapkan peran, dan kelola izin terperinci."
+
+#: templates/admin/dashboard.html:40 templates/admin/manage_users.html:8
+msgid "Manage Users"
+msgstr "Kelola Pengguna"
+
+#: templates/admin/dashboard.html:48
+msgid "Common Problems"
+msgstr "Masalah Umum"
+
+#: templates/admin/dashboard.html:49
+msgid "Update the quick-select problem descriptions used for ticket intake."
+msgstr ""
+"Perbarui deskripsi masalah pilih cepat yang digunakan untuk pengambilan "
+"tiket."
+
+#: templates/admin/dashboard.html:50
+msgid "Manage Problems"
+msgstr "Kelola Masalah"
+
+#: templates/admin/dashboard.html:58
+msgid "Parts Inventory"
+msgstr "Inventaris Suku Cadang"
+
+#: templates/admin/dashboard.html:59
+msgid ""
+"Manage the catalog of hardware and spare parts available for repair jobs."
+msgstr ""
+"Kelola katalog perangkat keras dan suku cadang yang tersedia untuk pekerjaan"
+" perbaikan."
+
+#: templates/admin/dashboard.html:60
+msgid "Manage Parts"
+msgstr "Kelola Bagian"
+
+#: templates/admin/dashboard.html:68
+msgid "Backup & Restore"
+msgstr "Cadangkan & Pulihkan"
+
+#: templates/admin/dashboard.html:69
+msgid "Generate JSON database exports and restore system state from backups."
+msgstr ""
+"Hasilkan ekspor basis data JSON dan pulihkan status sistem dari cadangan."
+
+#: templates/admin/dashboard.html:78 templates/onboarding/base.html:71
+msgid "Shop Branding"
+msgstr "Merek Toko"
+
+#: templates/admin/dashboard.html:79
+msgid ""
+"Upload your shop logo and configure contact information used on customer "
+"invoices."
+msgstr ""
+"Unggah logo toko Anda dan konfigurasikan informasi kontak yang digunakan "
+"pada faktur pelanggan."
+
+#: templates/admin/dashboard.html:80
+msgid "Branding Settings"
+msgstr "Pengaturan Merek"
+
+#: templates/admin/dashboard.html:88
+msgid "System Status"
+msgstr "Status Sistem"
+
+#: templates/admin/dashboard.html:89
+msgid ""
+"Monitor database connectivity, production environment variables, and API "
+"availability."
+msgstr ""
+"Pantau konektivitas database, variabel lingkungan produksi, dan ketersediaan"
+" API."
+
+#: templates/admin/dashboard.html:90
+msgid "Check System Status"
+msgstr "Periksa Status Sistem"
+
+#: templates/admin/locations.html:3
+msgid "Manage Locations - Admin"
+msgstr "Kelola Lokasi - Admin"
+
+#: templates/admin/locations.html:8
+msgid "+ Add New Location"
+msgstr "+ Tambahkan Lokasi Baru"
+
+#: templates/admin/locations.html:16 templates/admin/locations.html:58
+msgid "Location Name"
+msgstr "Nama Lokasi"
+
+#: templates/admin/locations.html:17 templates/admin/locations.html:62
+#: templates/customers/new_customer.html:24 templates/onboarding/setup.html:29
+msgid "Address"
+msgstr "Alamat"
+
+#: templates/admin/locations.html:18 templates/admin/locations.html:66
+#: templates/customers/customers.html:33 templates/devices/edit_device.html:31
+#: templates/devices/new_device.html:39 templates/onboarding/setup.html:37
+#: templates/tickets/ticket_form.html:50
+msgid "Phone"
+msgstr "Telepon"
+
+#: templates/admin/locations.html:20 templates/admin/manage_users.html:25
+#: templates/customers/customers.html:35 templates/reports/reports.html:81
+#: templates/tickets/tickets_list.html:31
+msgid "Created"
+msgstr "Dibuat"
+
+#: templates/admin/locations.html:21 templates/admin/manage_users.html:26
+msgid "Action"
+msgstr "Tindakan"
+
+#: templates/admin/locations.html:28 templates/admin/locations.html:29
+#: templates/admin/locations.html:30 templates/admin/manage_users.html:34
+#: templates/admin/system_status.html:81
+#: templates/admin/system_status.html:108
+#: templates/customers/customer_detail.html:61
+#: templates/customers/customer_detail.html:97
+#: templates/customers/customer_detail.html:100
+#: templates/customers/customers.html:43
+#: templates/devices/device_detail.html:23
+#: templates/devices/device_detail.html:24
+#: templates/devices/device_detail.html:25
+#: templates/devices/device_detail.html:26
+#: templates/devices/device_detail.html:27
+#: templates/devices/device_detail.html:28
+#: templates/devices/device_detail.html:29
+#: templates/devices/device_detail.html:71 templates/devices/devices.html:50
+#: templates/devices/devices.html:53 templates/devices/edit_device.html:18
+#: templates/main/dashboard.html:65 templates/main/dashboard.html:67
+#: templates/main/dashboard.html:68 templates/main/dashboard.html:72
+#: templates/tickets/ticket_detail.html:72
+#: templates/tickets/ticket_detail.html:73
+msgid "N/A"
+msgstr "T/A"
+
+#: templates/admin/locations.html:34 templates/admin/manage_users.html:51
+#: templates/devices/devices.html:58 templates/parts/manage_parts.html:58
+#: templates/services/manage_services.html:53
+msgid "Edit"
+msgstr "Sunting"
+
+#: templates/admin/locations.html:35 templates/admin/manage_users.html:55
+#: templates/common_problem/manage_common_problems.html:29
+#: templates/devices/device_detail.html:43
+#: templates/parts/manage_parts.html:62
+#: templates/services/manage_services.html:58
+msgid "Delete"
+msgstr "Menghapus"
+
+#: templates/admin/locations.html:39
+msgid "No locations defined yet."
+msgstr "Belum ada lokasi yang ditentukan."
+
+#: templates/admin/locations.html:53
+msgid "Add New Location"
+msgstr "Tambahkan Lokasi Baru"
+
+#: templates/admin/locations.html:59
+msgid "e.g., Downtown Branch"
+msgstr "misalnya, Cabang Pusat Kota"
+
+#: templates/admin/locations.html:63 templates/admin/settings.html:37
+#: templates/onboarding/setup.html:32
+msgid "Street, City, State, Zip"
+msgstr "Jalan, Kota, Negara Bagian, Zip"
+
+#: templates/admin/locations.html:67
+msgid "+1 (555) 123-4567"
+msgstr "+1 (555) 123-4567"
+
+#: templates/admin/locations.html:71
+msgid "branch@example.com"
+msgstr "cabang@example.com"
+
+#: templates/admin/locations.html:76
+msgid "Create Location"
+msgstr "Buat Lokasi"
+
+#: templates/admin/manage_users.html:4
+msgid "Manage Users - Repair Shop"
+msgstr "Kelola Pengguna - Bengkel"
+
+#: templates/admin/manage_users.html:9
+msgid "+ Create User"
+msgstr "+ Buat Pengguna"
+
+#: templates/admin/manage_users.html:22
+msgid "Location"
+msgstr "Lokasi"
+
+#: templates/admin/manage_users.html:24 templates/admin/system_status.html:37
+#: templates/customers/customer_detail.html:88
+#: templates/devices/device_detail.html:60 templates/main/dashboard.html:56
+#: templates/parts/manage_parts.html:23
+#: templates/services/manage_services.html:26
+msgid "Status"
+msgstr "Status"
+
+#: templates/admin/manage_users.html:35
+msgid "Global"
+msgstr "Global"
+
+#: templates/admin/manage_users.html:46 templates/parts/manage_parts.html:43
+#: templates/parts/manage_parts.html:120
+#: templates/services/manage_services.html:40
+#: templates/services/manage_services.html:104
+#: templates/tickets/tickets_list.html:14
+msgid "Active"
+msgstr "Aktif"
+
+#: templates/admin/manage_users.html:46
+#: templates/common_problem/manage_common_problems.html:25
+#: templates/parts/manage_parts.html:43
+#: templates/services/manage_services.html:40
+msgid "Inactive"
+msgstr "Tidak aktif"
+
+#: templates/admin/manage_users.html:53
+msgid "Are you sure you want to delete this user?"
+msgstr "Apakah Anda yakin ingin menghapus pengguna ini?"
+
+#: templates/admin/manage_users.html:62
+msgid "No system users found."
+msgstr "Tidak ada pengguna sistem yang ditemukan."
+
+#: templates/admin/settings.html:3
+msgid "Shop Settings - Admin"
+msgstr "Pengaturan Toko - Admin"
+
+#: templates/admin/settings.html:10
+msgid "Global Shop Settings"
+msgstr "Pengaturan Toko Global"
+
+#: templates/admin/settings.html:17
+msgid "Shop Logo"
+msgstr "Logo Toko"
+
+#: templates/admin/settings.html:28
+msgid "Recommended: Square PNG/SVG"
+msgstr "Direkomendasikan: PNG/SVG persegi"
+
+#: templates/admin/settings.html:32 templates/onboarding/setup.html:22
+msgid "Shop Name"
+msgstr "Nama Toko"
+
+#: templates/admin/settings.html:33
+msgid "e.g., My Repair Shop"
+msgstr "misalnya, Bengkel Saya"
+
+#: templates/admin/settings.html:36
+msgid "Shop Address (Location)"
+msgstr "Alamat Toko (Lokasi)"
+
+#: templates/admin/settings.html:38
+msgid "This will appear on invoices."
+msgstr "Ini akan muncul di faktur."
+
+#: templates/admin/settings.html:45
+msgid "Contact Phone"
+msgstr "Hubungi Telepon"
+
+#: templates/admin/settings.html:46 templates/onboarding/setup.html:40
+msgid "+1 (555) 000-0000"
+msgstr "+1 (555) 000-0000"
+
+#: templates/admin/settings.html:49
+msgid "Contact Email"
+msgstr "Hubungi Email"
+
+#: templates/admin/settings.html:50
+msgid "contact@example.com"
+msgstr "hubungi@example.com"
+
+#: templates/admin/settings.html:57 templates/devices/edit_device.html:83
+#: templates/parts/manage_parts.html:125
+#: templates/services/manage_services.html:109
+#: templates/tickets/edit_ticket.html:51
+msgid "Save Changes"
+msgstr "Simpan Perubahan"
+
+#: templates/admin/system_status.html:3
+msgid "System Status - Admin"
+msgstr "Status Sistem - Admin"
+
+#: templates/admin/system_status.html:7
+msgid "System Integrity & Status"
+msgstr "Integritas & Status Sistem"
+
+#: templates/admin/system_status.html:16
+msgid "Database Engine"
+msgstr "Mesin Basis Data"
+
+#: templates/admin/system_status.html:17
+msgid "Online"
+msgstr "On line"
+
+#: templates/admin/system_status.html:17
+msgid "Offline"
+msgstr "Luring"
+
+#: templates/admin/system_status.html:20
+msgid "Database Engine Version:"
+msgstr "Versi Mesin Basis Data:"
+
+#: templates/admin/system_status.html:21
+#: templates/customers/customer_detail.html:22
+#: templates/customers/customer_detail.html:103
+#: templates/customers/customers.html:45
+#: templates/devices/device_detail.html:74 templates/main/dashboard.html:75
+#: templates/tickets/ticket_detail.html:285
+#: templates/tickets/tickets_list.html:43
+msgid "Unknown"
+msgstr "Tidak dikenal"
+
+#: templates/admin/system_status.html:30
+msgid "Storage & Permissions"
+msgstr "Penyimpanan & Izin"
+
+#: templates/admin/system_status.html:36
+msgid "Volume"
+msgstr "Volume"
+
+#: templates/admin/system_status.html:49
+msgid "Path Missing"
+msgstr "Jalur Hilang"
+
+#: templates/admin/system_status.html:51
+msgid "Writable"
+msgstr "Dapat ditulisi"
+
+#: templates/admin/system_status.html:53
+msgid "Read Only"
+msgstr "Hanya Baca"
+
+#: templates/admin/system_status.html:58
+msgid "No storage volumes monitored."
+msgstr "Tidak ada volume penyimpanan yang dipantau."
+
+#: templates/admin/system_status.html:70
+msgid "Environment Summary"
+msgstr "Ringkasan Lingkungan"
+
+#: templates/admin/system_status.html:86
+msgid "No environment data available."
+msgstr "Tidak ada data lingkungan yang tersedia."
+
+#: templates/admin/system_status.html:97
+msgid "Active Configuration"
+msgstr "Konfigurasi Aktif"
+
+#: templates/admin/system_status.html:113
+msgid "No configuration data available."
+msgstr "Tidak ada data konfigurasi yang tersedia."
+
+#: templates/common_problem/manage_common_problems.html:4
+#: templates/common_problem/manage_common_problems.html:6
+msgid "Manage Common Problems"
+msgstr "Kelola Masalah Umum"
+
+#: templates/common_problem/manage_common_problems.html:12
+#: templates/tickets/edit_ticket.html:34 templates/tickets/new_ticket.html:53
+#: templates/tickets/ticket_detail.html:81
+msgid "Problem Description"
+msgstr "Deskripsi Masalah"
+
+#: templates/common_problem/manage_common_problems.html:13
+msgid "New problem description..."
+msgstr "Deskripsi masalah baru..."
+
+#: templates/common_problem/manage_common_problems.html:14
+msgid "Add Problem"
+msgstr "Tambahkan Masalah"
+
+#: templates/common_problem/manage_common_problems.html:27
+msgid "Are you sure you want to delete this problem?"
+msgstr "Apakah Anda yakin ingin menghapus masalah ini?"
+
+#: templates/common_problem/manage_common_problems.html:34
+msgid "No common problems defined yet."
+msgstr "Belum ada masalah umum yang teridentifikasi."
+
+#: templates/customers/customer_detail.html:3
+msgid "Customer Profile"
+msgstr "Profil Pelanggan"
+
+#: templates/customers/customer_detail.html:7
+msgid "Customer Details"
+msgstr "Detail Pelanggan"
+
+#: templates/customers/customer_detail.html:8
+msgid "Back to List"
+msgstr "Kembali ke Daftar"
+
+#: templates/customers/customer_detail.html:15
+msgid "Customer Info"
+msgstr "Info Pelanggan"
+
+#: templates/customers/customer_detail.html:19
+msgid "No phone provided"
+msgstr "Tidak ada telepon yang disediakan"
+
+#: templates/customers/customer_detail.html:21
+msgid "Address:"
+msgstr "Alamat:"
+
+#: templates/customers/customer_detail.html:21
+msgid "No address provided"
+msgstr "Tidak ada alamat yang diberikan"
+
+#: templates/customers/customer_detail.html:22
+msgid "Registered:"
+msgstr "Terdaftar:"
+
+#: templates/customers/customer_detail.html:27
+msgid "Export Data (GDPR)"
+msgstr "Ekspor Data (GDPR)"
+
+#: templates/customers/customer_detail.html:32
+#: templates/devices/edit_device.html:94
+msgid "Danger Zone"
+msgstr "Zona Bahaya"
+
+#: templates/customers/customer_detail.html:33
+msgid ""
+"Anonymize this customer? This will scrub all PII (name, phone, address) but "
+"keep ticket history for financial reports. This cannot be undone."
+msgstr ""
+"Anonimkan pelanggan ini? Ini akan menghapus semua PII (nama, telepon, "
+"alamat) tetapi menyimpan riwayat tiket untuk laporan keuangan. Hal ini tidak"
+" dapat dibatalkan."
+
+#: templates/customers/customer_detail.html:35
+msgid "Anonymize Profile"
+msgstr "Anonimkan Profil"
+
+#: templates/customers/customer_detail.html:46
+msgid "Registered Devices"
+msgstr "Perangkat Terdaftar"
+
+#: templates/customers/customer_detail.html:52
+#: templates/customers/customer_detail.html:87
+#: templates/devices/devices.html:32 templates/main/dashboard.html:55
+#: templates/tickets/edit_ticket.html:24
+#: templates/tickets/tickets_list.html:28
+msgid "Device"
+msgstr "Perangkat"
+
+#: templates/customers/customer_detail.html:53
+msgid "Serial"
+msgstr "Serial"
+
+#: templates/customers/customer_detail.html:63
+msgid "View History"
+msgstr "Lihat Riwayat"
+
+#: templates/customers/customer_detail.html:67
+msgid "No devices registered."
+msgstr "Tidak ada perangkat yang terdaftar."
+
+#: templates/customers/customer_detail.html:80
+msgid "Recent Repair Tickets"
+msgstr "Tiket Perbaikan Terbaru"
+
+#: templates/customers/customer_detail.html:86
+#: templates/devices/device_detail.html:59 templates/main/dashboard.html:53
+#: templates/reports/finance_report.html:99
+#: templates/reports/finance_report.html:152 templates/reports/reports.html:77
+#: templates/tickets/tickets_list.html:26
+msgid "Ticket #"
+msgstr "Tiket #"
+
+#: templates/customers/customer_detail.html:89
+#: templates/devices/device_detail.html:61 templates/main/dashboard.html:57
+#: templates/tickets/ticket_detail.html:211
+#: templates/tickets/ticket_detail.html:244
+msgid "Date"
+msgstr "Tanggal"
+
+#: templates/customers/customer_detail.html:105
+#: templates/devices/device_detail.html:76 templates/devices/devices.html:56
+#: templates/main/dashboard.html:77 templates/reports/reports.html:111
+#: templates/tickets/ticket_detail.html:38
+#: templates/tickets/tickets_list.html:49
+msgid "View"
+msgstr "Melihat"
+
+#: templates/customers/customer_detail.html:109
+msgid "No tickets found for this customer."
+msgstr "Tidak ada tiket yang ditemukan untuk pelanggan ini."
+
+#: templates/customers/customers.html:8
+msgid "Customer Directory"
+msgstr "Direktori Pelanggan"
+
+#: templates/customers/customers.html:10
+#: templates/customers/new_customer.html:3
+msgid "New Customer"
+msgstr "Pelanggan Baru"
+
+#: templates/customers/customers.html:17
+msgid "Search Customers"
+msgstr "Cari Pelanggan"
+
+#: templates/customers/customers.html:18
+msgid "Search by name or phone..."
+msgstr "Cari berdasarkan nama atau telepon..."
+
+#: templates/customers/customers.html:19 templates/devices/devices.html:19
+msgid "Search"
+msgstr "Mencari"
+
+#: templates/customers/customers.html:21 templates/devices/devices.html:21
+#: templates/reports/finance_report.html:13
+msgid "Clear"
+msgstr "Jernih"
+
+#: templates/customers/customers.html:32
+msgid "Name"
+msgstr "Nama"
+
+#: templates/customers/customers.html:47
+msgid "View Profile"
+msgstr "Lihat Profil"
+
+#: templates/customers/customers.html:51
+msgid "No customers found matching your search."
+msgstr "Tidak ada pelanggan yang cocok dengan penelusuran Anda."
+
+#: templates/customers/customers.html:51
+msgid "No customers found."
+msgstr "Tidak ada pelanggan yang ditemukan."
+
+#: templates/customers/new_customer.html:10
+#: templates/devices/new_device.html:25 templates/tickets/ticket_form.html:6
+msgid "Add New Customer"
+msgstr "Tambahkan Pelanggan Baru"
+
+#: templates/customers/new_customer.html:17
+msgid "e.g., John Doe"
+msgstr "misalnya, John Doe"
+
+#: templates/customers/new_customer.html:20
+#: templates/tickets/ticket_form.html:17 templates/tickets/ticket_form.html:18
+msgid "Phone Number"
+msgstr "Nomor telepon"
+
+#: templates/customers/new_customer.html:21
+msgid "e.g., +1 555-0123"
+msgstr "misalnya +1 555-0123"
+
+#: templates/customers/new_customer.html:25
+msgid "Customer's physical address"
+msgstr "Alamat fisik pelanggan"
+
+#: templates/customers/new_customer.html:30
+msgid "Create Customer"
+msgstr "Buat Pelanggan"
+
+#: templates/devices/device_detail.html:3
+#, python-format
+msgid "Device History - %(device_display)s"
+msgstr "Riwayat Perangkat - %(device_display)s"
+
+#: templates/devices/device_detail.html:7
+msgid "Device Details"
+msgstr "Detail Perangkat"
+
+#: templates/devices/device_detail.html:8 templates/devices/new_device.html:10
+msgid "Back to Inventory"
+msgstr "Kembali ke Inventaris"
+
+#: templates/devices/device_detail.html:15
+msgid "Device Information"
+msgstr "Informasi Perangkat"
+
+#: templates/devices/device_detail.html:19
+msgid "Owner:"
+msgstr "Pemilik:"
+
+#: templates/devices/device_detail.html:22
+msgid "Type:"
+msgstr "Jenis:"
+
+#: templates/devices/device_detail.html:23
+msgid "Brand:"
+msgstr "Merek:"
+
+#: templates/devices/device_detail.html:24
+msgid "Model #:"
+msgstr "Model #:"
+
+#: templates/devices/device_detail.html:25
+msgid "CPU:"
+msgstr "CPU:"
+
+#: templates/devices/device_detail.html:26
+msgid "RAM:"
+msgstr "RAM:"
+
+#: templates/devices/device_detail.html:27
+msgid "Storage:"
+msgstr "Penyimpanan:"
+
+#: templates/devices/device_detail.html:28
+#: templates/tickets/ticket_detail.html:73
+msgid "Color:"
+msgstr "Warna:"
+
+#: templates/devices/device_detail.html:29
+msgid "Serial:"
+msgstr "Serial:"
+
+#: templates/devices/device_detail.html:33
+msgid "Technical Notes:"
+msgstr "Catatan Teknis:"
+
+#: templates/devices/device_detail.html:38
+msgid "Edit Device"
+msgstr "Sunting Perangkat"
+
+#: templates/devices/device_detail.html:41
+msgid "Delete this device and its history?"
+msgstr "Hapus perangkat ini dan riwayatnya?"
+
+#: templates/devices/device_detail.html:53
+msgid "Repair History"
+msgstr "Riwayat Perbaikan"
+
+#: templates/devices/device_detail.html:81
+msgid "No repair history found for this device."
+msgstr "Tidak ditemukan riwayat perbaikan untuk perangkat ini."
+
+#: templates/devices/devices.html:8
+msgid "Device Inventory"
+msgstr "Inventaris Perangkat"
+
+#: templates/devices/devices.html:10 templates/devices/new_device.html:91
+msgid "Add Device"
+msgstr "Tambahkan Perangkat"
+
+#: templates/devices/devices.html:17
+msgid "Search Devices"
+msgstr "Perangkat Pencarian"
+
+#: templates/devices/devices.html:18
+msgid "Search by model or serial..."
+msgstr "Cari berdasarkan model atau serial..."
+
+#: templates/devices/devices.html:33
+msgid "Owner"
+msgstr "Pemilik"
+
+#: templates/devices/devices.html:34 templates/devices/edit_device.html:70
+#: templates/devices/new_device.html:78 templates/tickets/ticket_form.html:89
+msgid "Serial Number"
+msgstr "Nomor seri"
+
+#: templates/devices/devices.html:63
+msgid "No devices found matching your search."
+msgstr "Tidak ada perangkat yang cocok dengan penelusuran Anda."
+
+#: templates/devices/devices.html:63
+msgid "No devices found in inventory."
+msgstr "Tidak ada perangkat yang ditemukan di inventaris."
+
+#: templates/devices/edit_device.html:3 templates/devices/edit_device.html:9
+#, python-format
+msgid "Edit Device: %(display)s"
+msgstr "Sunting Perangkat: %(display)s"
+
+#: templates/devices/edit_device.html:10
+msgid "Back to Device Details"
+msgstr "Kembali ke Detail Perangkat"
+
+#: templates/devices/edit_device.html:14 templates/main/dashboard.html:54
+#: templates/reports/finance_report.html:98
+#: templates/reports/finance_report.html:151 templates/reports/reports.html:78
+#: templates/tickets/edit_ticket.html:20
+#: templates/tickets/tickets_list.html:27
+msgid "Customer"
+msgstr "Pelanggan"
+
+#: templates/devices/edit_device.html:28 templates/devices/new_device.html:36
+#: templates/tickets/ticket_form.html:47
+msgid "Device Type"
+msgstr "Jenis Perangkat"
+
+#: templates/devices/edit_device.html:30 templates/devices/edit_device.html:59
+#: templates/devices/new_device.html:38 templates/devices/new_device.html:67
+#: templates/tickets/ticket_form.html:49 templates/tickets/ticket_form.html:78
+msgid "-- Select --"
+msgstr "-- Pilih --"
+
+#: templates/devices/edit_device.html:32 templates/devices/new_device.html:40
+#: templates/tickets/ticket_form.html:51
+msgid "Laptop"
+msgstr "laptop"
+
+#: templates/devices/edit_device.html:33 templates/devices/new_device.html:41
+#: templates/tickets/ticket_form.html:52
+msgid "Tablet"
+msgstr "Tablet"
+
+#: templates/devices/edit_device.html:34 templates/devices/new_device.html:42
+#: templates/tickets/ticket_form.html:53
+msgid "Desktop"
+msgstr "Desktop"
+
+#: templates/devices/edit_device.html:35 templates/devices/new_device.html:43
+#: templates/tickets/ticket_form.html:54
+msgid "Monitor"
+msgstr "Memantau"
+
+#: templates/devices/edit_device.html:36 templates/devices/new_device.html:44
+#: templates/tickets/ticket_form.html:55
+msgid "Printer"
+msgstr "Pencetak"
+
+#: templates/devices/edit_device.html:37 templates/devices/new_device.html:45
+#: templates/tickets/new_ticket.html:87
+#: templates/tickets/ticket_detail.html:395
+#: templates/tickets/ticket_form.html:56
+msgid "Other"
+msgstr "Lainnya"
+
+#: templates/devices/edit_device.html:41 templates/devices/new_device.html:49
+#: templates/tickets/ticket_form.html:60
+msgid "Brand"
+msgstr "Merek"
+
+#: templates/devices/edit_device.html:42 templates/devices/new_device.html:50
+msgid "e.g., Apple, Dell"
+msgstr "misalnya, Apple, Dell"
+
+#: templates/devices/edit_device.html:45 templates/devices/new_device.html:53
+#: templates/tickets/ticket_form.html:64
+msgid "Model Number"
+msgstr "Nomor Model"
+
+#: templates/devices/edit_device.html:46 templates/devices/new_device.html:54
+msgid "e.g., A2633"
+msgstr "misalnya, A2633"
+
+#: templates/devices/edit_device.html:49 templates/devices/new_device.html:57
+#: templates/tickets/ticket_form.html:68
+msgid "CPU/Processor"
+msgstr "CPU/Prosesor"
+
+#: templates/devices/edit_device.html:50 templates/devices/new_device.html:58
+msgid "e.g., Core i7"
+msgstr "misalnya, Core i7"
+
+#: templates/devices/edit_device.html:53 templates/devices/new_device.html:61
+#: templates/tickets/ticket_form.html:72
+msgid "RAM"
+msgstr "RAM"
+
+#: templates/devices/edit_device.html:54 templates/devices/new_device.html:62
+msgid "e.g., 16GB"
+msgstr "misalnya, 16GB"
+
+#: templates/devices/edit_device.html:57 templates/devices/new_device.html:65
+#: templates/tickets/ticket_form.html:76
+msgid "Storage Type"
+msgstr "Tipe Penyimpanan"
+
+#: templates/devices/edit_device.html:60 templates/devices/new_device.html:68
+#: templates/tickets/ticket_form.html:79
+msgid "HDD"
+msgstr "HDD"
+
+#: templates/devices/edit_device.html:61 templates/devices/new_device.html:69
+#: templates/tickets/ticket_form.html:80
+msgid "SSD"
+msgstr "SSD"
+
+#: templates/devices/edit_device.html:62 templates/devices/new_device.html:70
+#: templates/tickets/ticket_form.html:81
+msgid "Mixed"
+msgstr "Campur aduk"
+
+#: templates/devices/edit_device.html:66 templates/devices/new_device.html:74
+#: templates/tickets/ticket_form.html:85
+msgid "Storage Capacity"
+msgstr "Kapasitas Penyimpanan"
+
+#: templates/devices/edit_device.html:67 templates/devices/new_device.html:75
+msgid "e.g., 512GB"
+msgstr "misalnya, 512GB"
+
+#: templates/devices/edit_device.html:71 templates/devices/new_device.html:79
+msgid "e.g., C02ABCDEFGH"
+msgstr "misalnya, C02ABCDEFGH"
+
+#: templates/devices/edit_device.html:74 templates/devices/new_device.html:82
+#: templates/tickets/ticket_form.html:93
+msgid "Color"
+msgstr "Warna"
+
+#: templates/devices/edit_device.html:75 templates/devices/new_device.html:83
+msgid "e.g., Space Gray"
+msgstr "misalnya, Space Grey"
+
+#: templates/devices/edit_device.html:78 templates/devices/new_device.html:86
+msgid "Notes"
+msgstr "Catatan"
+
+#: templates/devices/edit_device.html:79 templates/devices/new_device.html:87
+msgid "Any additional notes about the device..."
+msgstr "Catatan tambahan apa pun tentang perangkat..."
+
+#: templates/devices/edit_device.html:95
+msgid "Deleting this device will also remove all associated repair history."
+msgstr ""
+"Menghapus perangkat ini juga akan menghapus semua riwayat perbaikan terkait."
+
+#: templates/devices/edit_device.html:97
+msgid ""
+"Are you sure you want to delete this device? This action cannot be undone."
+msgstr ""
+"Apakah Anda yakin ingin menghapus perangkat ini? Tindakan ini tidak dapat "
+"dibatalkan."
+
+#: templates/devices/edit_device.html:100
+msgid "Delete Device"
+msgstr "Hapus Perangkat"
+
+#: templates/devices/new_device.html:3 templates/devices/new_device.html:9
+#: templates/devices/new_device.html:15
+msgid "Add New Device"
+msgstr "Tambahkan Perangkat Baru"
+
+#: templates/devices/new_device.html:23
+msgid "Owner (Customer)"
+msgstr "Pemilik (Pelanggan)"
+
+#: templates/devices/new_device.html:29
+msgid "-- Select Customer --"
+msgstr "-- Pilih Pelanggan --"
+
+#: templates/errors/400.html:2 templates/errors/400.html:7
+msgid "Bad Request"
+msgstr "Permintaan Buruk"
+
+#: templates/errors/400.html:9
+msgid ""
+"The server could not understand your request due to invalid syntax or "
+"malformed data."
+msgstr ""
+"Server tidak dapat memahami permintaan Anda karena sintaksis yang tidak "
+"valid atau format data yang salah."
+
+#: templates/errors/400.html:13 templates/errors/413.html:13
+#: templates/errors/415.html:13
+msgid "Go Back"
+msgstr "Kembali"
+
+#: templates/errors/401.html:2
+msgid "Login Required"
+msgstr "Diperlukan Masuk"
+
+#: templates/errors/401.html:7
+msgid "Authentication Required"
+msgstr "Diperlukan Otentikasi"
+
+#: templates/errors/401.html:9
+msgid ""
+"You must be logged in to access this page. Your session may have expired."
+msgstr ""
+"Anda harus login untuk mengakses halaman ini. Sesi Anda mungkin telah "
+"kedaluwarsa."
+
+#: templates/errors/403.html:2 templates/errors/403.html:7
+msgid "Access Denied"
+msgstr "Akses ditolak"
+
+#: templates/errors/403.html:9
+msgid ""
+"Sorry, you don't have the required permissions to access this page or "
+"perform this action."
+msgstr ""
+"Maaf, Anda tidak memiliki izin yang diperlukan untuk mengakses halaman ini "
+"atau melakukan tindakan ini."
+
+#: templates/errors/404.html:2 templates/errors/404.html:7
+msgid "Page Not Found"
+msgstr "Halaman Tidak Ditemukan"
+
+#: templates/errors/404.html:9
+msgid "Oops! The page you are looking for doesn't exist or has been moved."
+msgstr "Ups! Halaman yang dicari tidak ada atau sudah dipindahkan."
+
+#: templates/errors/413.html:2 templates/errors/413.html:7
+msgid "File Too Large"
+msgstr "Berkas Terlalu Besar"
+
+#: templates/errors/413.html:9
+msgid ""
+"The file you are trying to upload is too large. Maximum allowed size is 2MB."
+msgstr ""
+"File yang Anda coba unggah terlalu besar. Ukuran maksimum yang diperbolehkan"
+" adalah 2MB."
+
+#: templates/errors/415.html:2 templates/errors/415.html:7
+msgid "Unsupported Request"
+msgstr "Permintaan Tidak Didukung"
+
+#: templates/errors/415.html:9
+msgid ""
+"The server was unable to process the request format. This often happens due "
+"to an incompatible browser extension or a technical mismatch."
+msgstr ""
+"Server tidak dapat memproses format permintaan. Hal ini sering terjadi "
+"karena ekstensi browser yang tidak kompatibel atau ketidakcocokan teknis."
+
+#: templates/errors/500.html:2
+msgid "System Error"
+msgstr "Kesalahan Sistem"
+
+#: templates/errors/500.html:7
+msgid "Something Went Wrong"
+msgstr "Ada yang Salah"
+
+#: templates/errors/500.html:9
+msgid ""
+"The server encountered an unexpected error. Our technical team has been "
+"notified (check the logs)."
+msgstr ""
+"Server mengalami kesalahan yang tidak terduga. Tim teknis kami telah "
+"diberitahu (periksa log)."
+
+#: templates/errors/500.html:13
+msgid "Retry Request"
+msgstr "Permintaan Coba Lagi"
+
+#: templates/errors/503.html:2 templates/errors/503.html:7
+msgid "Service Unavailable"
+msgstr "Layanan Tidak Tersedia"
+
+#: templates/errors/503.html:9
+msgid ""
+"The server is temporarily unable to handle your request due to maintenance "
+"or capacity issues. Please try again later."
+msgstr ""
+"Server untuk sementara tidak dapat menangani permintaan Anda karena masalah "
+"pemeliharaan atau kapasitas. Silakan coba lagi nanti."
+
+#: templates/errors/503.html:13
+msgid "Retry Now"
+msgstr "Coba lagi sekarang"
+
+#: templates/macros/pagination.html:3
+msgid "Page navigation"
+msgstr "Navigasi halaman"
+
+#: templates/macros/pagination.html:8 templates/macros/pagination.html:14
+msgid "Previous"
+msgstr "Sebelumnya"
+
+#: templates/macros/pagination.html:38 templates/macros/pagination.html:44
+msgid "Next"
+msgstr "Berikutnya"
+
+#: templates/main/dashboard.html:11 templates/reports/reports.html:28
+msgid "Total Tickets"
+msgstr "Jumlah Tiket"
+
+#: templates/main/dashboard.html:19
+msgid "In Repair"
+msgstr "Dalam perbaikan"
+
+#: templates/main/dashboard.html:27 templates/tickets/ticket_detail.html:315
+msgid "Finished"
+msgstr "Selesai"
+
+#: templates/main/dashboard.html:44 templates/reports/reports.html:70
+msgid "Recent Tickets"
+msgstr "Tiket Terbaru"
+
+#: templates/main/dashboard.html:46 templates/tickets/new_ticket.html:102
+msgid "Create Ticket"
+msgstr "Buat Tiket"
+
+#: templates/main/dashboard.html:68 templates/tickets/ticket_detail.html:72
+msgid "S/N:"
+msgstr "tidak:"
+
+#: templates/main/dashboard.html:81 templates/reports/reports.html:116
+msgid "No recent tickets found."
+msgstr "Tidak ada tiket terbaru yang ditemukan."
+
+#: templates/onboarding/base.html:13
+msgid "Setup Wizard"
+msgstr "Panduan Pengaturan"
+
+#: templates/onboarding/base.html:103
+msgid "Repair Shop Ticketing System"
+msgstr "Sistem Tiket Bengkel"
+
+#: templates/onboarding/setup.html:2
+msgid "Initial Setup"
+msgstr "Pengaturan Awal"
+
+#: templates/onboarding/setup.html:9
+msgid "System Onboarding"
+msgstr "Orientasi Sistem"
+
+#: templates/onboarding/setup.html:14
+msgid "Welcome! Let's get your repair shop configured for the first time."
+msgstr ""
+"Selamat datang! Mari konfigurasikan bengkel Anda untuk pertama kalinya."
+
+#: templates/onboarding/setup.html:20
+msgid "Shop Identity"
+msgstr "Identitas Toko"
+
+#: templates/onboarding/setup.html:25
+msgid "e.g., QuickFix Tech Solutions"
+msgstr "misalnya, Solusi Teknologi QuickFix"
+
+#: templates/onboarding/setup.html:47
+msgid "contact@yourshop.com"
+msgstr "hubungi@tokoanda.com"
+
+#: templates/onboarding/setup.html:54
+msgid "Regional Settings"
+msgstr "Pengaturan Wilayah"
+
+#: templates/onboarding/setup.html:56
+msgid "System Language"
+msgstr "Bahasa Sistem"
+
+#: templates/onboarding/setup.html:62
+msgid "Select the primary language for the application interface."
+msgstr "Pilih bahasa utama untuk antarmuka aplikasi."
+
+#: templates/onboarding/setup.html:66
+msgid "Primary Currency"
+msgstr "Mata Uang Utama"
+
+#: templates/onboarding/setup.html:73
+msgid "This will be used for all invoices and financial reports."
+msgstr "Ini akan digunakan untuk semua faktur dan laporan keuangan."
+
+#: templates/onboarding/setup.html:78
+msgid "You can change these settings later in the Admin Panel."
+msgstr "Anda dapat mengubah pengaturan ini nanti di Panel Admin."
+
+#: templates/onboarding/setup.html:82
+msgid "Complete Setup & Launch Dashboard"
+msgstr "Selesaikan Penyiapan & Luncurkan Dasbor"
+
+#: templates/parts/manage_parts.html:4
+msgid "Manage Parts - Repair Shop"
+msgstr "Kelola Suku Cadang - Bengkel"
+
+#: templates/parts/manage_parts.html:8
+msgid "Spare Parts & Hardware"
+msgstr "Suku Cadang & Perangkat Keras"
+
+#: templates/parts/manage_parts.html:10
+msgid "+ New Inventory Item"
+msgstr "+ Barang Inventaris Baru"
+
+#: templates/parts/manage_parts.html:19 templates/parts/manage_parts.html:91
+#: templates/parts/manage_parts.html:144
+msgid "Part Name"
+msgstr "Nama Bagian"
+
+#: templates/parts/manage_parts.html:20
+msgid "Cost (Wholesale)"
+msgstr "Biaya (Grosir)"
+
+#: templates/parts/manage_parts.html:21 templates/parts/manage_parts.html:107
+#: templates/parts/manage_parts.html:160
+#: templates/tickets/ticket_detail.html:486
+msgid "Selling Price"
+msgstr "Harga penjualan"
+
+#: templates/parts/manage_parts.html:22
+msgid "Stock"
+msgstr "Saham"
+
+#: templates/parts/manage_parts.html:60
+msgid "Are you sure you want to permanently delete this part?"
+msgstr "Apakah Anda yakin ingin menghapus bagian ini secara permanen?"
+
+#: templates/parts/manage_parts.html:68
+msgid "No spare parts in inventory."
+msgstr "Tidak ada suku cadang dalam persediaan."
+
+#: templates/parts/manage_parts.html:86
+msgid "Edit Part Details"
+msgstr "Edit Detail Bagian"
+
+#: templates/parts/manage_parts.html:100 templates/parts/manage_parts.html:153
+#: templates/tickets/ticket_detail.html:476
+msgid "Wholesale Cost"
+msgstr "Biaya Grosir"
+
+#: templates/parts/manage_parts.html:115
+msgid "Stock Quantity"
+msgstr "Kuantitas Stok"
+
+#: templates/parts/manage_parts.html:139
+msgid "Add New Inventory Item"
+msgstr "Tambahkan Item Inventaris Baru"
+
+#: templates/parts/manage_parts.html:145
+msgid "e.g. iPhone 13 Screen"
+msgstr "misalnya Layar iPhone 13"
+
+#: templates/parts/manage_parts.html:156
+msgid "Your cost"
+msgstr "Biaya Anda"
+
+#: templates/parts/manage_parts.html:163
+msgid "Customer price"
+msgstr "Harga pelanggan"
+
+#: templates/parts/manage_parts.html:168
+msgid "Initial Stock"
+msgstr "Stok Awal"
+
+#: templates/parts/manage_parts.html:174
+msgid "Add to Inventory"
+msgstr "Tambahkan ke Inventaris"
+
+#: templates/reports/finance_report.html:3
+msgid "Financial Report - Repair Shop"
+msgstr "Laporan Keuangan - Bengkel"
+
+#: templates/reports/finance_report.html:7
+msgid "Financial Analytics"
+msgstr "Analisis Keuangan"
+
+#: templates/reports/finance_report.html:11
+msgid "Filter"
+msgstr "Menyaring"
+
+#: templates/reports/finance_report.html:16
+msgid "Back to Reports"
+msgstr "Kembali ke Laporan"
+
+#: templates/reports/finance_report.html:25
+msgid "Gross Revenue"
+msgstr "Pendapatan Kotor"
+
+#: templates/reports/finance_report.html:33
+msgid "Hardware Costs"
+msgstr "Biaya Perangkat Keras"
+
+#: templates/reports/finance_report.html:41
+#: templates/reports/finance_report.html:81 templates/reports/reports.html:58
+msgid "Net Profit"
+msgstr "Laba Bersih"
+
+#: templates/reports/finance_report.html:55 templates/reports/reports.html:12
+msgid "All Time"
+msgstr "Sepanjang Waktu"
+
+#: templates/reports/finance_report.html:70
+msgid "Net Income Trends"
+msgstr "Tren Pendapatan Bersih"
+
+#: templates/reports/finance_report.html:79
+msgid "Revenue"
+msgstr "Pendapatan"
+
+#: templates/reports/finance_report.html:80
+msgid "Costs"
+msgstr "Biaya"
+
+#: templates/reports/finance_report.html:91
+msgid "Customer Payment History"
+msgstr "Riwayat Pembayaran Pelanggan"
+
+#: templates/reports/finance_report.html:97
+msgid "Date & Time"
+msgstr "Tanggal & Waktu"
+
+#: templates/reports/finance_report.html:100
+#: templates/tickets/ticket_detail.html:241
+msgid "Method"
+msgstr "Metode"
+
+#: templates/reports/finance_report.html:101
+#: templates/tickets/ticket_detail.html:242
+msgid "Reference"
+msgstr "Referensi"
+
+#: templates/reports/finance_report.html:102
+#: templates/tickets/ticket_detail.html:240
+msgid "Amount"
+msgstr "Jumlah"
+
+#: templates/reports/finance_report.html:132
+msgid "No payment records found."
+msgstr "Tidak ada catatan pembayaran yang ditemukan."
+
+#: templates/reports/finance_report.html:142
+msgid "Material Usage & Hardware Tracking"
+msgstr "Penggunaan Material & Pelacakan Perangkat Keras"
+
+#: templates/reports/finance_report.html:143
+msgid "Includes Inventory & Manual Items"
+msgstr "Termasuk Inventaris & Item Manual"
+
+#: templates/reports/finance_report.html:149
+msgid "Item Description"
+msgstr "Deskripsi Barang"
+
+#: templates/reports/finance_report.html:150
+msgid "Type"
+msgstr "Jenis"
+
+#: templates/reports/finance_report.html:154
+msgid "Unit Cost"
+msgstr "Biaya Satuan"
+
+#: templates/reports/finance_report.html:155
+msgid "Unit Price"
+msgstr "Harga satuan"
+
+#: templates/reports/finance_report.html:167
+msgid "Manual Entry"
+msgstr "Entri Manual"
+
+#: templates/reports/finance_report.html:193
+msgid "No materials recorded yet."
+msgstr "Belum ada materi yang direkam."
+
+#: templates/reports/reports.html:3
+msgid "Reports & Analytics - Repair Shop"
+msgstr "Laporan & Analisis - Bengkel"
+
+#: templates/reports/reports.html:7
+msgid "Reports & Analytics"
+msgstr "Laporan & Analisis"
+
+#: templates/reports/reports.html:10
+msgid "Period:"
+msgstr "Periode:"
+
+#: templates/reports/reports.html:19
+msgid "Detailed Finance Report"
+msgstr "Laporan Keuangan Terperinci"
+
+#: templates/reports/reports.html:36
+msgid "Completed Tickets"
+msgstr "Tiket Selesai"
+
+#: templates/reports/reports.html:44
+msgid "Completion Rate"
+msgstr "Tingkat Penyelesaian"
+
+#: templates/reports/reports.html:79
+msgid "Device (Brand/Model)"
+msgstr "Perangkat (Merek/Model)"
+
+#: templates/reports/reports.html:80 templates/tickets/tickets_list.html:29
+msgid "Phase"
+msgstr "Fase"
+
+#: templates/services/manage_services.html:4
+msgid "Manage Services - Repair Shop"
+msgstr "Kelola Layanan - Bengkel"
+
+#: templates/services/manage_services.html:8
+msgid "Service Types & Pricing"
+msgstr "Jenis & Harga Layanan"
+
+#: templates/services/manage_services.html:11
+msgid "New Service"
+msgstr "Layanan Baru"
+
+#: templates/services/manage_services.html:18
+msgid "Service Catalog"
+msgstr "Katalog Layanan"
+
+#: templates/services/manage_services.html:24
+#: templates/services/manage_services.html:88
+#: templates/services/manage_services.html:128
+msgid "Service Name"
+msgstr "Nama Layanan"
+
+#: templates/services/manage_services.html:25
+#: templates/services/manage_services.html:96
+#: templates/services/manage_services.html:136
+#: templates/tickets/ticket_detail.html:111
+msgid "Price"
+msgstr "Harga"
+
+#: templates/services/manage_services.html:55
+msgid "Are you sure you want to permanently delete this service?"
+msgstr "Apakah Anda yakin ingin menghapus layanan ini secara permanen?"
+
+#: templates/services/manage_services.html:65
+msgid "No services defined."
+msgstr "Tidak ada layanan yang ditentukan."
+
+#: templates/services/manage_services.html:83
+msgid "Edit Service"
+msgstr "Sunting Layanan"
+
+#: templates/services/manage_services.html:123
+msgid "Add New Service Type"
+msgstr "Tambahkan Jenis Layanan Baru"
+
+#: templates/services/manage_services.html:129
+msgid "e.g. Screen Replacement"
+msgstr "misalnya Penggantian Layar"
+
+#: templates/services/manage_services.html:139
+msgid "Service price"
+msgstr "Harga layanan"
+
+#: templates/services/manage_services.html:145
+msgid "Create Service"
+msgstr "Buat Layanan"
+
+#: templates/tickets/edit_ticket.html:3
+#: templates/tickets/ticket_detail.html:18
+msgid "Edit Ticket"
+msgstr "Sunting Tiket"
+
+#: templates/tickets/edit_ticket.html:8
+msgid "Edit Repair Ticket:"
+msgstr "Edit Tiket Perbaikan:"
+
+#: templates/tickets/edit_ticket.html:13
+msgid "Note:"
+msgstr "Catatan:"
+
+#: templates/tickets/edit_ticket.html:13
+msgid ""
+"This ticket is archived (Already Taken). You are editing it with "
+"administrative privileges."
+msgstr ""
+"Tiket ini diarsipkan (Sudah Diambil). Anda mengeditnya dengan hak "
+"administratif."
+
+#: templates/tickets/edit_ticket.html:29
+#: templates/tickets/ticket_detail.html:85
+msgid "Items Included"
+msgstr "Item Termasuk"
+
+#: templates/tickets/edit_ticket.html:30 templates/tickets/new_ticket.html:59
+msgid "e.g., Original Charger, Leather Case"
+msgstr "misalnya Pengisi Daya Asli, Casing Kulit"
+
+#: templates/tickets/edit_ticket.html:35 templates/tickets/new_ticket.html:54
+msgid "Describe the issue in detail..."
+msgstr "Jelaskan permasalahannya secara rinci..."
+
+#: templates/tickets/edit_ticket.html:39 templates/tickets/new_ticket.html:63
+msgid "Technician Assignment"
+msgstr "Penugasan Teknisi"
+
+#: templates/tickets/edit_ticket.html:41 templates/tickets/new_ticket.html:65
+msgid "-- Unassigned --"
+msgstr "-- Belum ditetapkan --"
+
+#: templates/tickets/invoice.html:3
+msgid "Invoice"
+msgstr "Faktur"
+
+#: templates/tickets/invoice.html:8
+msgid "Invoice Details"
+msgstr "Detail Faktur"
+
+#: templates/tickets/invoice.html:21
+msgid "Invoice From:"
+msgstr "Faktur Dari:"
+
+#: templates/tickets/invoice.html:25
+msgid "System Generated Invoice"
+msgstr "Faktur yang Dihasilkan Sistem"
+
+#: templates/tickets/invoice.html:27
+msgid "Bill To:"
+msgstr "Tagihan Ke:"
+
+#: templates/tickets/invoice.html:35
+msgid "Device Info:"
+msgstr "Informasi Perangkat:"
+
+#: templates/tickets/invoice.html:37 templates/tickets/ticket_detail.html:7
+msgid "Ticket:"
+msgstr "Tiket:"
+
+#: templates/tickets/invoice.html:53 templates/tickets/ticket_detail.html:120
+msgid "Service"
+msgstr "Melayani"
+
+#: templates/tickets/invoice.html:61
+msgid "Part/Material"
+msgstr "Bagian/Bahan"
+
+#: templates/tickets/invoice.html:74
+msgid "Subtotal:"
+msgstr "Jumlah keseluruhan:"
+
+#: templates/tickets/invoice.html:79 templates/tickets/ticket_detail.html:234
+msgid "Total Paid:"
+msgstr "Jumlah yang Dibayar:"
+
+#: templates/tickets/invoice.html:93
+msgid "Back to Ticket"
+msgstr "Kembali ke Tiket"
+
+#: templates/tickets/invoice.html:96 templates/tickets/ticket_detail.html:40
+msgid "Download PDF"
+msgstr "Unduh PDF"
+
+#: templates/tickets/invoice.html:99
+msgid "Print Invoice"
+msgstr "Cetak Faktur"
+
+#: templates/tickets/new_ticket.html:3
+msgid "Create New Ticket"
+msgstr "Buat Tiket Baru"
+
+#: templates/tickets/new_ticket.html:8
+msgid "New Repair Ticket"
+msgstr "Tiket Perbaikan Baru"
+
+#: templates/tickets/new_ticket.html:12
+msgid ""
+"Please select a customer and a device from the search results before "
+"creating the ticket."
+msgstr ""
+"Silakan pilih pelanggan dan perangkat dari hasil pencarian sebelum membuat "
+"tiket."
+
+#: templates/tickets/new_ticket.html:17
+msgid "1. Search Customer"
+msgstr "1. Cari Pelanggan"
+
+#: templates/tickets/new_ticket.html:20
+msgid "Type name or phone..."
+msgstr "Ketik nama atau telepon..."
+
+#: templates/tickets/new_ticket.html:21 templates/tickets/new_ticket.html:33
+msgid "New"
+msgstr "Baru"
+
+#: templates/tickets/new_ticket.html:29
+msgid "2. Select Device"
+msgstr "2. Pilih Perangkat"
+
+#: templates/tickets/new_ticket.html:32
+msgid "Search customer's devices..."
+msgstr "Telusuri perangkat pelanggan..."
+
+#: templates/tickets/new_ticket.html:40
+msgid "Problem & Intake Details"
+msgstr "Detail Masalah & Pengambilan"
+
+#: templates/tickets/new_ticket.html:46
+msgid "Common Problems (Quick Select)"
+msgstr "Masalah Umum (Pilih Cepat)"
+
+#: templates/tickets/new_ticket.html:58
+msgid "Items Included (Charger, Case, etc.)"
+msgstr "Item yang Termasuk (Pengisi Daya, Casing, dll.)"
+
+#: templates/tickets/new_ticket.html:81
+#: templates/tickets/ticket_detail.html:389
+msgid "Payment Method"
+msgstr "Metode Pembayaran"
+
+#: templates/tickets/new_ticket.html:84
+#: templates/tickets/ticket_detail.html:392
+msgid "Card"
+msgstr "Kartu"
+
+#: templates/tickets/new_ticket.html:85
+#: templates/tickets/ticket_detail.html:393
+msgid "Bank Transfer"
+msgstr "Transfer Bank"
+
+#: templates/tickets/new_ticket.html:86
+#: templates/tickets/ticket_detail.html:394
+msgid "Check"
+msgstr "Memeriksa"
+
+#: templates/tickets/new_ticket.html:92
+msgid "Intake Date/Time"
+msgstr "Tanggal/Waktu Penerimaan"
+
+#: templates/tickets/new_ticket.html:94
+msgid "Intake Date"
+msgstr "Tanggal Penerimaan"
+
+#: templates/tickets/new_ticket.html:95
+msgid "Intake Time"
+msgstr "Waktu Pengambilan"
+
+#: templates/tickets/ticket_detail.html:2
+msgid "Ticket"
+msgstr "Tiket"
+
+#: templates/tickets/ticket_detail.html:10
+msgid "Ticket Locked"
+msgstr "Tiket Terkunci"
+
+#: templates/tickets/ticket_detail.html:13
+#: templates/tickets/ticket_detail.html:328
+msgid "Update Phase"
+msgstr "Fase Pembaruan"
+
+#: templates/tickets/ticket_detail.html:16
+#: templates/tickets/ticket_detail.html:342
+#: templates/tickets/ticket_detail.html:406
+msgid "Record Payment"
+msgstr "Catat Pembayaran"
+
+#: templates/tickets/ticket_detail.html:28
+msgid "Create Invoice"
+msgstr "Buat Faktur"
+
+#: templates/tickets/ticket_detail.html:33
+msgid "Finalize Invoice"
+msgstr "Selesaikan Faktur"
+
+#: templates/tickets/ticket_detail.html:40
+msgid "Download Invoice PDF"
+msgstr "Unduh Faktur PDF"
+
+#: templates/tickets/ticket_detail.html:50
+msgid ""
+"Archive this ticket? It will be removed from history lists but kept for "
+"financial reports."
+msgstr ""
+"Arsipkan tiket ini? Itu akan dihapus dari daftar sejarah tetapi disimpan "
+"untuk laporan keuangan."
+
+#: templates/tickets/ticket_detail.html:52
+msgid "Archive Ticket"
+msgstr "Tiket Arsip"
+
+#: templates/tickets/ticket_detail.html:57
+msgid ""
+"ERASE TICKET: Are you sure? This will remove all history and records for "
+"this job."
+msgstr ""
+"HAPUS TIKET: Apakah Anda yakin? Tindakan ini akan menghapus semua riwayat "
+"dan catatan untuk pekerjaan ini."
+
+#: templates/tickets/ticket_detail.html:59
+msgid "Erase Ticket"
+msgstr "Hapus Tiket"
+
+#: templates/tickets/ticket_detail.html:76
+msgid "Created:"
+msgstr "Dibuat:"
+
+#: templates/tickets/ticket_detail.html:77
+msgid "Technician:"
+msgstr "Teknisi:"
+
+#: templates/tickets/ticket_detail.html:77
+#: templates/tickets/tickets_list.html:46
+msgid "Unassigned"
+msgstr "Belum ditetapkan"
+
+#: templates/tickets/ticket_detail.html:93
+msgid "Services & Materials"
+msgstr "Layanan & Bahan"
+
+#: templates/tickets/ticket_detail.html:97
+msgid "+ Add Service"
+msgstr "+ Tambahkan Layanan"
+
+#: templates/tickets/ticket_detail.html:100
+msgid "+ Add Part"
+msgstr "+ Tambahkan Bagian"
+
+#: templates/tickets/ticket_detail.html:120
+msgid "Svc"
+msgstr "Svc"
+
+#: templates/tickets/ticket_detail.html:128
+msgid "Remove service?"
+msgstr "Hapus layanan?"
+
+#: templates/tickets/ticket_detail.html:128
+msgid "Remove service"
+msgstr "Hapus layanan"
+
+#: templates/tickets/ticket_detail.html:138
+msgid "Part"
+msgstr "Bagian"
+
+#: templates/tickets/ticket_detail.html:146
+msgid "Remove this part from costs?"
+msgstr "Hapus bagian ini dari biaya?"
+
+#: templates/tickets/ticket_detail.html:146
+msgid "Remove part"
+msgstr "Hapus bagian"
+
+#: templates/tickets/ticket_detail.html:155
+msgid "No services or parts added yet."
+msgstr "Belum ada layanan atau suku cadang yang ditambahkan."
+
+#: templates/tickets/ticket_detail.html:164
+msgid "Financial Summary"
+msgstr "Ringkasan Keuangan"
+
+#: templates/tickets/ticket_detail.html:166
+msgid "Initial Estimate:"
+msgstr "Perkiraan Awal:"
+
+#: templates/tickets/ticket_detail.html:171
+msgid "Services:"
+msgstr "Layanan:"
+
+#: templates/tickets/ticket_detail.html:175
+msgid "Materials:"
+msgstr "Bahan:"
+
+#: templates/tickets/ticket_detail.html:188
+msgid "Change Due:"
+msgstr "Batas Waktu Perubahan:"
+
+#: templates/tickets/ticket_detail.html:203
+msgid "Phase History"
+msgstr "Fase Sejarah"
+
+#: templates/tickets/ticket_detail.html:208
+msgid "From"
+msgstr "Dari"
+
+#: templates/tickets/ticket_detail.html:209
+msgid "To"
+msgstr "Ke"
+
+#: templates/tickets/ticket_detail.html:210
+#: templates/tickets/tickets_list.html:30
+msgid "Technician"
+msgstr "Teknisi"
+
+#: templates/tickets/ticket_detail.html:217
+msgid "Intake"
+msgstr "Asupan"
+
+#: templates/tickets/ticket_detail.html:219
+#: templates/tickets/ticket_detail.html:253
+msgid "System"
+msgstr "Sistem"
+
+#: templates/tickets/ticket_detail.html:233
+msgid "Payment History"
+msgstr "Riwayat Pembayaran"
+
+#: templates/tickets/ticket_detail.html:243
+msgid "Recorded By"
+msgstr "Direkam Oleh"
+
+#: templates/tickets/ticket_detail.html:259
+msgid "Void this payment? This will update the invoice balance."
+msgstr "Batalkan pembayaran ini? Ini akan memperbarui saldo faktur."
+
+#: templates/tickets/ticket_detail.html:265
+msgid "No payments recorded yet."
+msgstr "Belum ada pembayaran yang dicatat."
+
+#: templates/tickets/ticket_detail.html:276
+msgid "Notes & Timeline"
+msgstr "Catatan & Garis Waktu"
+
+#: templates/tickets/ticket_detail.html:281
+msgid "Internal"
+msgstr "Intern"
+
+#: templates/tickets/ticket_detail.html:285
+msgid "by"
+msgstr "oleh"
+
+#: templates/tickets/ticket_detail.html:288
+msgid "No notes or timeline entries for this ticket."
+msgstr "Tidak ada catatan atau entri garis waktu untuk tiket ini."
+
+#: templates/tickets/ticket_detail.html:303
+msgid "Update Ticket Phase"
+msgstr "Perbarui Fase Tiket"
+
+#: templates/tickets/ticket_detail.html:308
+msgid "New Phase"
+msgstr "Fase Baru"
+
+#: templates/tickets/ticket_detail.html:310
+msgid "-- Select Phase --"
+msgstr "-- Pilih Fase --"
+
+#: templates/tickets/ticket_detail.html:311
+msgid "Open"
+msgstr "Membuka"
+
+#: templates/tickets/ticket_detail.html:312
+msgid "Diagnostic"
+msgstr "Diagnostik"
+
+#: templates/tickets/ticket_detail.html:313
+msgid "Waiting for Parts"
+msgstr "Menunggu Bagian"
+
+#: templates/tickets/ticket_detail.html:314
+msgid "Repairing"
+msgstr "Memperbaiki"
+
+#: templates/tickets/ticket_detail.html:316
+msgid "Fully Paid"
+msgstr "Dibayar Penuh"
+
+#: templates/tickets/ticket_detail.html:317
+msgid "Already Taken"
+msgstr "Sudah Diambil"
+
+#: templates/tickets/ticket_detail.html:318
+msgid "Cancelled"
+msgstr "Dibatalkan"
+
+#: templates/tickets/ticket_detail.html:322
+msgid "Technician Commentary (Optional)"
+msgstr "Komentar Teknisi (Opsional)"
+
+#: templates/tickets/ticket_detail.html:323
+msgid "Describe the work done or reason for phase change..."
+msgstr "Jelaskan usaha yang dilakukan atau alasan perubahan fasa..."
+
+#: templates/tickets/ticket_detail.html:342
+msgid "Return Change / Refund"
+msgstr "Ganti Retur / Pengembalian Dana"
+
+#: templates/tickets/ticket_detail.html:348
+msgid "Overpayment / Change Due"
+msgstr "Kelebihan Pembayaran / Perubahan Jatuh Tempo"
+
+#: templates/tickets/ticket_detail.html:348
+msgid "Outstanding Balance"
+msgstr "Saldo Luar Biasa"
+
+#: templates/tickets/ticket_detail.html:354
+msgid "Amount to Record"
+msgstr "Jumlah yang Akan Dicatat"
+
+#: templates/tickets/ticket_detail.html:364
+msgid "Return All"
+msgstr "Kembalikan Semua"
+
+#: templates/tickets/ticket_detail.html:364
+msgid "Pay Full"
+msgstr "Bayar Penuh"
+
+#: templates/tickets/ticket_detail.html:368
+#, python-format
+msgid ""
+"Enter <strong>%(amount)s</strong> to record that the change was handed back "
+"to the customer."
+msgstr ""
+"Masukkan <strong> %(amount)s </strong> untuk mencatat bahwa uang kembalian "
+"telah diserahkan kembali kepada pelanggan."
+
+#: templates/tickets/ticket_detail.html:374
+msgid "Change Calculator"
+msgstr "Ubah Kalkulator"
+
+#: templates/tickets/ticket_detail.html:377
+msgid "Cash Received"
+msgstr "Terima kas"
+
+#: templates/tickets/ticket_detail.html:381
+msgid "Change to Give"
+msgstr "Ubah menjadi Memberi"
+
+#: templates/tickets/ticket_detail.html:399
+msgid "Transaction Reference (Optional)"
+msgstr "Referensi Transaksi (Opsional)"
+
+#: templates/tickets/ticket_detail.html:400
+msgid "E.g., Receipt #, Auth ID"
+msgstr "Misalnya, Tanda Terima #, ID Auth"
+
+#: templates/tickets/ticket_detail.html:406
+msgid "Record Return"
+msgstr "Rekam Pengembalian"
+
+#: templates/tickets/ticket_detail.html:421
+msgid "Add Repair Service"
+msgstr "Tambahkan Layanan Perbaikan"
+
+#: templates/tickets/ticket_detail.html:426
+msgid "Service Type"
+msgstr "Jenis Layanan"
+
+#: templates/tickets/ticket_detail.html:428
+msgid "-- Select Service --"
+msgstr "-- Pilih Layanan --"
+
+#: templates/tickets/ticket_detail.html:435
+#: templates/tickets/ticket_detail.html:496
+msgid "Quantity"
+msgstr "Kuantitas"
+
+#: templates/tickets/ticket_detail.html:441
+msgid "Add Service"
+msgstr "Tambahkan Layanan"
+
+#: templates/tickets/ticket_detail.html:455
+msgid "Add Replaced Part"
+msgstr "Tambahkan Bagian yang Diganti"
+
+#: templates/tickets/ticket_detail.html:460
+msgid "Choice from Inventory"
+msgstr "Pilihan dari Inventaris"
+
+#: templates/tickets/ticket_detail.html:462
+msgid "-- Or type manually below --"
+msgstr "-- Atau ketik manual di bawah --"
+
+#: templates/tickets/ticket_detail.html:464
+msgid "Stock:"
+msgstr "Saham:"
+
+#: templates/tickets/ticket_detail.html:469
+msgid "Manual Description"
+msgstr "Deskripsi Panduan"
+
+#: templates/tickets/ticket_detail.html:470
+msgid "E.g. Custom Screw, Generic Cable"
+msgstr "Misalnya. Sekrup Khusus, Kabel Generik"
+
+#: templates/tickets/ticket_detail.html:471
+msgid "Required if not selecting from inventory."
+msgstr "Diperlukan jika tidak memilih dari inventaris."
+
+#: templates/tickets/ticket_detail.html:481
+msgid "Optional for manual items."
+msgstr "Opsional untuk item manual."
+
+#: templates/tickets/ticket_detail.html:491
+msgid "Required for manual items."
+msgstr "Diperlukan untuk item manual."
+
+#: templates/tickets/ticket_detail.html:504
+msgid "Add Part"
+msgstr "Tambahkan Bagian"
+
+#: templates/tickets/ticket_form.html:21 templates/tickets/ticket_form.html:22
+msgid "Address (Optional)"
+msgstr "Alamat (Opsional)"
+
+#: templates/tickets/ticket_form.html:28
+msgid "Save Customer"
+msgstr "Selamatkan Pelanggan"
+
+#: templates/tickets/ticket_form.html:38
+msgid "Add New Device for Customer"
+msgstr "Tambahkan Perangkat Baru untuk Pelanggan"
+
+#: templates/tickets/ticket_form.html:61
+msgid "e.g. Apple, Dell"
+msgstr "misalnya Apple, Dell"
+
+#: templates/tickets/ticket_form.html:65
+msgid "e.g. A2633"
+msgstr "misalnya A2633"
+
+#: templates/tickets/ticket_form.html:69
+msgid "e.g. Core i7"
+msgstr "misalnya Inti i7"
+
+#: templates/tickets/ticket_form.html:73
+msgid "e.g. 16GB"
+msgstr "misalnya 16GB"
+
+#: templates/tickets/ticket_form.html:86
+msgid "e.g. 512GB"
+msgstr "misalnya 512GB"
+
+#: templates/tickets/ticket_form.html:90
+msgid "e.g. C02ABCDEFGH"
+msgstr "misalnya C02ABCDEFGH"
+
+#: templates/tickets/ticket_form.html:94
+msgid "e.g. Space Gray"
+msgstr "misalnya Ruang Abu-abu"
+
+#: templates/tickets/ticket_form.html:101
+msgid "Save Device"
+msgstr "Simpan Perangkat"
+
+#: templates/tickets/tickets_list.html:4
+msgid "All Tickets - Repair Shop"
+msgstr "Semua Tiket - Bengkel"
+
+#: templates/tickets/tickets_list.html:9
+msgid "Pickup History"
+msgstr "Riwayat Penjemputan"
+
+#: templates/tickets/tickets_list.html:9
+msgid "Repair Tickets"
+msgstr "Perbaikan Tiket"
+
+#: templates/tickets/tickets_list.html:10
+msgid "Archive of completed and collected devices"
+msgstr "Arsip perangkat yang telah selesai dan dikumpulkan"
+
+#: templates/tickets/tickets_list.html:10
+msgid "Active units currently in the shop"
+msgstr "Unit aktif saat ini ada di toko"
+
+#: templates/tickets/tickets_list.html:15
+msgid "Picked Up"
+msgstr "Dijemput"
+
+#: templates/tickets/tickets_list.html:17
+msgid "+ Create Ticket"
+msgstr "+ Buat Tiket"
+
+#: templates/tickets/tickets_list.html:54
+msgid "No repair tickets found."
+msgstr "Tidak ada tiket perbaikan yang ditemukan."

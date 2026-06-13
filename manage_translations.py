@@ -16,7 +16,18 @@ def check_babel_config():
                     print("    'jinja2.ext.autoescape' and 'jinja2.ext.with_' as")
                     print("    they are now built-in. Using them causes an AttributeError.")
                     print("\n    FIX: Remove those extensions from your 'babel.cfg' file.")
-                    print("!"*65 + "\n")
+                
+                if "[jinja2:" in content and "[extractors]" not in content:
+                    print("\n" + "!"*65)
+                    print("[!] WARNING: Missing [extractors] section for Jinja2.")
+                    print("    Python 3.12+ environments often require explicit mapping.")
+                    print("\n    FIX: Add '[extractors]\\njinja2 = jinja2.ext:babel_extract' to the top of babel.cfg")
+
+                if "method = jinja2" in content:
+                    print("\n[!] WARNING: Redundant 'method = jinja2' line detected.")
+                    print("    FIX: Remove the 'method = jinja2' line from the template section.")
+                
+                print("!"*65 + "\n")
         except Exception:
             pass
 

@@ -17,7 +17,7 @@ Follow these steps to get your environment running:
 ### 1. Clone and Environment Setup
 ```bash
 git clone https://github.com/ndarjo/repair-shop-ticketing.git
-cd repair-shop-ticketing
+cd repair_shop_ticketing
 
 python3 -m venv .venv
 source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
@@ -51,10 +51,24 @@ Before running the app, you must create the physical database in PostgreSQL and 
 # Drop previously made database
 sudo -i -u postgres psql
 drop database repair_shop WITH (FORCE);
+
 # Create the PostgreSQL database (ensure Postgres is running)
 createdb repair_shop || sudo -u postgres createdb repair_shop
 
 # Compile translation catalogs (Required for non-English language support)
+#extract translation file
+python manage_translations.py extract
+
+#update translation file
+python manage_translations.py update
+
+#initialize language, i.e french
+python manage_translations.py init fr
+
+#Auto-Translate: Fills in the blanks automatically.
+python manage_translations.py translate
+
+# After editing the new strings in your .po files, re-compile:
 python manage_translations.py compile
 ```
 
@@ -66,7 +80,7 @@ python app.py
 **First Run Actions:**
 - The system will automatically create tables and seed default roles/permissions.
 - It will create a default superuser with the credentials defined in your environment variables.
-- Access the dashboard at `http://127.0.0.1:5000`.
+- Access the dashboard at `http://127.0.0.1:5000` or your Local IPv4 address if enabled in env.local.
 
 ---
 
