@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user, login_user, logout_user
 from sqlalchemy import func, select
 from models import db, User
+from babel.numbers import list_currencies
 from app import limiter
 from flask_babel import _
 from urllib.parse import urlparse
@@ -119,7 +120,7 @@ def profile():
 
             if current_user.has_permission('view_reports'):
                 currency = request.form.get('currency')
-                if currency in ['USD', 'IDR', 'EUR', 'GBP']:
+                if currency in list_currencies():
                     current_user.currency = currency
                 
                 decimals = request.form.get('currency_decimals', type=int)

@@ -1,7 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Tuple, Any, Optional
-from flask_babel import _
+from flask_babel import _, get_locale
+from babel.numbers import get_currency_symbol, get_currency_precision
 from models import db, Ticket, PhaseLog, Note, Payment, User
 from .core import FinancialService
 
@@ -54,9 +55,9 @@ class RepairTicketService:
             db.session.flush()
             
             creator = db.session.get(User, creator_id)
-            currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
-            symbol = currency_map.get(creator.currency, '$') if creator else '$'
-            decimals = creator.currency_decimals if creator and creator.currency_decimals is not None else 2
+            user_currency = creator.currency if creator else 'USD'
+            symbol = get_currency_symbol(user_currency, locale=get_locale())
+            decimals = creator.currency_decimals if creator and creator.currency_decimals is not None else get_currency_precision(user_currency)
             
             payment_note = Note(
                 ticket_id=ticket.id,

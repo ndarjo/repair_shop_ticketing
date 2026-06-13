@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
 from flask_login import login_required, current_user
 from models import db, ShopSetting, Location
+from babel.numbers import list_currencies
 from flask_babel import _
 
 onboarding_bp = Blueprint('onboarding', __name__)
@@ -67,7 +68,7 @@ def setup():
             if language in current_app.config['LANGUAGES']:
                 current_user.language_preference = language
 
-            if currency in ['USD', 'IDR', 'EUR', 'GBP']:
+            if currency in list_currencies():
                 current_user.currency = currency
 
             shop_settings.setup_completed = True

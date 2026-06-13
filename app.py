@@ -12,6 +12,7 @@ from flask_wtf.csrf import CSRFProtect
 from flask_talisman import Talisman
 from urllib.parse import urlparse
 from flask_babel import Babel, _, lazy_gettext as _l
+from babel.numbers import get_currency_symbol, get_currency_precision, list_currencies, get_currency_name
 from flask_apscheduler import APScheduler
 from babel import Locale
 from flask_limiter import Limiter
@@ -195,16 +196,18 @@ def create_app(config_name=None):
     @app.context_processor
     def inject_now():
         """Provides the current time to all templates for footers and headers"""
-        currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
-        
+        user_currency = 'USD'
+        decimals = None
+
         # Optimization: Pull from current_user if authenticated to avoid redundant Admin queries
         if current_user.is_authenticated:
-            symbol = currency_map.get(current_user.currency, '$')
-            decimals = current_user.currency_decimals if current_user.currency_decimals is not None else 2
-        else:
-            # Safe defaults for login/onboarding pages
-            symbol = '$'
-            decimals = 2
+            user_currency = getattr(current_user, 'currency', 'USD')
+            decimals = current_user.currency_decimals
+        
+        locale = get_locale()
+        symbol = get_currency_symbol(user_currency, locale=locale)
+        if decimals is None:
+            decimals = get_currency_precision(user_currency)
         
         # Defensive lookup for ShopSetting to prevent recursive 500 errors during DB failure
         shop_info = None
@@ -234,7 +237,11 @@ def create_app(config_name=None):
             'currency_symbol': symbol, 
             'currency_decimals': decimals, 
             'shop_info': shop_info,
-            'languages': app.config['LANGUAGES']
+            'languages': app.config['LANGUAGES'],
+            'all_currencies': sorted([
+                (code, f"{get_currency_name(code, locale=locale)} ({get_currency_symbol(code, locale=locale)})")
+                for code in list_currencies()
+            ], key=lambda x: x[1])
         }
     
     @app.errorhandler(401)

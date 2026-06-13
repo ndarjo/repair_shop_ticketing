@@ -357,11 +357,11 @@ class DocumentService:
         
         # UI Integrity: Ensure PDF matches the viewing admin's currency settings
         from flask_login import current_user
-        currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
         # Safely get currency info from current user (PDF is generated in request context)
-        symbol = currency_map.get(getattr(current_user, 'currency', 'USD'), '$')
-        decimals = getattr(current_user, 'currency_decimals', 2)
-        if decimals is None: decimals = 2
+        user_currency = getattr(current_user, 'currency', 'USD')
+        symbol = get_currency_symbol(user_currency, locale=get_locale())
+        decimals = getattr(current_user, 'currency_decimals', None)
+        if decimals is None: decimals = get_currency_precision(user_currency)
 
         buffer = io.BytesIO()
         page_width = 80 * mm

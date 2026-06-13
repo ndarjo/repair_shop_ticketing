@@ -64,11 +64,12 @@
 
                             <div class="mb-3">
                                 <label for="currency" class="form-label">{{ _('Primary Currency') }}</label>
-                                <select id="currency" name="currency" class="form-select">
-                                    <option value="USD" {% if current_user.currency == 'USD' %}selected{% endif %}>{{ _('US Dollar ($)') }}</option>
-                                    <option value="IDR" {% if current_user.currency == 'IDR' %}selected{% endif %}>{{ _('Indonesian Rupiah (Rp)') }}</option>
-                                    <option value="EUR" {% if current_user.currency == 'EUR' %}selected{% endif %}>{{ _('Euro (€)') }}</option>
-                                    <option value="GBP" {% if current_user.currency == 'GBP' %}selected{% endif %}>{{ _('British Pound (£)') }}</option>
+                                <select name="currency" class="form-select">
+                                    {% for code, label in all_currencies %}
+                                        <option value="{{ code }}" {% if current_user.currency == code %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
                                 </select>
                                 <div class="form-text">{{ _('This will be used for all invoices and financial reports.') }}</div>
                             </div>
