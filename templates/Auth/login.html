@@ -1,31 +1,31 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Login') }} - Repair Shop{% endblock %}
+{% block title %}{{ _('Login') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-4">
-        <div class="card mt-5 shadow">
+        <div class="card mt-5 shadow-sm">
             <div class="card-body">
                 <div class="text-center mb-4">
                     {% if shop_info and shop_info.logo_path %}
-                        <img src="{{ url_for('static', filename='uploads/logos/' + shop_info.logo_path) }}" alt="Logo" class="brand-logo-login mb-3">
+                        <img src="{{ url_for('static', filename='uploads/logos/' + shop_info.logo_path) }}" alt="{{ shop_info.shop_name or _('Shop') }} Logo" class="brand-logo-login mb-3" style="max-height: 100px; width: auto; object-fit: contain;">
                     {% endif %}
-                    <h3>🛠️ {{ shop_info.shop_name if shop_info else _('Staff Login') }}</h3>
+                    <h3>🛠️ {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Staff Login') }}</h3>
                     <p class="text-muted">{{ _('Enter credentials to continue') }}</p>
                 </div>
-                <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
+                <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
                         <label for="username" class="form-label">{{ _('Username') }}</label>
                         <input type="text" id="username" name="username" class="form-control" 
-                               value="{{ last_username or '' }}" required autofocus autocomplete="username">
+                               value="{{ last_username or '' }}" required autofocus autocomplete="username" placeholder="{{ _('Username') }}">
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">{{ _('Password') }}</label>
-                        <input type="password" id="password" name="password" class="form-control" required autocomplete="current-password">
+                        <input type="password" id="password" name="password" class="form-control" required autocomplete="current-password" placeholder="{{ _('Password') }}">
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">{{ _('Sign In') }}</button>
+                    <button type="submit" class="btn btn-outline-primary w-100">{{ _('Sign In') }}</button>
                 </form>
             </div>
             <div class="card-footer bg-transparent border-top-0 pb-4">
@@ -36,7 +36,7 @@
                     <ul class="dropdown-menu">
                         {% for code, name in languages.items() %}
                             <li><a class="dropdown-item {% if code == current_locale %}active{% endif %}" 
-                                   href="{{ url_for('auth.set_language', code=code) }}">{{ name }}</a></li>
+                                   href="{{ url_for('auth.set_language', code=code, next=request.full_path) }}">{{ name }}</a></li>
                         {% endfor %}
                     </ul>
                 </div>

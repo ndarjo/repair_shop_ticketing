@@ -1,23 +1,24 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
 
-{% block title %}{{ _('Customers - Repair Shop') }}{% endblock %}
+{% block title %}{{ _('Customers') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h2>{{ _('Customer Directory') }}</h2>
     {% if current_user.has_permission('create_customer') %}
-    <a href="{{ url_for('customer.new_customer') }}" class="btn btn-primary">{{ _('+ New Customer') }}</a>
+    <a href="{{ url_for('customer.new_customer') }}" class="btn btn-outline-primary"><i class="fas fa-plus me-1" aria-hidden="true"></i> {{ _('New Customer') }}</a>
     {% endif %}
 </div>
 
 <div class="row mb-4">
     <div class="col-md-6">
         <form action="{{ url_for('customer.customers_list') }}" method="GET" class="d-flex">
-            <input type="text" name="q" class="form-control me-2" placeholder="{{ _('Search by name or phone...') }}" value="{{ search_query or '' }}">
-            <button type="submit" class="btn btn-primary">{{ _('Search') }}</button>
+            <label for="customer_search" class="visually-hidden">{{ _('Search Customers') }}</label>
+            <input type="text" id="customer_search" name="q" class="form-control me-2" placeholder="{{ _('Search by name or phone...') }}" value="{{ search_query or '' }}">
+            <button type="submit" class="btn btn-outline-primary"><i class="fas fa-search me-1" aria-hidden="true"></i> {{ _('Search') }}</button>
             {% if search_query %}
-                <a href="{{ url_for('customer.customers_list') }}" class="btn btn-outline-secondary ms-2 text-nowrap">{{ _('Clear') }}</a>
+                <a href="{{ url_for('customer.customers_list') }}" class="btn btn-outline-secondary ms-2 text-nowrap"><i class="fas fa-times me-1" aria-hidden="true"></i> {{ _('Clear') }}</a>
             {% endif %}
         </form>
     </div>
@@ -27,7 +28,7 @@
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead>
-                <tr>
+                <tr class="table-light">
                     <th>{{ _('Name') }}</th>
                     <th>{{ _('Phone') }}</th>
                     <th class="text-center">{{ _('Devices') }}</th>
@@ -38,14 +39,16 @@
             <tbody>
                 {% for customer in customers.items %}
                 <tr>
-                    <td><strong>{{ customer.name }}</strong></td>
-                    <td>{{ customer.phone }}</td>
+                    <td><strong class="text-break">{{ customer.name }}</strong></td>
+                    <td class="text-nowrap">{{ customer.phone or _('N/A') }}</td>
                     <td class="text-center"><span class="badge bg-secondary">{{ customer.devices|length }}</span></td>
-                    <td>{{ customer.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at else _('Unknown') }}</td>
                     <td class="text-end">
                         <a href="{{ url_for('customer.view_customer', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View Profile') }}</a>
                     </td>
                 </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-muted py-4">{{ _('No customers found matching your search.') if search_query else _('No customers found.') }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>

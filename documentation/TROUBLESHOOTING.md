@@ -45,6 +45,22 @@ flask seed
 
 ---
 
+## 🌐 Internationalization & Translations
+
+### 1. `AttributeError: module 'jinja2.ext' has no attribute 'autoescape'`
+**Symptoms:** Running `python manage_translations.py extract` (or update/init) fails with a traceback ending in an `AttributeError` for `autoescape`.
+
+**Cause:** This occurs on newer Python environments (3.10+) using Jinja2 3.x. The extensions `jinja2.ext.autoescape` and `jinja2.ext.with_` were removed because they are now part of the Jinja2 core.
+
+**Solution:**
+Update your `babel.cfg` file in the project root to remove the legacy extensions. A modern `babel.cfg` should look like this:
+```ini
+[python: **.py]
+[jinja2: **/templates/**.html]
+```
+
+---
+
 ## 🔐 Encryption & Security
 
 ### 1. `cryptography.fernet.InvalidToken`

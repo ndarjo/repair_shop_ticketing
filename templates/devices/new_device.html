@@ -1,35 +1,40 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Add Device - Repair Shop') }}{% endblock %}
+{% block title %}{{ _('Add New Device') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">{{ _('Add New Device') }}</h4>
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <h2 class="mb-0 visually-hidden">{{ _('Add New Device') }}</h2> {# Hidden as it will be in card header #}
+            <a href="{{ url_for('device.devices_list') }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i> {{ _('Back to Inventory') }}</a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">{{ _('Add New Device') }}</h5>
             </div>
             <div class="card-body">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row g-3">
                         <div class="col-md-12">
-                            <div class="d-flex justify-content-between align-items-baseline">
-                                <label class="form-label">{{ _('Owner (Customer)') }} *</label>
+                            <div class="d-flex justify-content-between align-items-baseline flex-wrap">
+                                <label for="customer_id" class="form-label">{{ _('Owner (Customer)') }} *</label>
                                 {% if current_user.has_permission('create_customer') %}
-                                <a href="{{ url_for('customer.new_customer') }}" class="btn btn-link btn-sm p-0">{{ _('Add New Customer') }}</a>
+                                <a href="{{ url_for('customer.new_customer') }}" class="btn btn-link btn-sm p-0 mb-2">{{ _('Add New Customer') }}</a>
                                 {% endif %}
                             </div>
-                            <select name="customer_id" class="form-select" required>
+                            <select id="customer_id" name="customer_id" class="form-select" required autofocus>
                                 <option value="">{{ _('-- Select Customer --') }}</option>
                                 {% for customer in customers %}
-                                <option value="{{ customer.id }}">{{ customer.name }} ({{ customer.phone }})</option>
+                                <option value="{{ customer.id }}" {% if customer.id|string == request.args.get('customer_id') or customer.id == customer_id %}selected{% endif %}>{{ customer.name }}{% if customer.phone %} ({{ customer.phone }}){% endif %}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Device Type') }} *</label>
-                            <select name="device_type" class="form-select" required>
+                            <label for="device_type" class="form-label">{{ _('Device Type') }} *</label>
+                            <select id="device_type" name="device_type" class="form-select" required>
                                 <option value="">{{ _('-- Select --') }}</option>
                                 <option value="Phone">{{ _('Phone') }}</option>
                                 <option value="Laptop">{{ _('Laptop') }}</option>
@@ -41,24 +46,24 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Brand') }} *</label>
-                            <input type="text" name="brand" class="form-control" placeholder="{{ _('e.g. Apple, Dell') }}" required>
+                            <label for="brand" class="form-label">{{ _('Brand') }} *</label>
+                            <input type="text" id="brand" name="brand" class="form-control" placeholder="{{ _('e.g., Apple, Dell') }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Model Number') }}</label>
-                            <input type="text" name="model_number" class="form-control" placeholder="{{ _('e.g. A2633') }}">
+                            <label for="model_number" class="form-label">{{ _('Model Number') }}</label>
+                            <input type="text" id="model_number" name="model_number" class="form-control" placeholder="{{ _('e.g., A2633') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('CPU/Processor') }}</label>
-                            <input type="text" name="cpu" class="form-control" placeholder="{{ _('e.g. Core i7') }}">
+                            <label for="cpu" class="form-label">{{ _('CPU/Processor') }}</label>
+                            <input type="text" id="cpu" name="cpu" class="form-control" placeholder="{{ _('e.g., Core i7') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('RAM') }}</label>
-                            <input type="text" name="ram" class="form-control" placeholder="{{ _('e.g. 16GB') }}">
+                            <label for="ram" class="form-label">{{ _('RAM') }}</label>
+                            <input type="text" id="ram" name="ram" class="form-control" placeholder="{{ _('e.g., 16GB') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Storage Type') }}</label>
-                            <select name="storage_type" class="form-select">
+                            <label for="storage_type" class="form-label">{{ _('Storage Type') }}</label>
+                            <select id="storage_type" name="storage_type" class="form-select">
                                 <option value="">{{ _('-- Select --') }}</option>
                                 <option value="HDD">{{ _('HDD') }}</option>
                                 <option value="SSD">{{ _('SSD') }}</option>
@@ -66,24 +71,24 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Storage Capacity') }}</label>
-                            <input type="text" name="storage_capacity" class="form-control" placeholder="{{ _('e.g. 512GB') }}">
+                            <label for="storage_capacity" class="form-label">{{ _('Storage Capacity') }}</label>
+                            <input type="text" id="storage_capacity" name="storage_capacity" class="form-control" placeholder="{{ _('e.g., 512GB') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Serial Number') }}</label>
-                            <input type="text" name="serial_number" class="form-control" placeholder="{{ _('e.g. C02ABCDEFGH') }}">
+                            <label for="serial_number" class="form-label">{{ _('Serial Number') }}</label>
+                            <input type="text" id="serial_number" name="serial_number" class="form-control" placeholder="{{ _('e.g., C02ABCDEFGH') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Color') }}</label>
-                            <input type="text" name="color" class="form-control" placeholder="{{ _('e.g. Space Gray') }}">
+                            <label for="color" class="form-label">{{ _('Color') }}</label>
+                            <input type="text" id="color" name="color" class="form-control" placeholder="{{ _('e.g., Space Gray') }}">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">{{ _('Notes') }}</label>
-                            <textarea name="notes" class="form-control" rows="2" placeholder="{{ _('Any additional notes about the device...') }}"></textarea>
+                            <label for="notes" class="form-label">{{ _('Notes') }}</label>
+                            <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="{{ _('Any additional notes about the device...') }}"></textarea>
                         </div>
                         <div class="col-12 mt-4 d-flex justify-content-end gap-2">
-                            <a href="{{ url_for('device.devices_list') }}" class="btn btn-secondary px-4">{{ _('Cancel') }}</a>
-                            <button type="submit" class="btn btn-primary px-4">{{ _('Add Device') }}</button>
+                            <a href="{{ url_for('device.devices_list') }}" class="btn btn-outline-secondary px-4">{{ _('Cancel') }}</a>
+                            <button type="submit" class="btn btn-outline-primary px-4"><i class="fas fa-plus me-1" aria-hidden="true"></i> {{ _('Add Device') }}</button>
                         </div>
                     </div>
                 </form>

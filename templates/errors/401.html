@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Login Required') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 text-center">
+        <div class="display-1 text-info mb-4"><i class="fas fa-lock" aria-hidden="true"></i></div>
+        <h1 class="display-4">{{ _('Authentication Required') }}</h1>
+        <p class="lead text-muted mb-5">
+            {{ _("You must be logged in to access this page. Your session may have expired.") }}
+        </p>
+        <div class="d-flex gap-2 justify-content-center">
+            <a href="{{ url_for('auth.login', next=request.full_path) }}" class="btn btn-outline-primary btn-lg px-5">
+                <i class="fas fa-sign-in-alt me-2" aria-hidden="true"></i>{{ _('Sign In') }}
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

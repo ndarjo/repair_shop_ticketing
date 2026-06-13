@@ -1,33 +1,51 @@
 <!-- Modals for New Customer/Device -->
-<div class="modal fade" id="newCustomerModal" tabindex="-1">
+<div class="modal fade" id="newCustomerModal" tabindex="-1" aria-labelledby="newCustomerModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header"><h5>{{ _('Add New Customer') }}</h5></div>
+            <div class="modal-header">
+                <h5 class="modal-title" id="newCustomerModalLabel">{{ _('Add New Customer') }}</h5>
+                <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <div class="modal-body">
                 <form id="newCustomerForm">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="text" name="name" class="form-control mb-2" placeholder="{{ _('Full Name') }}" required>
-                    <input type="tel" name="phone" class="form-control mb-2" placeholder="{{ _('Phone Number') }}" required autocomplete="tel">
-                    <textarea name="address" class="form-control" placeholder="{{ _('Address (Optional)') }}"></textarea>
+                    <div class="mb-3">
+                        <label for="cust_name" class="form-label">{{ _('Full Name') }} *</label>
+                        <input type="text" name="name" id="cust_name" class="form-control" placeholder="{{ _('Full Name') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cust_phone" class="form-label">{{ _('Phone Number') }} *</label>
+                        <input type="tel" name="phone" id="cust_phone" class="form-control" placeholder="{{ _('Phone Number') }}" required autocomplete="tel">
+                    </div>
+                    <div class="mb-3">
+                        <label for="cust_address" class="form-label">{{ _('Address (Optional)') }}</label>
+                        <textarea name="address" id="cust_address" class="form-control" rows="2" placeholder="{{ _('Address (Optional)') }}"></textarea>
+                    </div>
                 </form>
             </div>
-            <div class="modal-footer"><button type="button" id="saveCustomerBtn" class="btn btn-primary">{{ _('Save Customer') }}</button></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                <button type="button" id="saveCustomerBtn" class="btn btn-outline-primary">{{ _('Save Customer') }}</button>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="newDeviceModal" tabindex="-1">
+<div class="modal fade" id="newDeviceModal" tabindex="-1" aria-labelledby="newDeviceModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header"><h5>{{ _('Add New Device for Customer') }}</h5></div>
+            <div class="modal-header">
+                <h5 class="modal-title" id="newDeviceModalLabel">{{ _('Add New Device for Customer') }}</h5>
+                <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <div class="modal-body">
                 <form id="newDeviceForm">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="customer_id" id="modal_device_customer_id">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Device Type') }} *</label>
-                            <select name="device_type" class="form-select" required>
+                            <label for="dev_type" class="form-label">{{ _('Device Type') }} *</label>
+                            <select name="device_type" id="dev_type" class="form-select" required>
                                 <option value="">{{ _('-- Select --') }}</option>
                                 <option value="Phone">{{ _('Phone') }}</option>
                                 <option value="Laptop">{{ _('Laptop') }}</option>
@@ -39,24 +57,24 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Brand') }} *</label>
-                            <input type="text" name="brand" class="form-control" placeholder="{{ _('e.g. Apple, Dell') }}" required>
+                            <label for="dev_brand" class="form-label">{{ _('Brand') }} *</label>
+                            <input type="text" name="brand" id="dev_brand" class="form-control" placeholder="{{ _('e.g. Apple, Dell') }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Model Number') }}</label>
-                            <input type="text" name="model_number" class="form-control" placeholder="{{ _('e.g. A2633') }}">
+                            <label for="dev_model" class="form-label">{{ _('Model Number') }}</label>
+                            <input type="text" name="model_number" id="dev_model" class="form-control" placeholder="{{ _('e.g. A2633') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('CPU/Processor') }}</label>
-                            <input type="text" name="cpu" class="form-control" placeholder="{{ _('e.g. Core i7') }}">
+                            <label for="dev_cpu" class="form-label">{{ _('CPU/Processor') }}</label>
+                            <input type="text" name="cpu" id="dev_cpu" class="form-control" placeholder="{{ _('e.g. Core i7') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('RAM') }}</label>
-                            <input type="text" name="ram" class="form-control" placeholder="{{ _('e.g. 16GB') }}">
+                            <label for="dev_ram" class="form-label">{{ _('RAM') }}</label>
+                            <input type="text" name="ram" id="dev_ram" class="form-control" placeholder="{{ _('e.g. 16GB') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Storage Type') }}</label>
-                            <select name="storage_type" class="form-select">
+                            <label for="dev_storage_type" class="form-label">{{ _('Storage Type') }}</label>
+                            <select name="storage_type" id="dev_storage_type" class="form-select">
                                 <option value="">{{ _('-- Select --') }}</option>
                                 <option value="HDD">{{ _('HDD') }}</option>
                                 <option value="SSD">{{ _('SSD') }}</option>
@@ -64,23 +82,23 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Storage Capacity') }}</label>
-                            <input type="text" name="storage_capacity" class="form-control" placeholder="{{ _('e.g. 512GB') }}">
+                            <label for="dev_storage_cap" class="form-label">{{ _('Storage Capacity') }}</label>
+                            <input type="text" name="storage_capacity" id="dev_storage_cap" class="form-control" placeholder="{{ _('e.g. 512GB') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Serial Number') }}</label>
-                            <input type="text" name="serial_number" class="form-control" placeholder="{{ _('e.g. C02ABCDEFGH') }}">
+                            <label for="dev_sn" class="form-label">{{ _('Serial Number') }}</label>
+                            <input type="text" name="serial_number" id="dev_sn" class="form-control" placeholder="{{ _('e.g. C02ABCDEFGH') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">{{ _('Color') }}</label>
-                            <input type="text" name="color" class="form-control" placeholder="{{ _('e.g. Space Gray') }}">
+                            <label for="dev_color" class="form-label">{{ _('Color') }}</label>
+                            <input type="text" name="color" id="dev_color" class="form-control" placeholder="{{ _('e.g. Space Gray') }}">
                         </div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                <button type="button" id="saveDeviceBtn" class="btn btn-primary">{{ _('Save Device') }}</button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                <button type="button" id="saveDeviceBtn" class="btn btn-outline-primary">{{ _('Save Device') }}</button>
             </div>
         </div>
     </div>

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>{{ _('Manage Locations') }}</h2>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">{{ _('+ Add New Location') }}</button>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">{{ _('+ Add New Location') }}</button>
 </div>
 
 <div class="card shadow-sm">
@@ -18,21 +18,31 @@
                     <th>{{ _('Phone') }}</th>
                     <th>{{ _('Email') }}</th>
                     <th>{{ _('Created') }}</th>
-                    <th class="text-end">{{ _('Actions') }}</th>
+                    <th class="text-end">{{ _('Action') }}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for loc in locations %}
                 <tr>
                     <td><strong>{{ loc.name }}</strong></td>
-                    <td>{{ loc.address or 'N/A' }}</td>
-                    <td>{{ loc.phone or 'N/A' }}</td>
-                    <td>{{ loc.email or 'N/A' }}</td>
-                    <td>{{ loc.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td style="white-space: pre-wrap;">{{ loc.address or _('N/A') }}</td>
+                    <td class="text-nowrap">{{ loc.phone or _('N/A') }}</td>
+                    <td class="text-break">{{ loc.email or _('N/A') }}</td>
+                    <td class="text-nowrap">{{ loc.created_at.strftime('%Y-%m-%d') if loc.created_at else '' }}</td>
                     <td class="text-end">
-                        {# Future: Add Edit/Delete actions here #}
-                        <button class="btn btn-sm btn-outline-secondary" disabled>{{ _('Edit') }}</button>
-                        <button class="btn btn-sm btn-outline-danger" disabled>{{ _('Delete') }}</button>
+                        <button class="btn btn-sm btn-outline-warning edit-location-btn" 
+                                data-bs-toggle="modal" data-bs-target="#editLocationModal"
+                                data-id="{{ loc.id }}" 
+                                data-name="{{ loc.name }}"
+                                data-address="{{ loc.address or '' }}"
+                                data-phone="{{ loc.phone or '' }}"
+                                data-email="{{ loc.email or '' }}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <form action="{{ url_for('admin.delete_location', location_id=loc.id) }}" method="POST" class="d-inline confirm-action" data-confirm="{{ _('Are you sure? This will affect all users and tickets linked to this branch.') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                        </form>
                     </td>
                 </tr>
                 {% else %}
@@ -51,32 +61,73 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
                     <h5 class="modal-title" id="addLocationModalLabel">{{ _('Add New Location') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="locationName" class="form-label">{{ _('Location Name') }} *</label>
-                        <input type="text" class="form-control" id="locationName" name="name" required placeholder="{{ _('e.g., Downtown Branch') }}">
+                        <input type="text" class="form-control" id="locationName" name="name" value="{{ name or '' }}" required placeholder="{{ _('e.g., Downtown Branch') }}">
                     </div>
                     <div class="mb-3">
                         <label for="locationAddress" class="form-label">{{ _('Address') }}</label>
-                        <textarea class="form-control" id="locationAddress" name="address" rows="2" placeholder="{{ _('Street, City, State, Zip') }}"></textarea>
+                        <textarea class="form-control" id="locationAddress" name="address" rows="2" placeholder="{{ _('Street, City, State, Zip') }}">{{ address or '' }}</textarea>
                     </div>
                     <div class="mb-3">
                         <label for="locationPhone" class="form-label">{{ _('Phone') }}</label>
-                        <input type="tel" class="form-control" id="locationPhone" name="phone" placeholder="{{ _('+1 (555) 123-4567') }}">
+                        <input type="tel" class="form-control" id="locationPhone" name="phone" value="{{ phone or '' }}" placeholder="{{ _('+1 (555) 123-4567') }}">
                     </div>
                     <div class="mb-3">
                         <label for="locationEmail" class="form-label">{{ _('Email') }}</label>
-                        <input type="email" class="form-control" id="locationEmail" name="email" placeholder="{{ _('branch@example.com') }}">
+                        <input type="email" class="form-control" id="locationEmail" name="email" value="{{ email or '' }}" placeholder="{{ _('branch@example.com') }}">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ _('Create Location') }}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-outline-primary">{{ _('Create Location') }}</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Edit Location Modal -->
+<div class="modal fade" id="editLocationModal" tabindex="-1" aria-labelledby="editLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editLocationForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editLocationModalLabel">{{ _('Edit Location') }}</h5>
+                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editLocationName" class="form-label">{{ _('Location Name') }} *</label>
+                        <input type="text" class="form-control" id="editLocationName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editLocationAddress" class="form-label">{{ _('Address') }}</label>
+                        <textarea class="form-control" id="editLocationAddress" name="address" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editLocationPhone" class="form-label">{{ _('Phone') }}</label>
+                        <input type="tel" class="form-control" id="editLocationPhone" name="phone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editLocationEmail" class="form-label">{{ _('Email') }}</label>
+                        <input type="email" class="form-control" id="editLocationEmail" name="email">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-outline-warning">{{ _('Update Location') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/locations.js') }}" defer></script>
 {% endblock %}

@@ -3,9 +3,9 @@
 {% block title %}{{ _('Edit Ticket') }} {{ ticket.ticket_number }}{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header bg-warning">
-        <h4 class="mb-0">{{ _('Edit Repair Ticket:') }} {{ ticket.ticket_number }}</h4>
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-warning text-dark">
+        <h4 class="mb-0"><i class="fas fa-edit me-2"></i>{{ _('Edit Repair Ticket:') }} {{ ticket.ticket_number }}</h4>
     </div>
     <div class="card-body">
         {% if ticket.current_phase == 'Already Taken' %}
@@ -13,41 +13,42 @@
             <i class="fas fa-exclamation-triangle me-2"></i> <strong>{{ _('Note:') }}</strong> {{ _('This ticket is archived (Already Taken). You are editing it with administrative privileges.') }}
         </div>
         {% endif %}
-        <form method="POST">
+        <form action="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label class="form-label">{{ _('Customer') }}</label>
-                    <input type="text" class="form-control" value="{{ ticket.customer.name }}" readonly disabled>
+                    <label for="customer_display" class="form-label fw-bold">{{ _('Customer') }}</label>
+                    <input type="text" id="customer_display" class="form-control bg-light" value="{{ ticket.customer.name if ticket.customer else '-' }}" readonly disabled>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">{{ _('Device') }}</label>
-                    <input type="text" class="form-control" value="{{ ticket.device.display }}" readonly disabled>
+                    <label for="device_display" class="form-label fw-bold">{{ _('Device') }}</label>
+                    <input type="text" id="device_display" class="form-control bg-light" value="{{ ticket.device.display if ticket.device else '-' }}" readonly disabled>
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label">{{ _('Items Included') }}</label>
-                    <input type="text" name="items_included" class="form-control" value="{{ ticket.items_included }}" required>
+                    <label for="items_included" class="form-label fw-bold">{{ _('Items Included') }}</label>
+                    <input type="text" name="items_included" id="items_included" class="form-control" value="{{ ticket.items_included or '' }}" placeholder="{{ _('e.g., Original Charger, Leather Case') }}">
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label">{{ _('Problem Description') }}</label>
-                    <textarea name="problem_description" class="form-control" rows="3" required>{{ ticket.problem_description }}</textarea>
+                    <label for="problem_description" class="form-label fw-bold">{{ _('Problem Description') }} *</label>
+                    <textarea name="problem_description" id="problem_description" class="form-control" rows="3" required placeholder="{{ _('Describe the issue in detail...') }}">{{ ticket.problem_description or '' }}</textarea>
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">{{ _('Technician Assignment') }}</label>
-                    <select name="assigned_to" class="form-select">
+                    <label for="assigned_to" class="form-label fw-bold">{{ _('Technician Assignment') }}</label>
+                    <select name="assigned_to" id="assigned_to" class="form-select">
                         <option value="">{{ _('-- Unassigned --') }}</option>
-                        {% for user in users %}
-                            <option value="{{ user.id }}" {% if ticket.assigned_to == user.id %}selected{% endif %}>{{ user.full_name }}</option>
+                        {% for user in (users or []) %}
+                            <option value="{{ user.id }}" {% if ticket.assigned_to == user.id %}selected{% endif %}>{{ user.full_name or user.username }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <div class="col-12 text-end mt-4">
-                    <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-secondary px-4">{{ _('Cancel') }}</a>
-                    <button type="submit" class="btn btn-primary px-4">{{ _('Save Changes') }}</button>
+                    <hr>
+                    <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-outline-secondary px-4 me-2">{{ _('Cancel') }}</a>
+                    <button type="submit" class="btn btn-outline-primary btn-lg px-5">{{ _('Save Changes') }}</button>
                 </div>
             </div>
         </form>

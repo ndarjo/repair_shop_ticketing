@@ -12,9 +12,17 @@ class BasicTests(unittest.TestCase):
         self.client = self.app.test_client()
 
         # Seed ShopSetting to mark setup as completed so tests don't redirect to onboarding
-        loc = db.session.execute(db.select(Location)).scalar()
-        setting = ShopSetting(location_id=loc.id if loc else 1, shop_name="Test Shop", setup_completed=True)
-        db.session.add(setting)
+        loc = db.session.scalar(db.select(Location))
+        setting = db.session.scalar(db.select(ShopSetting))
+        if not setting:
+            setting = ShopSetting(
+                location_id=loc.id if loc else 1, 
+                shop_name="Test Shop", 
+                setup_completed=True
+            )
+            db.session.add(setting)
+        else:
+            setting.setup_completed = True
         db.session.commit()
 
     def tearDown(self):
@@ -29,7 +37,8 @@ class BasicTests(unittest.TestCase):
 
     def test_superuser_creation(self):
         """Verify that the superuser initialization works"""
-        user = db.session.execute(db.select(User).filter_by(username='admin')).scalar()
+        admin_username = os.getenv('INITIAL_ADMIN_USERNAME') or 'admin'
+        user = db.session.scalar(db.select(User).where(func.lower(User.username) == func.lower(admin_username)))
         self.assertIsNotNone(user)
         self.assertTrue(user.is_superuser)
 
@@ -38,7 +47,7 @@ class BasicTests(unittest.TestCase):
         c = Customer(name="Test User", phone="123456789")
         db.session.add(c)
         db.session.commit()
-        self.assertEqual(db.session.execute(db.select(func.count(Customer.id))).scalar(), 1)
+        self.assertEqual(db.session.scalar(db.select(func.count(Customer.id))), 1)
 
     def test_customer_encryption_consistency(self):
         """Verify that customer PII can be decrypted with the current key"""
@@ -61,10 +70,13 @@ class BasicTests(unittest.TestCase):
 
     def test_login_logic(self):
         """Verify authentication flow"""
-        admin_password = os.getenv('INITIAL_ADMIN_PASSWORD', 'change-me-immediately')
+        admin_username = os.getenv('INITIAL_ADMIN_USERNAME') or 'admin'
+        admin_password = os.getenv('INITIAL_ADMIN_PASSWORD') or 'change-me-immediately'
+        if len(admin_password) < 8:
+            admin_password = 'change-me-immediately'
         # Admin is created by default in app initialization context
         response = self.client.post('/auth/login', data=dict(
-            username='admin',
+            username=admin_username,
             password=admin_password
         ), follow_redirects=True)
         self.assertEqual(response.status_code, 200)
@@ -72,9 +84,7 @@ class BasicTests(unittest.TestCase):
 
     def test_location_scoping_integrity(self):
         """Verify that records are logically separated by location_id for multi-tenancy"""
-        # Clear seeded location to control test state
-        db.session.execute(db.delete(Location))
-        
+        # Create fresh branches to verify isolation
         loc1 = Location(name="Branch North")
         loc2 = Location(name="Branch South")
         db.session.add_all([loc1, loc2])
@@ -86,7 +96,7 @@ class BasicTests(unittest.TestCase):
         db.session.commit()
         
         # Verify that a query scoped to Location 1 does not leak Location 2 data
-        results = db.session.execute(db.select(Customer).filter_by(location_id=loc1.id)).scalars().all()
+        results = db.session.scalars(db.select(Customer).filter_by(location_id=loc1.id)).all()
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].name, "North Client")
 
@@ -94,20 +104,22 @@ class BasicTests(unittest.TestCase):
         """Verify the Ticket.timeline property merges phase logs and notes correctly"""
         from services.ticket import RepairTicketService
         
-        loc = db.session.execute(db.select(Location)).scalar()
+        loc = db.session.scalar(db.select(Location))
         cust = Customer(name="Timeline Test", phone="555", location_id=loc.id)
         dev = Device(customer=cust, device_type="Phone", brand="TestBrand")
         db.session.add_all([cust, dev])
         db.session.flush()
         
+        admin_username = os.getenv('INITIAL_ADMIN_USERNAME') or 'admin'
+        admin = db.session.scalar(db.select(User).where(func.lower(User.username) == func.lower(admin_username)))
         # Use the service to ensure initial phase logs are created
         ticket = RepairTicketService.create_ticket(
             customer_id=cust.id, device_id=dev.id, location_id=loc.id,
-            creator_id=1, items_included="None", problem_description="Broken Screen"
+            creator_id=admin.id, items_included="None", problem_description="Broken Screen"
         )
         
         # Add a manual note
-        note = Note(ticket=ticket, user_id=1, content="Started diagnostic", note_type="Technical")
+        note = Note(ticket=ticket, user_id=admin.id, content="Started diagnostic", note_type="Technical")
         db.session.add(note)
         db.session.commit()
         
@@ -119,9 +131,12 @@ class BasicTests(unittest.TestCase):
 
     def test_inventory_and_services_views(self):
         """Verify that the inventory and services templates render correctly for admin"""
-        admin_password = os.getenv('INITIAL_ADMIN_PASSWORD', 'change-me-immediately')
+        admin_username = os.getenv('INITIAL_ADMIN_USERNAME') or 'admin'
+        admin_password = os.getenv('INITIAL_ADMIN_PASSWORD') or 'change-me-immediately'
+        if len(admin_password) < 8:
+            admin_password = 'change-me-immediately'
         self.client.post('/auth/login', data=dict(
-            username='admin',
+            username=admin_username,
             password=admin_password
         ), follow_redirects=True)
         

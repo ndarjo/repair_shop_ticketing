@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Unsupported Request') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 text-center">
+        <div class="display-1 text-secondary mb-4"><i class="fas fa-file-code" aria-hidden="true"></i></div>
+        <h1 class="display-4">{{ _('Unsupported Request') }}</h1>
+        <p class="lead text-muted mb-5">
+            {{ _("The server was unable to process the request format. This often happens due to an incompatible browser extension or a technical mismatch.") }}
+        </p>
+        <div class="d-flex gap-2 justify-content-center">
+            <button onclick="window.history.back();" class="btn btn-outline-secondary btn-lg px-4">
+                <i class="fas fa-arrow-left me-2" aria-hidden="true"></i>{{ _('Go Back') }}
+            </button>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-lg px-4">
+                <i class="fas fa-home me-2" aria-hidden="true"></i>{{ _('Back to Dashboard') }}
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,19 +1,34 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
 
-{% block title %}{{ _('Devices - Repair Shop') }}{% endblock %}
+{% block title %}{{ _('Devices') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h2>{{ _('Device Inventory') }}</h2>
-    <a href="{{ url_for('device.new_device') }}" class="btn btn-primary">{{ _('+ Add Device') }}</a>
+    {% if current_user.has_permission('create_device') %}
+    <a href="{{ url_for('device.new_device') }}" class="btn btn-outline-primary"><i class="fas fa-plus me-1" aria-hidden="true"></i> {{ _('Add Device') }}</a>
+    {% endif %}
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <form action="{{ url_for('device.devices_list') }}" method="GET" class="d-flex">
+            <label for="device_search" class="visually-hidden">{{ _('Search Devices') }}</label>
+            <input type="text" id="device_search" name="q" class="form-control me-2" placeholder="{{ _('Search by model or serial...') }}" value="{{ search_query or '' }}">
+            <button type="submit" class="btn btn-outline-primary"><i class="fas fa-search me-1" aria-hidden="true"></i> {{ _('Search') }}</button>
+            {% if search_query %}
+                <a href="{{ url_for('device.devices_list') }}" class="btn btn-outline-secondary ms-2 text-nowrap"><i class="fas fa-times me-1" aria-hidden="true"></i> {{ _('Clear') }}</a>
+            {% endif %}
+        </form>
+    </div>
 </div>
 
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead>
-                <tr>
+                <tr class="table-light">
                     <th>{{ _('Device') }}</th>
                     <th>{{ _('Owner') }}</th>
                     <th>{{ _('Serial Number') }}</th>
@@ -25,12 +40,18 @@
                 {% for device in devices.items %}
                 <tr>
                     <td>
-                        <div class="fw-bold">{{ device.display }}</div>
+                        <div class="fw-bold text-break">{{ device.display }}</div>
                         <small class="text-muted">{{ _(device.device_type) }}</small>
                     </td>
-                    <td><a href="{{ url_for('customer.view_customer', customer_id=device.customer.id) }}">{{ device.customer.name }}</a></td>
-                    <td>{{ device.serial_number or 'N/A' }}</td>
-                    <td class="text-center"><span class="badge bg-info text-dark">{{ device.tickets|length }}</span></td>
+                    <td>
+                        {% if device.customer %}
+                            <a href="{{ url_for('customer.view_customer', customer_id=device.customer.id) }}" class="text-break">{{ device.customer.name }}</a>
+                        {% else %}
+                            <span class="text-muted">{{ _('N/A') }}</span>
+                        {% endif %}
+                    </td>
+                    <td><code class="text-break">{{ device.serial_number or _('N/A') }}</code></td>
+                    <td class="text-center"><span class="badge bg-secondary">{{ device.tickets|length }}</span></td>
                     <td class="text-end">
                         <a href="{{ url_for('device.view_device', device_id=device.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
                         {% if current_user.has_permission('edit_device') %}
@@ -38,12 +59,14 @@
                         {% endif %}
                     </td>
                 </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-muted py-4">{{ _('No devices found matching your search.') if search_query else _('No devices found in inventory.') }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     <div class="card-footer">
-        {{ render_pagination(devices, 'device.devices_list') }}
+        {{ render_pagination(devices, 'device.devices_list', q=search_query) }}
     </div>
 </div>
 {% endblock %}

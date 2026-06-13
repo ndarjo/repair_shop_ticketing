@@ -8,6 +8,8 @@ The system supports dynamic language discovery based on compiled translation fil
    ```bash
    python manage_translations.py extract
    ```
+   *Note: If you encounter an `AttributeError` regarding `jinja2.ext.autoescape`, ensure your `babel.cfg` does not include legacy extensions. See TROUBLESHOOTING.md for details.*
+
 2. **Initialize:** Create the translation catalog for the specific language.
    ```bash
    python manage_translations.py init fr
@@ -22,6 +24,10 @@ The system supports dynamic language discovery based on compiled translation fil
 If you modify the source code or templates, use the update command to scan for new strings and merge them into existing catalogs:
 ```bash
 python manage_translations.py update
+
+#Auto-Translate: Fills in the blanks automatically.
+python manage_translations.py translate
+
 # After editing the new strings in your .po files, re-compile:
 python manage_translations.py compile
 ```

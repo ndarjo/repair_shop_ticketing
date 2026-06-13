@@ -22,14 +22,14 @@ def require_permission(permission_name):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
-                if request.mimetype == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'error': 'Authentication required'}), 401
+                if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': _('Authentication required')}), 401
                 flash(_('Please log in first.'), 'error')
-                return redirect(url_for('auth.login'))
+                return redirect(url_for('auth.login', next=request.full_path))
             if not current_user.has_permission(permission_name):
                 current_app.logger.warning(f"Access denied for user {current_user.username} to permission {permission_name}")
-                if request.mimetype == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'error': 'Permission denied'}), 403
+                if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': _('Permission denied')}), 403
                 flash(_('You do not have permission to access this page.'), 'error')
                 return redirect(url_for('main.dashboard'))
             return f(*args, **kwargs)
@@ -42,13 +42,14 @@ def require_superuser():
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
-                if request.mimetype == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'error': 'Authentication required'}), 401
+                if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': _('Authentication required')}), 401
                 flash(_('Please log in first.'), 'error')
-                return redirect(url_for('auth.login'))
+                return redirect(url_for('auth.login', next=request.full_path))
             if not current_user.is_superuser:
-                if request.mimetype == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'error': 'Permission denied'}), 403
+                current_app.logger.warning(f"Access denied for non-superuser {current_user.username}")
+                if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'error': _('Permission denied')}), 403
                 flash(_('You do not have permission to access this page.'), 'error')
                 return redirect(url_for('main.dashboard'))
             return f(*args, **kwargs)

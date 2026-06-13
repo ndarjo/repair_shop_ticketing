@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from models import db, User
 from app import limiter
 from flask_babel import _
+from urllib.parse import urlparse
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -19,7 +20,7 @@ def login():
 
         if not username or not password:
             flash(_('Username and password are required'), 'error')
-            return render_template('Auth/login.html')
+            return render_template('Auth/login.html', last_username=username or '')
         
         stmt = select(User).where(func.lower(User.username) == func.lower(username))
         user = db.session.scalar(stmt)
@@ -32,14 +33,15 @@ def login():
                 
                 # UX Integrity: Redirect to the page the user was originally trying to access
                 next_page = request.args.get('next')
-                if not next_page or not next_page.startswith('/'):
+                if not next_page or urlparse(next_page).netloc != '' or not next_page.startswith('/'):
                     next_page = url_for('main.dashboard')
                 return redirect(next_page)
             else:
                 flash(_('Your account is deactivated. Please contact an administrator.'), 'error')
+                return render_template('Auth/login.html', last_username=username or '')
         else:
             flash(_('Invalid username or password'), 'error')
-            return render_template('Auth/login.html', last_username=username)
+            return render_template('Auth/login.html', last_username=username or '')
     
     return render_template('Auth/login.html')
 
@@ -51,7 +53,14 @@ def set_language(code):
         if current_user.is_authenticated:
             current_user.language_preference = code
             db.session.commit()
-    return redirect(request.referrer or url_for('main.dashboard'))
+            
+    ref = request.referrer
+    if ref:
+        parsed_ref = urlparse(ref)
+        parsed_url = urlparse(request.url)
+        if parsed_ref.netloc == parsed_url.netloc or not parsed_ref.netloc:
+            return redirect(ref)
+    return redirect(url_for('main.dashboard'))
 
 @auth_bp.route('/logout')
 @login_required
@@ -67,10 +76,12 @@ def profile():
         action = request.form.get('action')
         
         if action == 'change_username':
-            new_username = request.form.get('new_username')
-            if new_username == current_user.username:
+            new_username = request.form.get('new_username', '').strip()
+            if not new_username:
+                flash(_('Username is required'), 'error')
+            elif new_username == current_user.username:
                 pass # No change, avoid unnecessary error flash
-            elif db.session.execute(db.select(User).filter_by(username=new_username)).scalar():
+            elif db.session.scalar(select(User).where(func.lower(User.username) == func.lower(new_username), User.id != current_user.id)):
                 flash(_('Username already exists'), 'error')
             else:
                 current_user.username = new_username
@@ -82,12 +93,12 @@ def profile():
             new_password = request.form.get('new_password')
             confirm_password = request.form.get('confirm_password')
             
-            if not current_user.check_password(old_password):
+            if not old_password or not current_user.check_password(old_password):
                 flash(_('Current password is incorrect'), 'error')
             elif new_password != confirm_password:
                 flash(_('New passwords do not match'), 'error')
             # Security Integrity: Enforce a more modern minimum password length
-            elif len(new_password) < 8:
+            elif not new_password or len(new_password) < 8:
                 flash(_('Password must be at least 8 characters'), 'error')
             else:
                 current_user.set_password(new_password)
@@ -98,7 +109,8 @@ def profile():
             theme = request.form.get('theme')
             color = request.form.get('color_theme')
             language = request.form.get('language')
-            if theme in ['light', 'dark']:
+            # Added 'system' support for modern OS theme detection
+            if theme in ['light', 'dark', 'system']:
                 current_user.theme_preference = theme
             if color in ['blue', 'green', 'purple', 'red', 'orange']:
                 current_user.color_theme = color

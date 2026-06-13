@@ -47,6 +47,10 @@ The system requires specific environment variables and encryption keys to secure
 Before running the app, you must create the physical database in PostgreSQL and compile the translation catalogs.
 
 ```bash
+
+# Drop previously made database
+sudo -i -u postgres psql
+drop database repair_shop WITH (FORCE);
 # Create the PostgreSQL database (ensure Postgres is running)
 createdb repair_shop || sudo -u postgres createdb repair_shop
 

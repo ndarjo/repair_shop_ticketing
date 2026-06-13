@@ -1,80 +1,84 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
 
-{% block title %}{{ _('Dashboard - Repair Shop') }}{% endblock %}
+{% block title %}{{ _('Dashboard') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="row mb-4 g-3">
     <div class="col-md-3">
-        <div class="card text-center bg-primary text-white">
+        <div class="card h-100 shadow-sm text-center bg-danger">
             <div class="card-body">
                 <h6 class="card-title">{{ _('Total Tickets') }}</h6>
-                <h2 class="mb-0">{{ stats.total_tickets }}</h2>
+                <h2 class="mb-0">{{ stats.total_tickets if stats else 0 }}</h2>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-center bg-warning text-dark">
+        <div class="card h-100 shadow-sm text-center bg-warning">
             <div class="card-body">
                 <h6 class="card-title">{{ _('In Repair') }}</h6>
-                <h2 class="mb-0">{{ stats.repairing }}</h2>
+                <h2 class="mb-0">{{ stats.repairing if stats else 0 }}</h2>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-center bg-success text-white">
+        <div class="card h-100 shadow-sm text-center bg-success">
             <div class="card-body">
                 <h6 class="card-title">{{ _('Finished') }}</h6>
-                <h2 class="mb-0">{{ stats.finished }}</h2>
+                <h2 class="mb-0">{{ stats.finished if stats else 0 }}</h2>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-center bg-info text-white">
+        <div class="card h-100 shadow-sm text-center bg-info">
             <div class="card-body">
                 <h6 class="card-title">{{ _('Customers') }}</h6>
-                <h2 class="mb-0">{{ stats.total_customers }}</h2>
+                <h2 class="mb-0">{{ stats.total_customers if stats else 0 }}</h2>
             </div>
         </div>
     </div>
 </div>
 
 <div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header  d-flex justify-content-between align-items-center">
         <h5 class="mb-0">{{ _('Recent Tickets') }}</h5>
-        <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-sm btn-primary">{{ _('+ Create Ticket') }}</a>
+        {% if current_user.has_permission('create_ticket') %}
+        <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-plus me-1" aria-hidden="true"></i> {{ _('Create Ticket') }}</a>
+        {% endif %}
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-            <thead>
+            <thead class="table-light">
                 <tr>
                     <th>{{ _('Ticket #') }}</th>
                     <th>{{ _('Customer') }}</th>
                     <th>{{ _('Device') }}</th>
-                    <th class="text-center">{{ _('Phase') }}</th>
-                    <th>{{ _('Created') }}</th>
+                    <th class="text-center">{{ _('Status') }}</th>
+                    <th>{{ _('Date') }}</th>
                     <th class="text-end">{{ _('Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
-                {% for ticket in tickets.items %}
+                {% for ticket in (tickets.items if tickets else []) %}
                 <tr>
-                    <td><strong>{{ ticket.ticket_number }}</strong></td>
-                    <td>{{ ticket.customer.name }}</td>
+                    <td><strong class="text-break">{{ ticket.ticket_number }}</strong></td>
+                    <td class="text-break">{{ ticket.customer.name if ticket.customer else _('N/A') }}</td>
                     <td>
-                        <div>{{ ticket.device.display }}</div>
-                        <small class="text-muted">{{ _('S/N:') }} {{ ticket.device.serial_number or 'N/A' }}</small>
+                        <div class="text-break">{{ ticket.device.display if ticket.device else _('N/A') }}</div>
+                        <small class="text-muted">{{ _('S/N:') }} <code class="text-break">{{ (ticket.device.serial_number if ticket.device else None) or _('N/A') }}</code></small>
                     </td>
                     <td class="text-center">
                         <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
-                            {{ _(ticket.current_phase) }}
+                            {{ _(ticket.current_phase) if ticket.current_phase else _('N/A') }}
                         </span>
                     </td>
-                    <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td><small>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if ticket.created_at else _('Unknown') }}</small></td>
                     <td class="text-end">
                         <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
                     </td>
                 </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-4">{{ _('No recent tickets found.') }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -83,8 +87,4 @@
         {{ render_pagination(tickets, 'main.dashboard') }}
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}

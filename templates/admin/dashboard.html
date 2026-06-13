@@ -12,88 +12,54 @@
 
 <div class="row g-4">
     <div class="col-md-4">
-        <div class="card h-100 shadow-sm border-primary">
-            <div class="card-body text-center d-flex flex-column justify-content-between">
-                <i class="fas fa-hand-holding-usd fa-3x mb-3 text-primary"></i>
-                <h5 class="card-title">{{ _('Service Pricing') }}</h5>
-                <p class="card-text">{{ _('Define repair service types and manage global pricing charged to customers.') }}</p>
-                <a href="{{ url_for('main.manage_services') }}" class="btn btn-primary mt-auto">{{ _('Manage Services') }}</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
         <div class="card h-100 shadow-sm">
             <div class="card-body text-center d-flex flex-column justify-content-between">
-                <i class="fas fa-map-marker-alt fa-3x mb-3 text-primary"></i>
+                <i class="fas fa-map-marker-alt fa-3x mb-3 " aria-hidden="true"></i>
                 <h5 class="card-title">{{ _('Shop Locations') }}</h5>
                 <p class="card-text">{{ _('Manage physical branch locations, addresses, and contact details for the shop.') }}</p>
-                <a href="{{ url_for('admin.manage_locations') }}" class="btn btn-primary mt-auto">{{ _('Manage Locations') }}</a>
+                <a href="{{ url_for('admin.manage_locations') }}" class="btn btn-outline-primary mt-auto">{{ _('Manage Locations') }}</a>
             </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card h-100 shadow-sm">
             <div class="card-body text-center d-flex flex-column justify-content-between">
-                <i class="fas fa-users fa-3x mb-3 text-primary"></i>
+                <i class="fas fa-users fa-3x mb-3 " aria-hidden="true"></i>
                 <h5 class="card-title">{{ _('User Management') }}</h5>
                 <p class="card-text">{{ _('Create staff accounts, assign roles, and manage granular permissions.') }}</p>
-                <a href="{{ url_for('admin.manage_users') }}" class="btn btn-primary mt-auto">{{ _('Manage Users') }}</a>
+                <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-primary mt-auto">{{ _('Manage Users') }}</a>
             </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card h-100 shadow-sm">
             <div class="card-body text-center d-flex flex-column justify-content-between">
-                <i class="fas fa-exclamation-triangle fa-3x mb-3 text-primary"></i>
-                <h5 class="card-title">{{ _('Common Problems') }}</h5>
-                <p class="card-text">{{ _('Update the quick-select problem descriptions used for ticket intake.') }}</p>
-                <a href="{{ url_for('main.manage_common_problems') }}" class="btn btn-primary mt-auto">{{ _('Manage Problems') }}</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100 shadow-sm border-primary">
-            <div class="card-body text-center d-flex flex-column justify-content-between">
-                <i class="fas fa-boxes fa-3x mb-3 text-primary"></i>
-                <h5 class="card-title">{{ _('Parts Inventory') }}</h5>
-                <p class="card-text">{{ _('Manage the catalog of hardware and spare parts available for repair jobs.') }}</p>
-                <a href="{{ url_for('main.manage_inventory') }}" class="btn btn-primary mt-auto">{{ _('Manage Parts') }}</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100 shadow-sm border-primary">
-            <div class="card-body text-center d-flex flex-column justify-content-between">
-                <i class="fas fa-database fa-3x mb-3 text-primary"></i>
+                <i class="fas fa-database fa-3x mb-3 " aria-hidden="true"></i>
                 <h5 class="card-title">{{ _('Backup & Restore') }}</h5>
                 <p class="card-text">{{ _('Generate JSON database exports and restore system state from backups.') }}</p>
-                <a href="{{ url_for('admin.backup') }}" class="btn btn-primary mt-auto">{{ _('System Backups') }}</a>
+                <a href="{{ url_for('admin.backup') }}" class="btn btn-outline-primary mt-auto">{{ _('System Backups') }}</a>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card h-100 shadow-sm border-primary">
+        <div class="card h-100 shadow-sm">
             <div class="card-body text-center d-flex flex-column justify-content-between">
-                <i class="fas fa-image fa-3x mb-3 text-primary"></i>
+                <i class="fas fa-image fa-3x mb-3 " aria-hidden="true"></i>
                 <h5 class="card-title">{{ _('Shop Branding') }}</h5>
                 <p class="card-text">{{ _('Upload your shop logo and configure contact information used on customer invoices.') }}</p>
-                <a href="{{ url_for('admin.settings') }}" class="btn btn-primary mt-auto">{{ _('Branding Settings') }}</a>
+                <a href="{{ url_for('admin.settings') }}" class="btn btn-outline-primary mt-auto">{{ _('Branding Settings') }}</a>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card h-100 shadow-sm border-primary">
+        <div class="card h-100 shadow-sm">
             <div class="card-body text-center d-flex flex-column justify-content-between">
-                <i class="fas fa-server fa-3x mb-3 text-primary"></i>
+                <i class="fas fa-server fa-3x mb-3 " aria-hidden="true"></i>
                 <h5 class="card-title">{{ _('System Status') }}</h5>
                 <p class="card-text">{{ _('Monitor database connectivity, production environment variables, and API availability.') }}</p>
-                <a href="{{ url_for('admin.system_status') }}" class="btn btn-primary mt-auto">{{ _('Check System Status') }}</a>
+                <a href="{{ url_for('admin.system_status') }}" class="btn btn-outline-primary mt-auto">{{ _('Check System Status') }}</a>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}

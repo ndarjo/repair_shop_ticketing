@@ -1,4 +1,5 @@
 import os
+import urllib.parse
 from datetime import timedelta
 import logging
 from dotenv import load_dotenv, find_dotenv
@@ -47,8 +48,8 @@ class Config:
     # Primarily uses DATABASE_URL; otherwise constructs it from individual components
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
     if not SQLALCHEMY_DATABASE_URI:
-        db_user = os.getenv('DB_USER', 'postgres')
-        db_pass = os.getenv('DB_PASSWORD', '')
+        db_user = urllib.parse.quote_plus(os.getenv('DB_USER', 'postgres'))
+        db_pass = urllib.parse.quote_plus(os.getenv('DB_PASSWORD', ''))
         db_host = os.getenv('DB_HOST', 'localhost')
         db_port = os.getenv('DB_PORT', '5432')
         db_name = os.getenv('DB_NAME', 'repair_shop')
@@ -137,6 +138,9 @@ class ProductionConfig(Config):
         if os.getenv('ENCRYPTION_KEY', '39iJ2h3vR5uY8_a1zX-9kL0mN2pQ4rS6tU8vW0xY2zA=') == '39iJ2h3vR5uY8_a1zX-9kL0mN2pQ4rS6tU8vW0xY2zA=':
             raise ValueError("CRITICAL SECURITY ERROR: ENCRYPTION_KEY must be set in production.")
 
+        if os.getenv('BLIND_INDEX_SALT', Config.SECRET_KEY) == Config.SECRET_KEY:
+            logging.warning("SECURITY: BLIND_INDEX_SALT is defaulting to SECRET_KEY. It is highly recommended to set a unique salt for database indexing.")
+
         # Ensure database is not running without a password in production
         if not os.getenv('DB_PASSWORD') and not os.getenv('DATABASE_URL'):
             logging.warning("SECURITY: DB_PASSWORD is empty. Ensure PostgreSQL is using peer auth or local trust.")
@@ -153,8 +157,10 @@ class TestingConfig(Config):
     # PostgreSQL is recommended for tests to support to_char() and other PG-specific functions
     SQLALCHEMY_DATABASE_URI = os.getenv('TEST_DATABASE_URL')
     if not SQLALCHEMY_DATABASE_URI:
-        t_user = os.getenv('DB_USER', 'postgres')
+        t_user = urllib.parse.quote_plus(os.getenv('DB_USER', 'postgres'))
+        t_pass = urllib.parse.quote_plus(os.getenv('DB_PASSWORD', ''))
         t_host = os.getenv('DB_HOST', 'localhost')
+        t_port = os.getenv('DB_PORT', '5432')
         t_name = os.getenv('TEST_DB_NAME', 'repair_shop_test')
         # Construct dynamically to avoid hardcoded sensitive patterns
-        SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg://{t_user}@{t_host}/{t_name}"
+        SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg://{t_user}:{t_pass}@{t_host}:{t_port}/{t_name}"

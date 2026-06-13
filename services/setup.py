@@ -2,9 +2,8 @@ import click
 import os
 from flask.cli import with_appcontext
 from models import db, Role, Permission, User, Location, CommonProblem, Customer
-from datetime import datetime
-from flask_babel import _
 from cryptography.fernet import Fernet
+from sqlalchemy import func
 
 def initialize_roles_and_permissions():
     """Create default system roles and assign granular permissions."""
@@ -12,14 +11,14 @@ def initialize_roles_and_permissions():
         'view_customer', 'create_customer', 'edit_customer', 'delete_customer',
         'view_ticket', 'create_ticket', 'edit_ticket', 'delete_ticket', 'archive_ticket',
         'view_reports', 'manage_settings', 'process_payments', 'manage_inventory',
-        'create_device', 'edit_device', 'delete_device', 'create_invoice',
+        'view_device', 'create_device', 'edit_device', 'delete_device', 'create_invoice',
         'update_phase', 'mark_as_paid', 'mark_as_taken',
         'add_service', 'remove_service', 'add_part', 'remove_part'
     ]
     
     perm_objs = {}
     for p_name in permissions:
-        perm = db.session.execute(db.select(Permission).where(Permission.name == p_name)).scalar()
+        perm = db.session.scalar(db.select(Permission).where(Permission.name == p_name))
         if not perm:
             perm = Permission(name=p_name, category='General')
             db.session.add(perm)
@@ -30,19 +29,21 @@ def initialize_roles_and_permissions():
         'admin': permissions,
         'manager': [p for p in permissions if p not in ['delete_ticket', 'delete_device']],
         'technician': [
-            'view_customer', 'view_ticket', 'update_phase', 
+            'view_customer', 'view_ticket', 'view_device', 'edit_device', 'edit_ticket', 
+            'update_phase', 
             'add_service', 'remove_service', 'add_part', 'remove_part'
         ],
         'receptionist': [
             'view_customer', 'create_customer', 'view_ticket', 'create_ticket',
-            'create_device', 'create_invoice',
+            'view_device', 'create_device', 'edit_device', 'edit_ticket', 
+            'create_invoice',
             'process_payments', 'mark_as_paid', 'mark_as_taken',
             'add_service', 'remove_service', 'add_part', 'remove_part'
         ]
     }
 
     for role_name, perms in role_permissions.items():
-        role = db.session.execute(db.select(Role).where(Role.name == role_name)).scalar()
+        role = db.session.scalar(db.select(Role).where(Role.name == role_name))
         if not role:
             role = Role(name=role_name)
             db.session.add(role)
@@ -52,46 +53,52 @@ def initialize_roles_and_permissions():
 
 def initialize_default_data():
     """Seed the database with common repair problems and a default location."""
-    main_loc = db.session.execute(db.select(Location)).scalar()
+    main_loc = db.session.scalar(db.select(Location))
     if not main_loc:
         main_loc = Location(name="Main Branch", address="123 System Ave")
         db.session.add(main_loc)
         db.session.flush() # Get ID for problem linking
 
     problems = [
-        _('Broken Screen'), _('Battery Replacement'), _('Water Damage'),
-        _('Charging Port Issue'), _('Software Failure'), _('No Power'),
-        _('Data Recovery'), _('Keyboard Replacement')
+        'Broken Screen', 'Battery Replacement', 'Water Damage',
+        'Charging Port Issue', 'Software Failure', 'No Power',
+        'Data Recovery', 'Keyboard Replacement'
     ]
     
     for p_text in problems:
-        exists = db.session.execute(db.select(CommonProblem).where(
-            CommonProblem.problem_text == p_text, 
-            CommonProblem.location_id == main_loc.id)).scalar()
+        exists = db.session.scalar(db.select(CommonProblem).where(
+            func.lower(CommonProblem.problem_text) == func.lower(p_text), 
+            CommonProblem.location_id == main_loc.id))
         if not exists:
             db.session.add(CommonProblem(problem_text=p_text, location_id=main_loc.id))
     db.session.commit()
 
 def initialize_superuser():
     """Ensure at least one admin exists based on environment variables."""
-    admin_user = db.session.execute(db.select(User).where(User.is_superuser == True)).scalar()
+    admin_user = db.session.scalar(db.select(User).where(User.is_superuser == True))
     if not admin_user:
-        main_loc = db.session.execute(db.select(Location)).scalar()
+        main_loc = db.session.scalar(db.select(Location))
+        username = os.getenv('INITIAL_ADMIN_USERNAME') or 'admin'
+        
+        # Bug Fix: Prevent crash if the intended admin username is taken by a non-superuser
+        if db.session.scalar(db.select(User).where(func.lower(User.username) == func.lower(username))):
+            return
+
         admin = User(
-            username=os.getenv('INITIAL_ADMIN_USERNAME', 'admin'),
+            username=username,
             full_name='System Administrator',
             is_superuser=True,
             is_active=True,
             location_id=main_loc.id if main_loc else None
         )
         
-        initial_password = os.getenv('INITIAL_ADMIN_PASSWORD', 'change-me-immediately')
+        initial_password = os.getenv('INITIAL_ADMIN_PASSWORD') or 'change-me-immediately'
         if len(initial_password) < 8:
             initial_password = 'change-me-immediately' # Fallback to a secure default if ENV is weak
             
         admin.set_password(initial_password)
         
-        admin_role = db.session.execute(db.select(Role).where(Role.name == 'admin')).scalar()
+        admin_role = db.session.scalar(db.select(Role).where(Role.name == 'admin'))
         if admin_role:
             admin.roles.append(admin_role)
             
@@ -103,10 +110,14 @@ def register_cli_commands(app):
     @app.cli.command("seed")
     @with_appcontext
     def seed():
-        initialize_roles_and_permissions()
-        initialize_default_data()
-        initialize_superuser() # Ensure admin account is created alongside data
-        click.echo("Database seeded.")
+        try:
+            initialize_roles_and_permissions()
+            initialize_default_data()
+            initialize_superuser() # Ensure admin account is created alongside data
+            click.echo("Database seeded.")
+        except Exception as e:
+            db.session.rollback()
+            click.echo(f"Error during seeding: {str(e)}", err=True)
 
     @app.cli.command("reencrypt-pii")
     @click.argument("old_key")
@@ -115,7 +126,7 @@ def register_cli_commands(app):
         """Rotate encryption keys: Decrypts with OLD_KEY and re-encrypts with current config."""
         try:
             old_fernet = Fernet(old_key.encode())
-            customers = db.session.execute(db.select(Customer)).scalars().all()
+            customers = db.session.scalars(db.select(Customer)).all()
             count = 0
             for customer in customers:
                 # Manually decrypt phone/address using the provided old key
@@ -144,33 +155,40 @@ def register_cli_commands(app):
     def create_user(username, password, role):
         """Create a new user with a specific role."""
         if len(password) < 8:
-            click.echo("Password must be at least 8 characters.")
+            click.echo("Error: Password must be at least 8 characters.", err=True)
             return
 
-        if db.session.execute(db.select(User).where(User.username == username)).scalar():
-            click.echo(f"User {username} already exists.")
+        if db.session.scalar(db.select(User).where(func.lower(User.username) == func.lower(username))):
+            click.echo(f"Error: User {username} already exists.", err=True)
             return
             
-        role_obj = db.session.execute(db.select(Role).where(Role.name == role)).scalar()
+        role_obj = db.session.scalar(db.select(Role).where(func.lower(Role.name) == func.lower(role)))
         if not role_obj:
-            click.echo(f"Role {role} does not exist.")
+            click.echo(f"Error: Role {role} does not exist.", err=True)
             return
             
-        loc = db.session.execute(db.select(Location)).scalar()
+        loc = db.session.scalar(db.select(Location))
         user = User(username=username, is_active=True, location_id=loc.id if loc else None)
         user.set_password(password)
+        if role_obj.name == 'admin':
+            user.is_superuser = True
         user.roles.append(role_obj)
-        db.session.add(user)
-        db.session.commit()
-        click.echo(f"User {username} created successfully.")
+        try:
+            db.session.add(user)
+            db.session.commit()
+            click.echo(f"User {username} created successfully.")
+        except Exception as e:
+            db.session.rollback()
+            click.echo(f"Error creating user: {str(e)}", err=True)
 
     @app.cli.command("reset-db")
     @with_appcontext
     def reset_db():
         """Wipe and re-initialize the database."""
-        db.drop_all()
-        db.create_all()
-        click.echo("Database reset complete.")
+        if click.confirm('CRITICAL: This will PERMANENTLY WIPE all database tables and data. Continue?', abort=True):
+            db.drop_all()
+            db.create_all()
+            click.echo("Database reset complete.")
 
 def register_scheduler_tasks(scheduler, app):
     """Register background tasks for the APScheduler."""

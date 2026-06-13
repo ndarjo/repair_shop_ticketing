@@ -6,7 +6,7 @@
 <div class="row justify-content-center">
     <div class="col-md-8 offset-md-2">
         <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white">
+            <div class="card-header ">
                 <h4 class="mb-0">{{ _('Global Shop Settings') }}</h4>
             </div>
             <div class="card-body">
@@ -14,27 +14,27 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row mb-4">
                         <div class="col-md-4 text-center">
-                            <label class="form-label d-block fw-bold">{{ _('Shop Logo') }}</label>
+                            <label for="shop_logo" class="form-label d-block fw-bold">{{ _('Shop Logo') }}</label>
                             <div class="mb-3">
                                 {% if settings and settings.logo_path %}
                                     <img src="{{ url_for('static', filename='uploads/logos/' + settings.logo_path) }}" alt="Current Logo" class="img-thumbnail" style="max-height: 120px; max-width: 100%; object-fit: contain;">
                                 {% else %}
                                     <div class="bg-light border rounded d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
-                                        <i class="bi bi-image text-muted fs-1"></i>
+                                        <i class="fas fa-image text-muted fs-1"></i>
                                     </div>
                                 {% endif %}
                             </div>
-                            <input type="file" name="shop_logo" class="form-control form-control-sm" accept="image/*">
+                            <input type="file" id="shop_logo" name="shop_logo" class="form-control form-control-sm" accept="image/*">
                             <small class="text-muted d-block mt-1">{{ _('Recommended: Square PNG/SVG') }}</small>
                         </div>
                         <div class="col-md-8">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">{{ _('Shop Name') }} *</label>
-                                <input type="text" name="shop_name" class="form-control" value="{{ settings.shop_name if settings else _('Repair Shop') }}" required>
+                                <label for="shop_name" class="form-label fw-bold">{{ _('Shop Name') }} *</label>
+                                <input type="text" id="shop_name" name="shop_name" class="form-control" value="{{ settings.shop_name if settings and settings.shop_name else _('Repair Shop') }}" required placeholder="{{ _('e.g., My Repair Shop') }}">
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">{{ _('Shop Address (Location)') }}</label>
-                                <textarea name="shop_address" class="form-control" rows="3">{{ settings.shop_address if settings else '' }}</textarea>
+                                <label for="shop_address" class="form-label fw-bold">{{ _('Shop Address (Location)') }}</label>
+                                <textarea id="shop_address" name="shop_address" class="form-control" rows="3" placeholder="{{ _('Street, City, State, Zip') }}">{{ settings.shop_address if settings and settings.shop_address else '' }}</textarea>
                                 <small class="text-muted">{{ _('This will appear on invoices.') }}</small>
                             </div>
                         </div>
@@ -42,19 +42,19 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">{{ _('Contact Phone') }}</label>
-                            <input type="text" name="shop_phone" class="form-control" value="{{ settings.shop_phone if settings else '' }}">
+                            <label for="shop_phone" class="form-label fw-bold">{{ _('Contact Phone') }}</label>
+                            <input type="tel" id="shop_phone" name="shop_phone" class="form-control" value="{{ settings.shop_phone if settings and settings.shop_phone else '' }}" placeholder="{{ _('+1 (555) 000-0000') }}">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">{{ _('Contact Email') }}</label>
-                            <input type="email" name="shop_email" class="form-control" value="{{ settings.shop_email if settings else '' }}">
+                            <label for="shop_email" class="form-label fw-bold">{{ _('Contact Email') }}</label>
+                            <input type="email" id="shop_email" name="shop_email" class="form-control" value="{{ settings.shop_email if settings and settings.shop_email else '' }}" placeholder="{{ _('contact@example.com') }}">
                         </div>
                     </div>
                     
                     <hr>
                     <div class="text-end">
-                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary px-4 me-2">{{ _('Cancel') }}</a>
-                        <button type="submit" class="btn btn-primary px-4">{{ _('Save Changes') }}</button>
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary px-4 me-2">{{ _('Cancel') }}</a>
+                        <button type="submit" class="btn btn-outline-warning px-4">{{ _('Save Changes') }}</button>
                     </div>
                 </form>
             </div>

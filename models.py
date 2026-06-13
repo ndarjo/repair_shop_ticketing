@@ -70,7 +70,8 @@ class User(UserMixin, db.Model):
     # Relationships
     roles = db.relationship('Role', secondary=user_roles, backref=db.backref('users', lazy='dynamic'))
     permissions = db.relationship('Permission', secondary=user_permissions, backref=db.backref('users', lazy='dynamic'))
-    tickets = db.relationship('Ticket', backref='assigned_to_user', lazy=True, foreign_keys='Ticket.assigned_to')
+    created_tickets = db.relationship('Ticket', back_populates='creator', lazy=True, foreign_keys='Ticket.creator_id')
+    tickets = db.relationship('Ticket', back_populates='assigned_to_user', lazy=True, foreign_keys='Ticket.assigned_to')
     notes = db.relationship('Note', backref='author', lazy=True)
     payments = db.relationship('Payment', backref='recorded_by_user', lazy=True)
     phase_logs = db.relationship('PhaseLog', backref='technician_user', lazy=True)
@@ -95,7 +96,7 @@ class User(UserMixin, db.Model):
                 Permission.roles.any(Role.users.any(id=self.id))
             )
         )
-        return db.session.execute(stmt).scalar() is not None
+        return db.session.scalar(stmt) is not None
     
     def has_role(self, role_name):
         """Check if user has specific role using modern select"""
@@ -103,7 +104,7 @@ class User(UserMixin, db.Model):
             user_roles.c.user_id == self.id,
             Role.name == role_name
         )
-        return db.session.execute(stmt).scalar() is not None
+        return db.session.scalar(stmt) is not None
     
     def __repr__(self):
         return f'<User {self.username}>'
@@ -258,7 +259,11 @@ class Ticket(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False, index=True)
     device_id = db.Column(db.Integer, db.ForeignKey('devices.id'), nullable=False, index=True)
     assigned_to = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     
+    creator = db.relationship('User', back_populates='created_tickets', foreign_keys=[creator_id])
+    assigned_to_user = db.relationship('User', back_populates='tickets', foreign_keys=[assigned_to])
+
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=False, index=True)
 
     items_included = db.Column(db.Text, nullable=False)
@@ -269,10 +274,10 @@ class Ticket(db.Model):
     device_picked_up = db.Column(db.Boolean, default=False)
     picked_up_date = db.Column(db.DateTime)
     estimated_cost = db.Column(db.Numeric(10, 2), default=Decimal('0.00'))
-    actual_cost = db.Column(db.Numeric(10, 2), default=Decimal('0.00'))
+    actual_cost = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
     created_at = db.Column(db.DateTime, default=datetime.now)
     
-    # FIXED: Restored truncated cascading children connections down below
+    # Relationships
     ticket_services = db.relationship('TicketService', backref='ticket', lazy=True, cascade='all, delete-orphan')
     notes = db.relationship('Note', backref='ticket', lazy=True, cascade='all, delete-orphan')
     phase_logs = db.relationship('PhaseLog', backref='ticket', lazy=True, cascade='all, delete-orphan')
@@ -290,7 +295,7 @@ class Ticket(db.Model):
         while True:
             ticket_number = f"TKT-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
             stmt = db.select(Ticket.id).filter_by(ticket_number=ticket_number)
-            if not db.session.execute(stmt).scalar():
+            if not db.session.scalar(stmt):
                 return ticket_number
 
     @property
@@ -433,7 +438,7 @@ class Invoice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     invoice_number = db.Column(db.String(50), unique=True, nullable=False)
     
-    # FIXED: Added db.ForeignKey constraint linking this column directly to the tickets table
+    # Link to the associated ticket
     ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id', ondelete='CASCADE'), nullable=False, index=True)
     
     total_amount = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
@@ -464,7 +469,7 @@ class Invoice(db.Model):
         """Amount of the first payment recorded for the ticket"""
         if not self.ticket_id: return Decimal('0.00')
         stmt = db.select(Payment).where(Payment.ticket_id == self.ticket_id).order_by(Payment.paid_at.asc())
-        first_payment = db.session.execute(stmt).scalar()
+        first_payment = db.session.scalar(stmt)
         return first_payment.amount if first_payment else Decimal('0.00')
 
     @property

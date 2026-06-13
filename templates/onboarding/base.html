@@ -5,12 +5,12 @@
     {% set theme = current_user.theme_preference %}
     {% set color = current_user.color_theme %}
 {% endif %}
-<html lang="en" data-theme="{{ theme }}">
+<html lang="{{ current_locale or 'en' }}" data-theme="{{ theme }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{% if csrf_token is defined %}{{ csrf_token() }}{% endif %}">
-    <title>{% block title %}{{ _('Setup Wizard - Repair Shop') }}{% endblock %}</title>
+    <title>{% block title %}{{ _('Setup Wizard') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
           onerror="this.onerror=null;this.href='{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}';">
@@ -27,11 +27,11 @@
         <div class="container-fluid">
             <a class="navbar-brand fw-bold d-flex align-items-center" href="{{ url_for('main.dashboard') }}">
                 {% if shop_info and shop_info.logo_path %}
-                    <img src="{{ url_for('static', filename='uploads/logos/' + shop_info.logo_path) }}" alt="{{ shop_info.shop_name }} Logo" class="brand-logo-nav me-2 rounded">
+                    <img src="{{ url_for('static', filename='uploads/logos/' + shop_info.logo_path) }}" alt="{{ shop_info.shop_name or _('Shop') }} Logo" class="brand-logo-nav me-2 rounded">
                 {% else %}
-                    <span class="me-2">🛠️</span>
+                    <span class="me-2" aria-hidden="true">🛠️</span>
                 {% endif %}
-                {{ shop_info.shop_name if shop_info else 'RepairShop' }}
+                {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -40,21 +40,21 @@
                 <ul class="navbar-nav me-auto fw-bold">
                     {% if current_user.is_authenticated and shop_info and shop_info.setup_completed %}
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}" {{ 'aria-current="page"' if request.endpoint == 'main.dashboard' }}><i class="fas fa-tachometer-alt me-1"></i> {{ _('Dashboard') }}</a>
+                        <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}" {{ 'aria-current="page"' if request.endpoint == 'main.dashboard' }}><i class="fas fa-tachometer-alt me-1" aria-hidden="true"></i> {{ _('Dashboard') }}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'ticket.tickets_list' }}" href="{{ url_for('ticket.tickets_list') }}" {{ 'aria-current="page"' if request.endpoint == 'ticket.tickets_list' }}><i class="fas fa-ticket-alt me-1"></i> {{ _('Tickets') }}</a>
+                        <a class="nav-link {{ 'active' if request.endpoint == 'ticket.tickets_list' }}" href="{{ url_for('ticket.tickets_list') }}" {{ 'aria-current="page"' if request.endpoint == 'ticket.tickets_list' }}><i class="fas fa-ticket-alt me-1" aria-hidden="true"></i> {{ _('Tickets') }}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'customer.customers_list' }}" href="{{ url_for('customer.customers_list') }}" {{ 'aria-current="page"' if request.endpoint == 'customer.customers_list' }}><i class="fas fa-users me-1"></i> {{ _('Customers') }}</a>
+                        <a class="nav-link {{ 'active' if request.endpoint == 'customer.customers_list' }}" href="{{ url_for('customer.customers_list') }}" {{ 'aria-current="page"' if request.endpoint == 'customer.customers_list' }}><i class="fas fa-users me-1" aria-hidden="true"></i> {{ _('Customers') }}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'device.devices_list' }}" href="{{ url_for('device.devices_list') }}" {{ 'aria-current="page"' if request.endpoint == 'device.devices_list' }}><i class="fas fa-laptop me-1"></i> {{ _('Devices') }}</a>
+                        <a class="nav-link {{ 'active' if request.endpoint == 'device.devices_list' }}" href="{{ url_for('device.devices_list') }}" {{ 'aria-current="page"' if request.endpoint == 'device.devices_list' }}><i class="fas fa-laptop me-1" aria-hidden="true"></i> {{ _('Devices') }}</a>
                     </li>
                     {% if current_user.has_permission('view_reports') %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('report.reports') }}"><i class="fas fa-chart-line me-1"></i> {{ _('Reports') }}</a>
-                    </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'report.reports' }}" href="{{ url_for('report.reports') }}" {{ 'aria-current="page"' if request.endpoint == 'report.reports' }}><i class="fas fa-chart-line me-1" aria-hidden="true"></i> {{ _('Reports') }}</a>
+                        </li>
                     {% endif %}
                     {% endif %}
                 </ul>
@@ -62,7 +62,7 @@
                     {% if current_user.is_authenticated %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                {{ current_user.full_name }}
+                                {{ current_user.full_name or current_user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">{{ _('Profile & Theme') }}</a></li>
@@ -76,7 +76,7 @@
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.login') }}">{{ _('Login') }}</a>
+                            <a class="nav-link" href="{{ url_for('auth.login', next=request.full_path) }}">{{ _('Login') }}</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -90,7 +90,7 @@
                 {% for category, message in messages %}
                     <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
                         {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="btn-outline-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
             {% endif %}

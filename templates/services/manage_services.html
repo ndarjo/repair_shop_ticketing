@@ -4,31 +4,37 @@
 {% block title %}{{ _('Manage Services - Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ _('Service Types & Pricing') }}</h2>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <h2 class="mb-0 ">{{ _('Service Types & Pricing') }}</h2>
     {% if current_user.has_permission('manage_settings') %}
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">{{ _('+ New Service') }}</button>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+        <i class="fas fa-plus-circle me-1" aria-hidden="true"></i> {{ _('New Service') }}
+    </button>
     {% endif %}
 </div>
 
-<div class="card shadow-sm">
+<div class="card shadow-sm border-0">
+    <div class="card-header">
+        <h5 class="mb-0 "><i class="fas fa-concierge-bell me-2" aria-hidden="true"></i>{{ _('Service Catalog') }}</h5>
+    </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th>{{ _('Service Name') }}</th>
-                    <th>{{ _('Description') }}</th>
-                    <th class="text-end">{{ _('Price') }}</th>
-                    <th>{{ _('Status') }}</th>
-                    <th class="text-end">{{ _('Actions') }}</th>
+                    <th scope="col">{{ _('Service Name') }}</th>
+                    <th scope="col" class="text-end">{{ _('Price') }}</th>
+                    <th scope="col">{{ _('Status') }}</th>
+                    <th scope="col" class="text-end">{{ _('Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for service in services.items %}
                 <tr>
-                    <td><strong>{{ service.name }}</strong></td>
-                    <td><small class="text-muted">{{ service.description or '-' }}</small></td>
-                    <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, service.price) }}</td>
+                    <td>
+                        <strong>{{ service.name }}</strong><br>
+                        <small class="text-muted">{{ service.description or '-' }}</small>
+                    </td>
+                    <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, service.price or 0) }}</td>
                     <td>
                         <span class="badge bg-{{ 'success' if service.is_active else 'secondary' }}">
                             {{ _('Active') if service.is_active else _('Inactive') }}
@@ -42,19 +48,21 @@
                                 data-id="{{ service.id }}"
                                 data-name="{{ service.name }}"
                                 data-description="{{ service.description or '' }}"
-                                data-price="{{ '%.*f'|format(currency_decimals, service.price) }}"
+                                data-price="{{ '%.*f'|format(currency_decimals, service.price or 0) }}"
                                 data-active="{{ 'true' if service.is_active else 'false' }}">
-                            {{ _('Edit') }}
+                            <i class="fas fa-edit me-1" aria-hidden="true"></i> {{ _('Edit') }}
                         </button>
                         <form action="{{ url_for('main.delete_service', service_id=service.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this service?') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Delete') }}</button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash-alt me-1" aria-hidden="true"></i> {{ _('Delete') }}
+                            </button>
                         </form>
                         {% endif %}
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="text-center text-muted py-4">{{ _('No services defined.') }}</td></tr>
+                <tr><td colspan="4" class="text-center text-muted py-4">{{ _('No services defined.') }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -71,7 +79,10 @@
         <div class="modal-content">
             <form id="editServiceForm" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header"><h5 id="editServiceModalLabel">{{ _('Edit Service') }}</h5></div>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editServiceModalLabel">{{ _('Edit Service') }}</h5>
+                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">{{ _('Service Name') }}</label>
@@ -85,7 +96,7 @@
                         <label class="form-label">{{ _('Price') }}</label>
                         <div class="input-group">
                             <span class="input-group-text">{{ currency_symbol }}</span>
-                            <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="price" id="edit_service_price" class="form-control" required>
+                            <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="price" id="edit_service_price" class="form-control" min="0" required>
                         </div>
                     </div>
                     <div class="form-check">
@@ -94,8 +105,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ _('Save Changes') }}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-outline-primary">{{ _('Save Changes') }}</button>
                 </div>
             </form>
         </div>
@@ -103,12 +114,15 @@
 </div>
 
 <!-- Add Modal -->
-<div class="modal fade" id="addServiceModal" tabindex="-1">
+<div class="modal fade" id="addServiceModal" tabindex="-1" aria-labelledby="addServiceModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form action="{{ url_for('main.add_service') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header"><h5>{{ _('Add New Service Type') }}</h5></div>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addServiceModalLabel">{{ _('Add New Service Type') }}</h5>
+                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">{{ _('Service Name') }}</label>
@@ -122,17 +136,37 @@
                         <label class="form-label">{{ _('Price') }}</label>
                         <div class="input-group">
                             <span class="input-group-text">{{ currency_symbol }}</span>
-                            <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="price" class="form-control" required>
+                            <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="price" class="form-control" placeholder="{{ _('Service price') }}" min="0" required>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ _('Create Service') }}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-outline-primary">{{ _('Create Service') }}</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editServiceModal = document.getElementById('editServiceModal');
+    if (editServiceModal) {
+        editServiceModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-id');
+            
+            const form = document.getElementById('editServiceForm');
+            form.action = "{{ url_for('main.edit_service', service_id=0) }}".replace('/0', '/' + id);
+            
+            document.getElementById('edit_service_name').value = button.getAttribute('data-name') || '';
+            document.getElementById('edit_service_description').value = button.getAttribute('data-description') || '';
+            document.getElementById('edit_service_price').value = button.getAttribute('data-price') || '0';
+            document.getElementById('edit_service_active').checked = button.getAttribute('data-active') === 'true';
+        });
+    }
+});
+</script>
 {% endif %}
 {% endblock %}

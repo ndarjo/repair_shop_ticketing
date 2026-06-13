@@ -1,113 +1,127 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Invoice') }} {{ invoice.invoice_number }}{% endblock %}
+{% block title %}{{ _('Invoice') }} {{ invoice.invoice_number or '' }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4 mb-5">
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center p-3">
-            <h4 class="mb-0"><i class="bi bi-receipt-cutoff me-2"></i>{{ _('Invoice Details') }}</h4>
-            <span class="badge bg-{{ 'success' if invoice.status == 'Paid' else 'warning' if invoice.status == 'Partial' else 'info' }} rounded-pill px-3">
-                {{ _(invoice.status) }}
-            </span>
-        </div>
-        <div class="card-body p-4">
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="d-flex align-items-center mb-3">
-                        {% if shop_info and shop_info.logo_path %}
-                            <img src="{{ url_for('static', filename='uploads/logos/' + shop_info.logo_path) }}" alt="Logo" height="50" class="me-3">
-                        {% endif %}
-                        <div>
-                            <h6 class="text-uppercase text-muted small fw-bold mb-1">{{ _('Invoice From:') }}</h6>
-                            <h5 class="mb-0">{{ shop_info.shop_name if shop_info else _('Repair Shop') }}</h5>
-                        </div>
+<div class="card shadow-sm border-0 mt-2 mb-5">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center p-3">
+        <h4 class="mb-0"><i class="bi bi-receipt-cutoff me-2"></i>{{ _('Invoice Details') }}</h4>
+        <h4 class="mb-0"><i class="fas fa-file-invoice me-2"></i>{{ _('Invoice Details') }}</h4>
+        <span class="badge bg-{{ 'success' if invoice.status == 'Paid' else 'warning' if invoice.status == 'Partial' else 'info' }} rounded-pill px-3">
+            {{ _(invoice.status) }}
+        </span>
+    </div>
+    <div class="card-body p-4">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center mb-3">
+                    {% if shop_info and shop_info.logo_path %}
+                        <img src="{{ url_for('static', filename='uploads/logos/' + shop_info.logo_path) }}" alt="Logo" height="50" class="me-3">
+                    {% endif %}
+                    <div>
+                        <h6 class="text-uppercase text-muted small fw-bold mb-1">{{ _('Invoice From:') }}</h6>
+                    <h5 class="mb-0">{{ shop_info.shop_name or _('Repair Shop') }}</h5>
                     </div>
-                    <p class="text-muted small mb-1" style="white-space: pre-line;">{{ shop_info.shop_address if shop_info else _('System Generated Invoice') }}</p>
+                </div>
+            <p class="text-muted small mb-1" style="white-space: pre-line;">{{ shop_info.shop_address or _('System Generated Invoice') }}</p>
 
-                    <h6 class="text-uppercase text-muted small fw-bold mt-3">{{ _('Bill To:') }}</h6>
-                    <h5 class="mb-0">{{ invoice.ticket.customer.name }}</h5>
-                    <p class="mb-0">{{ invoice.ticket.customer.phone }}</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <h3 class="mb-0">{{ invoice.invoice_number }}</h3>
-                    <p class="text-muted small">{{ _('Date:') }} {{ invoice.created_at.strftime('%d %b %Y') }}</p>
-                    
-                    <h6 class="text-uppercase text-muted small fw-bold mt-3">{{ _('Device Info:') }}</h6>
-                    <p class="mb-0"><strong>{{ invoice.ticket.device.display }}</strong></p>
-                    <p class="text-muted small">{{ _('Ticket:') }} {{ invoice.ticket.ticket_number }}</p>
-                </div>
+                <h6 class="text-uppercase text-muted small fw-bold mt-3">{{ _('Bill To:') }}</h6>
+                <h5 class="mb-0">{{ invoice.ticket.customer.name if invoice.ticket and invoice.ticket.customer else '-' }}</h5>
+                <p class="mb-0">{{ invoice.ticket.customer.phone if invoice.ticket and invoice.ticket.customer else '' }}</p>
             </div>
+            <div class="col-md-6 text-md-end">
+                <h3 class="mb-0">{{ invoice.invoice_number or '-' }}</h3>
+                <p class="text-muted small">{{ _('Date:') }} {{ invoice.created_at.strftime('%d %b %Y') if invoice.created_at else '-' }}</p>
+                
+                <h6 class="text-uppercase text-muted small fw-bold mt-3">{{ _('Device Info:') }}</h6>
+                <p class="mb-0"><strong>{{ invoice.ticket.device.display if invoice.ticket and invoice.ticket.device else '-' }}</strong></p>
+                <p class="text-muted small">{{ _('Ticket:') }} {{ invoice.ticket.ticket_number if invoice.ticket else '-' }}</p>
+            </div>
+        </div>
 
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col">{{ _('Description') }}</th>
-                            <th scope="col" class="text-center">{{ _('Qty') }}</th>
-                            <th scope="col" class="text-end">{{ _('Total') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ts in invoice.ticket.ticket_services %}
-                        <tr>
-                            <td>{{ _(ts.service.name) }}</td>
-                            <td class="text-center">{{ ts.quantity }}</td>
-                            <td class="text-end">{{ currency_symbol }}{{ "{:,.{}f}".format(ts.price_charged * ts.quantity, currency_decimals) }}</td>
-                        </tr>
-                        {% endfor %}
-                        
-                        {% for item in invoice.items %}
-                        <tr>
-                            <td>{{ item.description }}</td>
-                            <td class="text-center">{{ item.quantity }}</td>
-                            <td class="text-end">{{ currency_symbol }}{{ "{:,.{}f}".format(item.total_price, currency_decimals) }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">{{ _('Description') }}</th>
+                        <th scope="col" class="text-center">{{ _('Qty') }}</th>
+                        <th scope="col" class="text-end">{{ _('Total') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ts in (invoice.ticket.ticket_services if invoice.ticket else []) %}
+                    <tr>
+                        <td>{{ _(ts.service.name) if ts.service else _('Service') }}</td>
+                        <td class="text-center">{{ ts.quantity or 0 }}</td>
+                        <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, (ts.price_charged or 0) * (ts.quantity or 0)) }}</td>
+                    </tr>
+                    {% endfor %}
+                    
+                    {% for item in (invoice.items or []) %}
+                    <tr>
+                        <td>{{ item.description or _('Part/Material') }}</td>
+                        <td class="text-center">{{ item.quantity or 0 }}</td>
+                        <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price or 0) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row justify-content-end mt-4">
+            <div class="col-md-5">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <td class="text-muted">{{ _('Subtotal:') }}</td>
+                        <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.total_amount or 0) }}</td>
+                    </tr>
+                    {% if (invoice.full_payment_received or 0) > 0 %}
+                    <tr>
+                        <td class="text-muted">{{ _('Total Paid:') }}</td>
+                        <td class="text-end text-success fw-bold">-{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.full_payment_received or 0) }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="border-top">
+                        <td class="pt-2"><h5 class="mb-0">{{ _('Balance Due:') }}</h5></td>
+                        <td class="text-end pt-2 text-{{ 'success' if (invoice.remaining_balance or 0) <= 0 else 'danger' }}"><h5 class="mb-0 fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.remaining_balance or 0) }}</h5></td>
+                    </tr>
                 </table>
             </div>
-
-            <div class="row justify-content-end mt-4">
-                <div class="col-md-5">
-                    <table class="table table-sm table-borderless">
-                        <tr>
-                            <td class="text-muted">{{ _('Subtotal:') }}</td>
-                            <td class="text-end fw-bold">{{ currency_symbol }}{{ "{:,.{}f}".format(invoice.total_amount, currency_decimals) }}</td>
-                        </tr>
-                        {% if invoice.full_payment_received > 0 %}
-                        <tr>
-                            <td class="text-muted">{{ _('Total Paid:') }}</td>
-                            <td class="text-end text-success fw-bold">-{{ currency_symbol }}{{ "{:,.{}f}".format(invoice.full_payment_received, currency_decimals) }}</td>
-                        </tr>
-                        {% endif %}
-                        <tr class="border-top">
-                            <td class="pt-2"><h5 class="mb-0">{{ _('Balance Due:') }}</h5></td>
-                            <td class="text-end pt-2 text-primary"><h5 class="mb-0 fw-bold">{{ currency_symbol }}{{ "{:,.{}f}".format(invoice.remaining_balance, currency_decimals) }}</h5></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <div class="card-footer bg-white border-0 p-4 text-center d-print-none">
-            <a href="{{ url_for('ticket.view_ticket', ticket_id=invoice.ticket_id) }}" class="btn btn-outline-secondary px-4 me-2">
-                <i class="bi bi-arrow-left me-1"></i> {{ _('Back to Ticket') }}
-            </a>
-            <a href="{{ url_for('ticket.download_invoice_pdf', ticket_id=invoice.ticket_id) }}" class="btn btn-outline-primary px-4 me-2">
-                <i class="bi bi-file-earmark-pdf me-1"></i> {{ _('Download PDF') }}
-            </a>
-            <button id="printInvoiceBtn" class="btn btn-primary px-4">
-                <i class="bi bi-printer me-1"></i> {{ _('Print Invoice') }}
-            </button>
         </div>
     </div>
+    <div class="card-footer bg-white border-0 p-4 text-center d-print-none">
+        <a href="{{ url_for('ticket.view_ticket', ticket_id=invoice.ticket_id) }}" class="btn btn-outline-secondary px-4 me-2">
+            <i class="fas fa-arrow-left me-1"></i> {{ _('Back to Ticket') }}
+        </a>
+        <a href="{{ url_for('ticket.download_invoice_pdf', ticket_id=invoice.ticket_id) }}" class="btn btn-outline-primary px-4 me-2">
+            <i class="fas fa-file-pdf me-1"></i> {{ _('Download PDF') }}
+        </a>
+        <button id="printInvoiceBtn" class="btn btn-outline-primary px-4">
+            <i class="fas fa-print me-1"></i> {{ _('Print Invoice') }}
+        </button>
+    </div>
 </div>
+{% endblock %}
 
+{% block styles %}
 <style>
 @media print {
-    .navbar, .footer, .d-print-none { display: none !important; }
+    .navbar, .footer, .alert, .d-print-none { display: none !important; }
     .container { width: 100% !important; max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
     .card { border: none !important; box-shadow: none !important; }
 }
 </style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const printBtn = document.getElementById('printInvoiceBtn');
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            window.print();
+        });
+    }
+});
+</script>
 {% endblock %}

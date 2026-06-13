@@ -15,16 +15,16 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="username" class="form-label">{{ _('Username') }} *</label>
-                            <input type="text" class="form-control" id="username" name="username" required>
+                            <input type="text" class="form-control" id="username" name="username" value="{{ username or '' }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="email" class="form-label">{{ _('Email') }}</label>
-                            <input type="email" class="form-control" id="email" name="email">
+                            <label for="email" class="form-label">{{ _('Email') }} *</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ email or '' }}" required>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="full_name" class="form-label">{{ _('Full Name') }} *</label>
-                        <input type="text" class="form-control" id="full_name" name="full_name" required>
+                        <input type="text" class="form-control" id="full_name" name="full_name" value="{{ full_name or '' }}" required>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">{{ _('Password') }} *</label>
@@ -32,11 +32,11 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="role_id" class="form-label">{{ _('Primary Role') }}</label>
-                            <select name="role_id" id="role_id" class="form-select">
+                            <label for="role_id" class="form-label">{{ _('Primary Role') }} *</label>
+                            <select name="role_id" id="role_id" class="form-select" required>
                                 <option value="">{{ _('-- Select Role --') }}</option>
                                 {% for role in roles %}
-                                    <option value="{{ role.id }}">{{ _(role.name) }}</option>
+                                    <option value="{{ role.id }}" {% if role_id == role.id %}selected{% endif %}>{{ _(role.name) }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -45,14 +45,14 @@
                             <select name="location_id" id="location_id" class="form-select" required>
                                 <option value="">{{ _('-- Select Location --') }}</option>
                                 {% for loc in locations %}
-                                    <option value="{{ loc.id }}">{{ loc.name }}</option>
+                                    <option value="{{ loc.id }}" {% if location_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <button type="submit" class="btn btn-primary">{{ _('Create User') }}</button>
-                        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">{{ _('Cancel') }}</a>
+                    <div class="mb-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-outline-primary">{{ _('Create User') }}</button>
+                        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
                     </div>
                 </form>
             </div>

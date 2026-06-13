@@ -1,7 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Tuple, Any, Optional
-from flask import current_app
 from flask_babel import _
 from models import db, Ticket, PhaseLog, Note, Payment, User
 from .core import FinancialService
@@ -33,12 +32,14 @@ class RepairTicketService:
             ticket_id=ticket.id,
             user_id=creator_id,
             old_phase=None,
-            new_phase='Open'
+            new_phase='Open',
+            changed_at=created_at
         )
         db.session.add(initial_log)
 
-        # Ensure invoice exists for intake tracking
+        # Ensure invoice exists for intake tracking and matches ticket creation date
         invoice = FinancialService.get_or_create_invoice(ticket.id)
+        invoice.created_at = created_at
 
         if down_payment > 0:
             payment = Payment(
@@ -50,22 +51,25 @@ class RepairTicketService:
                 paid_at=created_at
             )
             db.session.add(payment)
+            db.session.flush()
             
             creator = db.session.get(User, creator_id)
             currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
             symbol = currency_map.get(creator.currency, '$') if creator else '$'
-            decimals = creator.currency_decimals if creator else 2
+            decimals = creator.currency_decimals if creator and creator.currency_decimals is not None else 2
             
             payment_note = Note(
                 ticket_id=ticket.id,
                 user_id=creator_id,
+                note_type=_('Down Payment'),
                 content=_('Initial down payment of %(symbol)s%(amount)s received via %(method)s.',
                           symbol=symbol, amount=f"{down_payment:.{decimals}f}", method=payment_method or _('Cash')),
-                is_internal=True
+                is_internal=True,
+                created_at=created_at
             )
             db.session.add(payment_note)
             
-            FinancialService.sync_invoice_status(invoice.id)
+        FinancialService.sync_invoice_status(invoice.id) # Ensure invoice status is synced regardless of down payment
 
         return ticket
 
@@ -76,21 +80,28 @@ class RepairTicketService:
         if not ticket:
             return False, _('Ticket not found')
 
+        # UX: Avoid redundant updates if the phase hasn't changed
+        if ticket.current_phase == new_phase:
+            return True, ticket
+
         if ticket.current_phase == 'Already Taken':
             return False, _('This ticket is locked and cannot be modified.')
 
+        now = datetime.now()
         old_phase = ticket.current_phase
         ticket.current_phase = new_phase
 
         if new_phase == 'Already Taken':
             ticket.device_picked_up = True
-            ticket.picked_up_date = datetime.now()
+            ticket.picked_up_date = now
+            ticket.is_archived = True
 
         log = PhaseLog(
             ticket_id=ticket.id,
             user_id=user_id,
             old_phase=old_phase,
-            new_phase=new_phase
+            new_phase=new_phase,
+            changed_at=now
         )
         db.session.add(log)
 
@@ -105,7 +116,8 @@ class RepairTicketService:
             user_id=user_id,
             note_type=note_type,
             content=content,
-            is_internal=True
+            is_internal=True,
+            created_at=now
         )
         db.session.add(note)
 

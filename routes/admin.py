@@ -1,12 +1,15 @@
 import os
 import json
 import subprocess
+import sys
+import platform
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, send_file
 from flask_login import login_required, current_user
-from models import db, User, Role, Location, ShopSetting, Permission, CommonProblem, Service, SparePart
-from services import BackupService
+from sqlalchemy import text, func
 from sqlalchemy.orm import joinedload
+from models import db, User, Role, Location, ShopSetting, Ticket, Customer, Note, Payment, PhaseLog, Service, SparePart, CommonProblem
+from services import BackupService
 from .utils import require_permission, require_superuser, safe_decimal
 from flask_babel import _
 from werkzeug.utils import secure_filename
@@ -19,15 +22,22 @@ admin_bp = Blueprint('admin', __name__)
 @login_required
 @require_superuser()
 def dashboard():
-    return render_template('admin/dashboard.html')
+    """Admin dashboard providing high-level system overview"""
+    stats = {
+        'users': db.session.scalar(db.select(func.count(User.id))) or 0,
+        'locations': db.session.scalar(db.select(func.count(Location.id))) or 0,
+        'tickets': db.session.scalar(db.select(func.count(Ticket.id))) or 0,
+        'backups': len(os.listdir(current_app.config['BACKUP_DIR'])) if os.path.isdir(current_app.config['BACKUP_DIR']) else 0
+    }
+    return render_template('admin/dashboard.html', stats=stats)
 
 @admin_bp.route('/users')
 @login_required
 @require_superuser()
 def manage_users():
     page = request.args.get('page', 1, type=int)
-    # Optimization: Eager load roles to prevent N+1 queries in the user list template
-    stmt = db.select(User).options(joinedload(User.roles))
+    # Optimization: Eager load roles and locations to prevent N+1 queries in the user list template
+    stmt = db.select(User).options(joinedload(User.roles), joinedload(User.location))
     users = db.paginate(stmt, page=page, per_page=15)
     return render_template('admin/manage_users.html', users=users)
 
@@ -36,42 +46,48 @@ def manage_users():
 @require_superuser()
 def create_user():
     if request.method == 'POST':
-        username = request.form.get('username')
+        username = request.form.get('username', '').strip()
         password = request.form.get('password')
-        email = request.form.get('email')
-        full_name = request.form.get('full_name')
+        email = request.form.get('email', '').strip()
+        full_name = request.form.get('full_name', '').strip()
         role_id = request.form.get('role_id', type=int)
         location_id = request.form.get('location_id', type=int)
 
-        if not all([username, password, full_name, location_id]):
+        if not all([username, password, email, full_name, location_id is not None, role_id is not None]):
             flash(_('All fields are required.'), 'error')
-            return redirect(url_for('admin.create_user'))
-
-        if len(password) < 8:
+        elif len(password) < 8:
             flash(_('Password must be at least 8 characters'), 'error')
-            return redirect(url_for('admin.create_user'))
-
-        if db.session.execute(db.select(User).filter_by(username=username)).scalar():
+        elif db.session.scalar(db.select(User).where(func.lower(User.username) == func.lower(username))):
             flash(_('Username already exists'), 'error')
         else:
-            new_user = User(
-                username=username,
-                email=email,
-                full_name=full_name,
-                location_id=location_id
-            )
-            new_user.set_password(password)
+            # INTEGRITY: Verify that the selected location and role exist before committing
+            loc = db.session.get(Location, location_id)
+            role = db.session.get(Role, role_id)
             
-            if role_id:
-                role = db.session.get(Role, role_id)
-                if role:
-                    new_user.roles.append(role)
-            
-            db.session.add(new_user)
-            db.session.commit()
-            flash(_('User created successfully'), 'success')
-            return redirect(url_for('admin.manage_users'))
-    
+            if not loc:
+                flash(_('Selected location is invalid.'), 'error')
+            elif not role:
+                flash(_('Selected role is invalid.'), 'error')
+            else:
+                new_user = User(username=username, email=email, full_name=full_name, location_id=loc.id)
+                new_user.set_password(password)
+                new_user.roles.append(role)
+                try:
+                    db.session.add(new_user)
+                    db.session.commit()
+                    flash(_('User created successfully'), 'success')
+                    return redirect(url_for('admin.manage_users'))
+                except Exception as e:
+                    db.session.rollback()
+                    current_app.logger.error(f"User creation database error: {str(e)}")
+                    flash(_('A database error occurred while creating the user.'), 'error')
+        
+        # UX: Return form data on error to prevent data loss
+        return render_template('admin/create_user.html', roles=db.session.execute(db.select(Role)).scalars().all(), 
+                               locations=db.session.execute(db.select(Location)).scalars().all(),
+                               username=username, email=email, full_name=full_name,
+                               location_id=location_id, role_id=role_id)
+
     roles = db.session.execute(db.select(Role)).scalars().all()
     locations = db.session.execute(db.select(Location)).scalars().all()
     return render_template('admin/create_user.html', roles=roles, locations=locations)
@@ -80,29 +96,64 @@ def create_user():
 @login_required
 @require_superuser()
 def edit_user(user_id):
-    user = db.session.get(User, user_id)
-    if request.method == 'POST':
-        user.full_name = request.form.get('full_name')
-        user.email = request.form.get('email')
-        user.is_active = 'is_active' in request.form
-        user.location_id = request.form.get('location_id', type=int)
-        
-        # Update roles
-        role_id = request.form.get('role_id', type=int)
-        if role_id:
-            role = db.session.get(Role, role_id)
-            user.roles = [role] if role else []
-
-        password = request.form.get('password')
-        if password:
-            if len(password) < 8:
-                flash(_('Password must be at least 8 characters'), 'error')
-                return redirect(url_for('admin.edit_user', user_id=user_id))
-            user.set_password(password)
-            
-        db.session.commit()
-        flash(_('User updated'), 'success')
+    # Eager load roles and location to populate the form correctly on GET requests
+    user = db.session.scalar(db.select(User).options(joinedload(User.roles), joinedload(User.location)).where(User.id == user_id))
+    if not user:
+        flash(_('User not found.'), 'error')
         return redirect(url_for('admin.manage_users'))
+
+    if request.method == 'POST':
+        is_active_requested = 'is_active' in request.form
+        password = request.form.get('password')
+        full_name = request.form.get('full_name', '').strip()
+        email = request.form.get('email', '').strip()
+        loc_id = request.form.get('location_id', type=int)
+        role_id = request.form.get('role_id', type=int)
+        
+        if not full_name or not email:
+            flash(_('Full name and email are required.'), 'error')
+        # SAFETY CHECK: Prevent an admin from deactivating their own account
+        elif user.id == current_user.id and not is_active_requested:
+            flash(_('Security Error: You cannot deactivate your own administrative account.'), 'error')
+            is_active_requested = True
+        elif password and len(password) < 8:
+            flash(_('Password must be at least 8 characters'), 'error')
+        else:
+            # Integrity: Verify location and role before assignment to prevent FK violations
+            loc = db.session.get(Location, loc_id)
+            role = db.session.get(Role, role_id)
+            
+            if not loc:
+                flash(_('Selected location is invalid.'), 'error')
+            elif not role:
+                flash(_('Selected role is invalid.'), 'error')
+            elif user.id == current_user.id and any(r.name == 'superuser' for r in user.roles) and role.name != 'superuser':
+                flash(_('Security Error: You cannot demote your own account from the superuser role.'), 'error')
+            else:
+                user.full_name = full_name
+                user.email = email
+                user.is_active = is_active_requested
+                user.location_id = loc.id
+                user.roles = [role]
+
+                if password:
+                    user.set_password(password)
+                
+                try:
+                    db.session.commit()
+                    flash(_('User updated'), 'success')
+                    return redirect(url_for('admin.manage_users'))
+                except Exception as e:
+                    db.session.rollback()
+                    current_app.logger.error(f"User update database error: {str(e)}")
+                    flash(_('A database error occurred while updating the user.'), 'error')
+        
+        # UX: Return form data on validation error to prevent data loss
+        all_roles = db.session.execute(db.select(Role)).scalars().all()
+        all_locations = db.session.execute(db.select(Location)).scalars().all()
+        return render_template('admin/edit_user.html', user=user, roles=all_roles, locations=all_locations,
+                               full_name=full_name, email=email, is_active=is_active_requested,
+                               location_id=loc_id, role_id=role_id)
     
     roles = db.session.execute(db.select(Role)).scalars().all()
     locations = db.session.execute(db.select(Location)).scalars().all()
@@ -118,10 +169,29 @@ def delete_user(user_id):
         return redirect(url_for('admin.manage_users'))
 
     user = db.session.get(User, user_id)
-    if user:
+    if not user:
+        flash(_('User not found.'), 'error')
+        return redirect(url_for('admin.manage_users'))
+
+    # INTEGRITY CHECK: Prevent deletion of users with any linked history to avoid FK violations
+    # This checks all tables where User is a mandatory ForeignKey
+    has_tickets = db.session.scalar(db.select(func.count(Ticket.id)).where((Ticket.assigned_to == user_id) | (Ticket.creator_id == user_id)))
+    has_notes = db.session.scalar(db.select(func.count(Note.id)).where(Note.user_id == user_id))
+    has_payments = db.session.scalar(db.select(func.count(Payment.id)).where(Payment.user_id == user_id))
+    has_logs = db.session.scalar(db.select(func.count(PhaseLog.id)).where(PhaseLog.user_id == user_id))
+
+    if any([has_tickets, has_notes, has_payments, has_logs]):
+        flash(_('Cannot delete user: This account has linked activity (tickets, notes, or payments). Deactivate the account instead to preserve history.'), 'error')
+        return redirect(url_for('admin.manage_users'))
+
+    try:
         db.session.delete(user)
         db.session.commit()
         flash(_('User account permanently removed.'), 'success')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"User deletion error: {str(e)}")
+        flash(_('Error removing user from database.'), 'error')
     
     return redirect(url_for('admin.manage_users'))
 
@@ -130,37 +200,127 @@ def delete_user(user_id):
 @require_superuser()
 def manage_locations():
     if request.method == 'POST':
-        name = request.form.get('name')
-        address = request.form.get('address')
-        phone = request.form.get('phone')
-        email = request.form.get('email')
+        name = request.form.get('name', '').strip()
+        address = request.form.get('address', '').strip()
+        phone = request.form.get('phone', '').strip()
+        email = request.form.get('email', '').strip()
 
-        if name:
+        if not name:
+            flash(_('Location name is required.'), 'error')
+        elif db.session.scalar(db.select(Location).where(func.lower(Location.name) == func.lower(name))):
+            flash(_('A location with this name already exists.'), 'warning')
+        else:
             new_loc = Location(name=name, address=address, phone=phone, email=email)
-            db.session.add(new_loc)
-            db.session.commit()
-            flash(_('New location "%(name)s" created successfully.', name=name), 'success')
-            return redirect(url_for('admin.manage_locations'))
-        flash(_('Location name is required.'), 'error')
+            try:
+                db.session.add(new_loc)
+                db.session.commit()
+                flash(_('New location "%(name)s" created successfully.', name=name), 'success')
+                return redirect(url_for('admin.manage_locations'))
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Location creation error: {str(e)}")
+                flash(_('Error saving new location.'), 'error')
+        
+        # UX: Return form data on error
+        return render_template('admin/locations.html', locations=db.session.execute(db.select(Location)).scalars().all(),
+                               name=name, address=address, phone=phone, email=email)
 
     locations = db.session.execute(db.select(Location)).scalars().all()
     return render_template('admin/locations.html', locations=locations)
 
+@admin_bp.route('/locations/edit/<int:location_id>', methods=['POST'])
+@login_required
+@require_superuser()
+def edit_location(location_id):
+    """Update existing location details with optional branding synchronization"""
+    loc = db.session.get(Location, location_id)
+    if not loc:
+        flash(_('Location not found.'), 'error')
+        return redirect(url_for('admin.manage_locations'))
+
+    name = request.form.get('name', '').strip()
+    if not name:
+        flash(_('Location name is required.'), 'error')
+    else:
+        # Integrity: Check for duplicate names (excluding current record)
+        exists = db.session.scalar(db.select(Location).where(
+            func.lower(Location.name) == func.lower(name),
+            Location.id != location_id
+        ))
+        if exists:
+            flash(_('Another location with this name already exists.'), 'warning')
+            return redirect(url_for('admin.manage_locations'))
+            
+        loc.name = name
+        loc.address = request.form.get('address', '').strip()
+        loc.phone = request.form.get('phone', '').strip()
+        loc.email = request.form.get('email', '').strip()
+        
+        # Sync branding if this location is the primary shop anchor
+        if loc.settings:
+            loc.settings.shop_name = name
+            loc.settings.shop_address = loc.address
+            loc.settings.shop_phone = loc.phone
+            loc.settings.shop_email = loc.email
+
+        try:
+            db.session.commit()
+            flash(_('Location "%(name)s" updated.', name=name), 'success')
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Location update error: {str(e)}")
+            flash(_('Error updating location.'), 'error')
+            
+    return redirect(url_for('admin.manage_locations'))
+
+@admin_bp.route('/locations/delete/<int:location_id>', methods=['POST'])
+@login_required
+@require_superuser()
+def delete_location(location_id):
+    """Safely remove a location after verifying no entities are linked to it"""
+    loc = db.session.get(Location, location_id)
+    if not loc:
+        flash(_('Location not found.'), 'error')
+        return redirect(url_for('admin.manage_locations'))
+
+    # Integrity: Prevent deletion if any entities are linked to this branch
+    has_users = db.session.scalar(db.select(func.count(User.id)).where(User.location_id == location_id))
+    has_tickets = db.session.scalar(db.select(func.count(Ticket.id)).where(Ticket.location_id == location_id))
+    has_customers = db.session.scalar(db.select(func.count(Customer.id)).where(Customer.location_id == location_id))
+    has_services = db.session.scalar(db.select(func.count(Service.id)).where(Service.location_id == location_id))
+    has_parts = db.session.scalar(db.select(func.count(SparePart.id)).where(SparePart.location_id == location_id))
+    has_problems = db.session.scalar(db.select(func.count(CommonProblem.id)).where(CommonProblem.location_id == location_id))
+    has_settings = db.session.scalar(db.select(func.count(ShopSetting.id)).where(ShopSetting.location_id == location_id))
+    
+    if any([has_users, has_tickets, has_customers, has_services, has_parts, has_problems, has_settings]):
+        flash(_('Cannot delete location: It is currently linked to existing records (users, tickets, customers, or shop settings).'), 'error')
+        return redirect(url_for('admin.manage_locations'))
+
+    try:
+        db.session.delete(loc)
+        db.session.commit()
+        flash(_('Location deleted successfully.'), 'success')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Location deletion error: {str(e)}")
+        flash(_('Error removing location from database.'), 'error')
+
+    return redirect(url_for('admin.manage_locations'))
 
 @admin_bp.route('/status')
 @login_required
 @require_superuser()
 def system_status():
     """Comprehensive diagnostic view for administrators"""
-    import sys
-    import platform
-    from sqlalchemy import text
-    
     # 1. Database Check
     db_status = "Online"
     db_version = "Unknown"
     try:
-        db_version = db.session.execute(text("SELECT version()")).scalar()
+        # Integrity: Only attempt Postgres-specific version check if using Postgres
+        if 'postgresql' in current_app.config.get('SQLALCHEMY_DATABASE_URI', ''):
+            db_version = db.session.scalar(text("SELECT version()"))
+        else:
+            db_version = _("Non-PostgreSQL Database")
     except Exception:
         db_status = "Offline"
 
@@ -173,9 +333,11 @@ def system_status():
     dir_status = {}
     for name, path in dirs.items():
         folder = os.path.dirname(path) if name == 'Logs' else path
+        exists = os.path.exists(folder)
         dir_status[name] = {
             'path': folder,
-            'writable': os.access(folder, os.W_OK)
+            'exists': exists,
+            'writable': os.access(folder, os.W_OK) if exists else False
         }
 
     # 3. System Info
@@ -207,22 +369,28 @@ def backup():
     if request.method == 'POST':
         backup_type = request.form.get('backup_type')
         if backup_type == 'json_data':
-            data = BackupService.get_system_logical_data()
-            filename = f"manual_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-            path = os.path.join(current_app.config['BACKUP_DIR'], filename)
-            with open(path, 'w') as f:
-                json.dump(data, f)
-            flash(_('Logical backup created successfully: %(name)s', name=filename), 'success')
+            try:
+                data = BackupService.get_system_logical_data()
+                filename = f"manual_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                path = os.path.join(current_app.config['BACKUP_DIR'], filename)
+                with open(path, 'w') as f:
+                    json.dump(data, f, indent=4)
+                flash(_('Logical backup created successfully: %(name)s', name=filename), 'success')
+            except Exception as e:
+                current_app.logger.error(f"JSON Backup generation failed: {str(e)}")
+                flash(_('Error: Failed to generate logical backup file.'), 'error')
+                
         elif backup_type == 'full_db':
             filename = f"full_dump_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dump"
             path = os.path.join(current_app.config['BACKUP_DIR'], filename)
             
             try:
-                db_url = current_app.config['SQLALCHEMY_DATABASE_URI']
+                db_url = current_app.config.get('SQLALCHEMY_DATABASE_URI', '')
                 
                 if 'postgresql' in db_url:
-                    # System tools don't support SQLAlchemy driver syntax (e.g. +psycopg)
-                    clean_url = db_url.replace('+psycopg', '')
+                    # INTEGRITY: pg_dump does not support SQLAlchemy driver dialects (e.g. +psycopg or +psycopg2)
+                    # Strip the dialect part to create a valid RFC 3986 URI for system tools
+                    clean_url = db_url.replace('+psycopg2', '').replace('+psycopg', '')
                     
                     # Capture stderr to provide helpful feedback if pg_dump fails
                     subprocess.run(['pg_dump', '--dbname', clean_url, '-Fc', '-f', path], 
@@ -233,14 +401,17 @@ def backup():
             except subprocess.CalledProcessError as e:
                 err_msg = e.stderr.decode() if e.stderr else _("Process returned non-zero exit status.")
                 flash(_('Error: pg_dump failed. %(msg)s', msg=err_msg), 'error')
+            except FileNotFoundError:
+                flash(_('Error: pg_dump utility not found. Please ensure PostgreSQL client tools are installed.'), 'error')
             except Exception as e:
+                db.session.rollback()
                 current_app.logger.error(f"Backup failed: {str(e)}")
                 flash(_('An unexpected error occurred during the backup process.'), 'error')
 
         return redirect(url_for('admin.backup'))
 
     backup_dir = current_app.config['BACKUP_DIR']
-    backups = sorted(os.listdir(backup_dir), reverse=True) if os.path.exists(backup_dir) else []
+    backups = sorted(os.listdir(backup_dir), reverse=True) if os.path.isdir(backup_dir) else []
     return render_template('admin/backup.html', backups=backups)
 
 @admin_bp.route('/backup/download/<filename>')
@@ -248,8 +419,9 @@ def backup():
 @require_superuser()
 def download_backup_file(filename):
     """Download a backup file from the server's repository"""
+    filename = secure_filename(filename)
     path = os.path.join(current_app.config['BACKUP_DIR'], filename)
-    if os.path.exists(path):
+    if os.path.isfile(path):
         return send_file(path, as_attachment=True)
     flash(_('File not found.'), 'error')
     return redirect(url_for('admin.backup'))
@@ -272,13 +444,14 @@ def restore():
         temp_path = os.path.join(current_app.config['BACKUP_DIR'], f"temp_{filename}")
         file.save(temp_path)
         
-        success, message = BackupService.restore_full_backup(temp_path)
-        if os.path.exists(temp_path): os.remove(temp_path)
-        
-        if success:
-            flash(_('Database restored successfully. System state has been reverted.'), 'success')
-        else:
-            flash(message, 'error')
+        try:
+            success, message = BackupService.restore_full_backup(temp_path)
+            if success:
+                flash(_('Database restored successfully. System state has been reverted.'), 'success')
+            else:
+                flash(message, 'error')
+        finally:
+            if os.path.exists(temp_path): os.remove(temp_path)
     else:
         flash(_('Only .dump files (PostgreSQL binary) are supported for automated restore.'), 'warning')
 
@@ -288,34 +461,57 @@ def restore():
 @login_required
 @require_permission('manage_settings')
 def settings():
-    shop_settings = db.session.execute(db.select(ShopSetting).filter_by(location_id=current_user.location_id)).scalar()
+    # SCALABILITY: Handle superuser global context by defaulting to the primary branch settings
+    loc_id = current_user.location_id or db.session.scalar(db.select(Location.id).limit(1))
+    
+    shop_settings = db.session.scalar(db.select(ShopSetting).filter_by(location_id=loc_id))
+    
     if request.method == 'POST':
         if not shop_settings:
-            shop_settings = ShopSetting(location_id=current_user.location_id)
+            shop_settings = ShopSetting(location_id=loc_id)
             db.session.add(shop_settings)
         
-        shop_settings.shop_name = request.form.get('shop_name')
-        shop_settings.shop_address = request.form.get('shop_address')
-        shop_settings.shop_phone = request.form.get('shop_phone')
-        shop_settings.shop_email = request.form.get('shop_email')
+        name = request.form.get('shop_name', '').strip()
+        if not name:
+            flash(_('Shop name is required.'), 'error')
+        else:
+            shop_settings.shop_name = name
+            shop_settings.shop_address = request.form.get('shop_address', '').strip()
+            shop_settings.shop_phone = request.form.get('shop_phone', '').strip()
+            shop_settings.shop_email = request.form.get('shop_email', '').strip()
+            
+            # SYNC: Ensure the physical Location record matches the new branding details
+            if shop_settings.location:
+                shop_settings.location.name = name
+                shop_settings.location.address = shop_settings.shop_address
+                shop_settings.location.phone = shop_settings.shop_phone
+                shop_settings.location.email = shop_settings.shop_email
 
         # Handle Logo Upload
         file = request.files.get('shop_logo')
         if file and file.filename:
-            filename = secure_filename(f"logo_loc_{current_user.location_id}_{file.filename}")
+            # INTEGRITY: Use the scoped location ID for file naming consistency
+            filename = secure_filename(f"logo_loc_{loc_id}_{file.filename}")
             logo_dir = current_app.config['LOGOS_DIR']
+            new_path = os.path.join(logo_dir, filename)
             
+            file.save(new_path)
+
             # Remove old logo if it exists
-            if shop_settings.logo_path:
+            if shop_settings.logo_path and shop_settings.logo_path != filename:
                 old_path = os.path.join(logo_dir, shop_settings.logo_path)
                 if os.path.exists(old_path): os.remove(old_path)
-            
-            file.save(os.path.join(logo_dir, filename))
+
             shop_settings.logo_path = filename
         
-        db.session.commit()
-        flash(_('Settings updated successfully!'), 'success')
-        return redirect(url_for('admin.settings'))
+        try:
+            db.session.commit()
+            flash(_('Settings updated successfully!'), 'success')
+            return redirect(url_for('admin.settings'))
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Settings update error: {str(e)}")
+            flash(_('Failed to save settings.'), 'error')
         
     return render_template('admin/settings.html', settings=shop_settings)
 

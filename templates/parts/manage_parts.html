@@ -7,7 +7,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>{{ _('Spare Parts & Hardware') }}</h2>
     {% if current_user.has_permission('manage_inventory') %}
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPartModal">{{ _('+ New Inventory Item') }}</button>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPartModal">{{ _('+ New Inventory Item') }}</button>
     {% endif %}
 </div>
 
@@ -31,11 +31,11 @@
                         <strong>{{ part.name }}</strong><br>
                         <small class="text-muted">{{ part.description or '-' }}</small>
                     </td>
-                    <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, part.cost) }}</td>
-                    <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, part.selling_price) }}</td>
+                    <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, part.cost or 0) }}</td>
+                    <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, part.selling_price or 0) }}</td>
                     <td class="text-center">
-                        <span class="badge bg-{{ 'danger' if part.stock_quantity <= 0 else 'info' }}">
-                            {{ part.stock_quantity }}
+                        <span class="badge bg-{{ 'danger' if (part.stock_quantity or 0) <= 0 else 'info' }}">
+                            {{ part.stock_quantity or 0 }}
                         </span>
                     </td>
                     <td>
@@ -50,9 +50,10 @@
                                 data-bs-target="#editPartModal"
                                 data-id="{{ part.id }}"
                                 data-name="{{ part.name }}"
-                                data-cost="{{ '%.*f'|format(currency_decimals, part.cost) }}"
-                                data-price="{{ '%.*f'|format(currency_decimals, part.selling_price) }}"
-                                data-stock="{{ part.stock_quantity }}"
+                                data-description="{{ part.description or '' }}"
+                                data-cost="{{ '%.*f'|format(currency_decimals, part.cost or 0) }}"
+                                data-price="{{ '%.*f'|format(currency_decimals, part.selling_price or 0) }}"
+                                data-stock="{{ part.stock_quantity or 0 }}"
                                 data-active="{{ 'true' if part.is_active else 'false' }}">
                             {{ _('Edit') }}
                         </button>
@@ -81,25 +82,38 @@
         <div class="modal-content">
             <form id="editPartForm" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header"><h5 id="editPartModalLabel">{{ _('Edit Part Details') }}</h5></div>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editPartModalLabel">{{ _('Edit Part Details') }}</h5>
+                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">{{ _('Part Name') }}</label>
                         <input type="text" name="name" id="edit_part_name" class="form-control" required>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ _('Description') }}</label>
+                        <textarea name="description" id="edit_part_description" class="form-control" rows="2"></textarea>
+                    </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">{{ _('Wholesale Cost') }}</label>
-                            <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="cost" id="edit_part_cost" class="form-control">
+                            <div class="input-group">
+                                <span class="input-group-text">{{ currency_symbol }}</span>
+                                <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="cost" id="edit_part_cost" class="form-control" min="0">
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">{{ _('Selling Price') }}</label>
-                            <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="selling_price" id="edit_part_price" class="form-control" required>
+                            <div class="input-group">
+                                <span class="input-group-text">{{ currency_symbol }}</span>
+                                <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="selling_price" id="edit_part_price" class="form-control" min="0" required>
+                            </div>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ _('Stock Quantity') }}</label>
-                        <input type="number" name="stock_quantity" id="edit_part_stock" class="form-control" min="0">
+                        <input type="number" name="stock_quantity" id="edit_part_stock" class="form-control" min="0" required>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="is_active" id="edit_part_active">
@@ -107,8 +121,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ _('Save Changes') }}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-outline-primary">{{ _('Save Changes') }}</button>
                 </div>
             </form>
         </div>
@@ -116,39 +130,74 @@
 </div>
 
 <!-- Add Part Modal -->
-<div class="modal fade" id="addPartModal" tabindex="-1">
+<div class="modal fade" id="addPartModal" tabindex="-1" aria-labelledby="addPartModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form action="{{ url_for('main.add_part') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header"><h5>{{ _('Add New Inventory Item') }}</h5></div>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addPartModalLabel">{{ _('Add New Inventory Item') }}</h5>
+                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">{{ _('Part Name') }}</label>
                         <input type="text" name="name" class="form-control" placeholder="{{ _('e.g. iPhone 13 Screen') }}" required>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ _('Description') }}</label>
+                        <textarea name="description" class="form-control" rows="2"></textarea>
+                    </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">{{ _('Wholesale Cost') }}</label>
-                            <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="cost" class="form-control" placeholder="{{ _('Your cost') }}">
+                            <div class="input-group">
+                                <span class="input-group-text">{{ currency_symbol }}</span>
+                                <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="cost" class="form-control" placeholder="{{ _('Your cost') }}" min="0">
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">{{ _('Selling Price') }}</label>
-                            <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="selling_price" class="form-control" placeholder="{{ _('Customer price') }}" required>
+                            <div class="input-group">
+                                <span class="input-group-text">{{ currency_symbol }}</span>
+                                <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="selling_price" class="form-control" placeholder="{{ _('Customer price') }}" min="0" required>
+                            </div>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ _('Initial Stock') }}</label>
-                        <input type="number" name="stock_quantity" class="form-control" value="0" min="0">
+                        <input type="number" name="stock_quantity" class="form-control" value="0" min="0" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ _('Add to Inventory') }}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-outline-primary">{{ _('Add to Inventory') }}</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editPartModal = document.getElementById('editPartModal');
+    if (editPartModal) {
+        editPartModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-id');
+            
+            const form = document.getElementById('editPartForm');
+            form.action = "{{ url_for('main.manage_inventory') }}/edit/" + (id || '');
+            
+            document.getElementById('edit_part_name').value = button.getAttribute('data-name') || '';
+            document.getElementById('edit_part_description').value = button.getAttribute('data-description') || '';
+            document.getElementById('edit_part_cost').value = button.getAttribute('data-cost') || '0';
+            document.getElementById('edit_part_price').value = button.getAttribute('data-price') || '0';
+            document.getElementById('edit_part_stock').value = button.getAttribute('data-stock') || '0';
+            document.getElementById('edit_part_active').checked = button.getAttribute('data-active') === 'true';
+        });
+    }
+});
+</script>
 {% endif %}
 {% endblock %}

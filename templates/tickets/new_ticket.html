@@ -3,35 +3,36 @@
 {% block title %}{{ _('Create New Ticket') }}{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
+<div class="card shadow-sm border-0">
     <div class="card-header bg-primary text-white">
         <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>{{ _('New Repair Ticket') }}</h4>
     </div>
     <div class="card-body">
-        <form method="POST" id="ticketForm">
+        <form action="{{ url_for('ticket.new_ticket') }}" method="POST" id="ticketForm" 
+              data-validation-msg="{{ _('Please select a customer and a device from the search results before creating the ticket.')|forceescape }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row g-4">
                 <!-- Customer Search Section -->
                 <div class="col-md-6 position-relative">
-                    <label class="form-label fw-bold">{{ _('1. Search Customer') }}</label>
+                    <label for="customer_search" class="form-label fw-bold">{{ _('1. Search Customer') }} *</label>
                     <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                        <span class="input-group-text"><i class="fas fa-user" aria-hidden="true"></i></span>
                         <input type="text" id="customer_search" class="form-control" placeholder="{{ _('Type name or phone...') }}" autocomplete="off">
                         <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#newCustomerModal">{{ _('New') }} +</button>
                     </div>
-                    <input type="hidden" name="customer_id" id="customer_id" required>
+                    <input type="hidden" name="customer_id" id="customer_id">
                     <div id="customer_results" class="list-group position-absolute w-100 z-3 shadow mt-1" style="display: none; max-height: 250px; overflow-y: auto;"></div>
                 </div>
 
                 <!-- Device Search Section -->
                 <div class="col-md-6 position-relative">
-                    <label class="form-label fw-bold">{{ _('2. Select Device') }}</label>
+                    <label for="device_search" class="form-label fw-bold">{{ _('2. Select Device') }} *</label>
                     <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-laptop"></i></span>
+                        <span class="input-group-text"><i class="fas fa-laptop" aria-hidden="true"></i></span>
                         <input type="text" id="device_search" class="form-control" placeholder="{{ _('Search customer\'s devices...') }}" disabled autocomplete="off">
                         <button type="button" id="new_device_btn" class="btn btn-outline-secondary" disabled data-bs-toggle="modal" data-bs-target="#newDeviceModal">{{ _('New') }} +</button>
                     </div>
-                    <input type="hidden" name="device_id" id="device_id" required>
+                    <input type="hidden" name="device_id" id="device_id">
                     <div id="device_results" class="list-group position-absolute w-100 z-3 shadow mt-1" style="display: none; max-height: 250px; overflow-y: auto;"></div>
                 </div>
 
@@ -41,42 +42,44 @@
                 </div>
 
                 <div class="col-md-12">
-                    <label class="form-label">{{ _('Common Problems (Quick Select)') }}</label>
-                    <div class="d-flex flex-wrap gap-2 mb-3">
-                        {% for problem in common_problems %}
-                            <button type="button" class="btn btn-sm btn-outline-info problem-quick-select" data-problem="{{ problem.problem_text }}">{{ _(problem.problem_text) }}</button>
-                        {% endfor %}
-                    </div>
-                    <label class="form-label">{{ _('Problem Description') }} *</label>
+                    {% if common_problems %}
+                        <label class="form-label fw-bold">{{ _('Common Problems (Quick Select)') }}</label>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            {% for problem in common_problems %}
+                                <button type="button" class="btn btn-sm btn-outline-info problem-quick-select" data-problem="{{ _(problem.problem_text)|forceescape }}">{{ _(problem.problem_text) }}</button>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <label for="problem_description" class="form-label fw-bold">{{ _('Problem Description') }} *</label>
                     <textarea name="problem_description" id="problem_description" class="form-control" rows="3" required placeholder="{{ _('Describe the issue in detail...') }}"></textarea>
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label">{{ _('Items Included (Charger, Case, etc.)') }}</label>
-                    <input type="text" name="items_included" class="form-control" placeholder="{{ _('e.g., Original Charger, Leather Case') }}">
+                    <label for="items_included" class="form-label fw-bold">{{ _('Items Included (Charger, Case, etc.)') }}</label>
+                    <input type="text" name="items_included" id="items_included" class="form-control" placeholder="{{ _('e.g., Original Charger, Leather Case') }}">
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">{{ _('Technician Assignment') }}</label>
-                    <select name="assigned_to" class="form-select">
+                    <label for="assigned_to" class="form-label fw-bold">{{ _('Technician Assignment') }}</label>
+                    <select name="assigned_to" id="assigned_to" class="form-select">
                         <option value="">{{ _('-- Unassigned --') }}</option>
-                        {% for user in users %}
-                            <option value="{{ user.id }}">{{ user.full_name }}</option>
+                        {% for user in (users or []) %}
+                            <option value="{{ user.id }}">{{ user.full_name or user.username }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">{{ _('Down Payment') }}</label>
+                    <label for="down_payment" class="form-label fw-bold">{{ _('Down Payment') }}</label>
                     <div class="input-group">
                         <span class="input-group-text">{{ currency_symbol }}</span>
-                        <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="down_payment" class="form-control" value="{{ '%.*f'|format(currency_decimals, 0.0) }}">
+                        <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="down_payment" id="down_payment" class="form-control" value="{{ '%.*f'|format(currency_decimals, 0.0) }}" min="0">
                     </div>
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">{{ _('Payment Method') }}</label>
-                    <select name="payment_method" class="form-select">
+                    <label for="payment_method" class="form-label fw-bold">{{ _('Payment Method') }}</label>
+                    <select name="payment_method" id="payment_method" class="form-select">
                         <option value="Cash">{{ _('Cash') }}</option>
                         <option value="Card">{{ _('Card') }}</option>
                         <option value="Transfer">{{ _('Bank Transfer') }}</option>
@@ -86,17 +89,17 @@
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">{{ _('Intake Date/Time') }}</label>
+                    <label for="created_date" class="form-label fw-bold">{{ _('Intake Date/Time') }}</label>
                     <div class="input-group">
-                        <input type="date" name="created_date" class="form-control" value="{{ now_date }}">
-                        <input type="time" name="created_time" class="form-control" value="{{ now_time }}">
+                        <input type="date" name="created_date" id="created_date" class="form-control" value="{{ now.strftime('%Y-%m-%d') if now else '' }}" aria-label="{{ _('Intake Date') }}">
+                        <input type="time" name="created_time" id="created_time" class="form-control" value="{{ now.strftime('%H:%M') if now else '' }}" aria-label="{{ _('Intake Time') }}">
                     </div>
                 </div>
 
                 <div class="col-12 text-end mt-4">
                     <hr>
-                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary px-4 me-2">{{ _('Cancel') }}</a>
-                    <button type="submit" class="btn btn-primary btn-lg px-5">{{ _('Create Ticket') }}</button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary px-4 me-2">{{ _('Cancel') }}</a>
+                    <button type="submit" class="btn btn-outline-primary btn-lg px-5">{{ _('Create Ticket') }}</button>
                 </div>
             </div>
         </form>
@@ -108,10 +111,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-    // This page relies on the AJAX logic initialized in main.js
-    document.addEventListener('DOMContentLoaded', () => {
-        // The modals and search fields are wired up via IDs by the core engine
-    });
-</script>
+<script src="{{ url_for('static', filename='js/new_ticket.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/ticket_search.js') }}" defer></script>
 {% endblock %}

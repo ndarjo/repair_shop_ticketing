@@ -9,13 +9,13 @@
         <div class="alert alert-info mb-4" role="alert">
             <h5 class="alert-heading"><i class="fas fa-clock me-2"></i>{{ _('Automated Daily Backups Active') }}</h5>
             <p class="mb-0">
-                {{ _('The system automatically performs a <strong>full database backup (PostgreSQL Dump)</strong> every day at <strong>%(hour)02d:%(min)02d</strong> (local time) (with logical JSON fallback).', 
+                {{ _('The system automatically performs a <strong>full database backup (PostgreSQL Dump)</strong> every day at <strong>%(hour)02d:%(min)02d</strong> (UTC) (with logical JSON fallback).', 
                    hour=config.BACKUP_HOUR, min=config.BACKUP_MINUTE)|safe }}
             </p>
         </div>
 
         <div class="card mb-4">
-            <div class="card-header">
+            <div class="card-header ">
                 <h5>{{ _('Create New Backup') }}</h5>
             </div>
             <div class="card-body">
@@ -26,37 +26,37 @@
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="backup_type" id="json_data_backup" value="json_data" checked>
                             <label class="form-check-label" for="json_data_backup">
-                                **{{ _('Logical Data Backup (JSON)') }}**: {{ _('Exports selected customer and ticket data. (Human-readable, good for migration)') }}
+                                <strong>{{ _('Logical Data Backup (JSON)') }}</strong>: {{ _('Exports system data including users, customers, and tickets into a portable format.') }}
                             </label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="backup_type" id="full_db_backup" value="full_db">
                             <label class="form-check-label" for="full_db_backup">
-                                **{{ _('Full Database Snapshot') }}**: {{ _('Exports binary file for SQLite (.db) or compressed dump for PostgreSQL (.dump) using native system utilities.') }}
+                                <strong>{{ _('Full Database Snapshot') }}</strong>: {{ _('Exports a compressed dump for PostgreSQL (.dump) using native system utilities.') }}
                             </label>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary">{{ _('Download Backup') }}</button>
+                    <button type="submit" class="btn btn-outline-primary">{{ _('Generate Backup') }}</button>
                 </form>
             </div>
         </div>
 
         <div class="card">
-            <div class="card-header"><h5>{{ _('Restore from Backup') }}</h5></div>
+            <div class="card-header "><h5>{{ _('Restore from Backup') }}</h5></div>
             <div class="card-body">
-                <p class="text-muted">{{ _('Upload a <strong>.db</strong> or <strong>.dump</strong> file for a full system restore, or a <strong>.json</strong> file to import data records.') }}</p>
-                <form action="{{ url_for('admin.restore') }}" method="POST" enctype="multipart/form-data">
+                <p class="text-muted">{{ _('Upload a <strong>.dump</strong> file (PostgreSQL binary) for a full system restore.')|safe }}</p>
+                <form action="{{ url_for('admin.restore') }}" method="POST" enctype="multipart/form-data" class="confirm-action" data-confirm="{{ _('WARNING: Restoring from a backup file will overwrite all current data. Are you sure?') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
-                        <input class="form-control" type="file" name="backup_file" accept=".json,.db,.dump" required>
+                        <input class="form-control" type="file" name="backup_file" accept=".dump" required>
                     </div>
-                    <button type="submit" class="btn btn-warning confirm-action" data-confirm="{{ _('WARNING: Restoring from a backup file will overwrite all current data. Are you sure?') }}">{{ _('Upload & Restore') }}</button>
+                    <button type="submit" class="btn btn-outline-warning">{{ _('Upload & Restore') }}</button>
                 </form>
             </div>
         </div>
 
         <div class="card mt-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header  d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">{{ _('Available Backups') }}</h5>
                 <span class="badge bg-secondary">{{ backups|length }} {{ _('Files') }}</span>
             </div>
@@ -72,7 +72,7 @@
                         <tbody>
                             {% for b in backups %}
                             <tr>
-                                <td><code class="text-primary">{{ b }}</code></td>
+                                <td><strong class="text-break">{{ b }}</strong></td>
                                 <td class="text-end">
                                     <a href="{{ url_for('admin.download_backup_file', filename=b) }}" class="btn btn-sm btn-outline-primary" title="{{ _('Download') }}"><i class="fas fa-download"></i></a>
                                 </td>

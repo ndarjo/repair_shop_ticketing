@@ -10,54 +10,56 @@
                 <span class="badge bg-dark text-light"><i class="fas fa-lock me-1"></i> {{ _('Ticket Locked') }}</span>
             {% else %}
                 {% if current_user.has_permission('update_phase') or current_user.has_permission('mark_as_paid') or current_user.has_permission('mark_as_taken') %}
-                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#updatePhaseModal">{{ _('Update Phase') }}</button>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updatePhaseModal">{{ _('Update Phase') }}</button>
                 {% endif %}
                 {% if current_user.has_permission('process_payments') %}
-                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">{{ _('Record Payment') }}</button>
+                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">{{ _('Record Payment') }}</button>
                 {% endif %}
-                <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-warning">{{ _('Edit Ticket') }}</a>
+                <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-warning">{{ _('Edit Ticket') }}</a>
             {% endif %}
 
-            {% if current_user.has_permission('create_invoice') and ticket.current_phase != 'Already Taken' %}
+            {% if current_user.has_permission('create_invoice') %}
                 {% set active_invoice = ticket.invoices[0] if ticket.invoices else None %}
+                {% if active_invoice or ticket.current_phase != 'Already Taken' %}
                 <div class="btn-group ms-1">
                     {% if not active_invoice %}
                         <form action="{{ url_for('ticket.create_invoice', ticket_id=ticket.id) }}" method="POST" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-info text-white">{{ _('Create Invoice') }}</button>
+                            <button type="submit" class="btn btn-sm btn-outline-info text-white">{{ _('Create Invoice') }}</button>
                         </form>
                     {% elif active_invoice.status == 'Draft' %}
                         <form action="{{ url_for('ticket.create_invoice', ticket_id=ticket.id) }}" method="POST" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-info text-white">{{ _('Finalize Invoice') }}</button>
+                            <button type="submit" class="btn btn-sm btn-outline-info text-white">{{ _('Finalize Invoice') }}</button>
                         </form>
                     {% else %}
                         <div class="btn-group">
                             <a href="{{ url_for('ticket.view_invoice', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-info">
-                                <i class="bi bi-eye me-1"></i> {{ _('View') }}
+                                <i class="fas fa-eye me-1"></i> {{ _('View') }}
                             </a>
                             <a href="{{ url_for('ticket.download_invoice_pdf', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('Download PDF') }}" aria-label="{{ _('Download Invoice PDF') }}">
-                                <i class="bi bi-file-earmark-pdf"></i>
+                                <i class="fas fa-file-pdf"></i>
                             </a>
                         </div>
                     {% endif %}
                 </div>
+                {% endif %}
             {% endif %}
 
             {% if ticket.current_phase == 'Already Taken' and not ticket.is_archived and current_user.has_permission('archive_ticket') %}
-            <form action="{{ url_for('ticket.archive_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Archive this ticket? It will be removed from history lists but kept for financial reports.') }}">
+            <form action="{{ url_for('ticket.archive_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Archive this ticket? It will be removed from history lists but kept for financial reports.')|forceescape }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-sm btn-outline-secondary ms-2"><i class="fas fa-archive me-1"></i> {{ _('Archive Ticket') }}</button>
+                <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="fas fa-archive me-1"></i> {{ _('Archive Ticket') }}</button>
             </form>
             {% endif %}
 
             {% if current_user.has_permission('delete_ticket') %}
-            <form action="{{ url_for('ticket.delete_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('ERASE TICKET: Are you sure? This will remove all history and records for this job.') }}">
+            <form action="{{ url_for('ticket.delete_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('ERASE TICKET: Are you sure? This will remove all history and records for this job.')|forceescape }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-sm btn-outline-danger ms-2">{{ _('Erase Ticket') }}</button>
+                <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Erase Ticket') }}</button>
             </form>
             {% endif %}
-            <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %} ms-2">
+            <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
                 {{ _(ticket.current_phase) }}
             </span>
         </div>
@@ -66,9 +68,9 @@
         <div class="row">
             <div class="col-md-6">
                 <p><strong>{{ _('Customer:') }}</strong> {{ ticket.customer.name }}</p>
-                <p><strong>{{ _('Device:') }}</strong> <a href="{{ url_for('device.view_device', device_id=ticket.device.id) }}">{{ ticket.device.display }}</a></p>
-                <p><strong>{{ _('S/N:') }}</strong> <code class="text-dark">{{ ticket.device.serial_number or 'N/A' }}</code></p>
-                <p><strong>{{ _('Color:') }}</strong> {{ ticket.device.color or 'N/A' }}</p>
+                <p><strong>{{ _('Device:') }}</strong> {% if ticket.device %}<a href="{{ url_for('device.view_device', device_id=ticket.device.id) }}">{{ ticket.device.display }}</a>{% else %}-{% endif %}</p>
+                <p><strong>{{ _('S/N:') }}</strong> <code class="text-dark">{{ ticket.device.serial_number if (ticket.device and ticket.device.serial_number) else _('N/A') }}</code></p>
+                <p><strong>{{ _('Color:') }}</strong> {{ ticket.device.color if (ticket.device and ticket.device.color) else _('N/A') }}</p>
             </div>
             <div class="col-md-6">
                 <p><strong>{{ _('Created:') }}</strong> {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
@@ -77,11 +79,11 @@
         </div>
         <hr>
         <h5>{{ _('Problem Description') }}</h5>
-        <p>{{ ticket.problem_description }}</p>
+        <p style="white-space: pre-wrap;">{{ ticket.problem_description }}</p>
 
         {% if ticket.items_included %}
         <h6><i class="fas fa-box-open me-2 text-muted"></i>{{ _('Items Included') }}</h6>
-        <p class="text-muted">{{ ticket.items_included }}</p>
+        <p class="text-muted" style="white-space: pre-wrap;">{{ ticket.items_included }}</p>
         {% endif %}
         
         <hr>
@@ -113,17 +115,17 @@
                         </thead>
                         <tbody>
                             {% for ts in ticket.ticket_services %}
-                            {% set ts_total = ts.price_charged * ts.quantity %}
+                            {% set ts_total = (ts.price_charged or 0) * (ts.quantity or 0) %}
                             <tr>
-                                <td><span class="badge bg-light text-dark me-1">{{ _('Svc') }}</span> {{ _(ts.service.name) }}</td>
-                                <td class="text-center">{{ ts.quantity }}</td>
-                                <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price_charged) }}</td>
+                                <td><span class="badge bg-light text-dark me-1">{{ _('Svc') }}</span> {{ _(ts.service.name) if ts.service else _('Service') }}</td>
+                                <td class="text-center">{{ ts.quantity or 0 }}</td>
+                                <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price_charged or 0) }}</td>
                                 <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts_total) }}</td>
                                 <td class="text-end">
                                     {% if current_user.has_permission('remove_service') and ticket.current_phase != 'Already Taken' %}
                                     <form action="{{ url_for('ticket.remove_service', ticket_id=ticket.id, ts_id=ts.id) }}" method="POST" style="display:inline;">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" data-confirm="{{ _('Remove service?') }}" aria-label="{{ _('Remove service') }}"><i class="fas fa-times"></i></button>
+                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" data-confirm="{{ _('Remove service?')|forceescape }}" aria-label="{{ _('Remove service') }}"><i class="fas fa-times"></i></button>
                                     </form>
                                     {% endif %}
                                 </td>
@@ -134,14 +136,14 @@
                                 {% for item in inv.items %}
                                 <tr class="table-info">
                                     <td><span class="badge bg-light text-dark me-1">{{ _('Part') }}</span> {{ item.description }}</td>
-                                    <td class="text-center">{{ item.quantity }}</td>
-                                    <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price) }}</td>
-                                    <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price) }}</td>
+                                    <td class="text-center">{{ item.quantity or 0 }}</td>
+                                    <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price or 0) }}</td>
+                                    <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price or 0) }}</td>
                                     <td class="text-end">
                                         {% if current_user.has_permission('remove_part') and ticket.current_phase != 'Already Taken' %}
                                         <form action="{{ url_for('ticket.remove_part', ticket_id=ticket.id, item_id=item.id) }}" method="POST" style="display:inline;">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-link text-danger p-0 confirm-action" data-confirm="{{ _('Remove this part from costs?') }}" aria-label="{{ _('Remove part') }}"><i class="fas fa-times"></i></button>
+                                            <button type="submit" class="btn btn-link text-danger p-0 confirm-action" data-confirm="{{ _('Remove this part from costs?')|forceescape }}" aria-label="{{ _('Remove part') }}"><i class="fas fa-times"></i></button>
                                         </form>
                                         {% endif %}
                                     </td>
@@ -162,24 +164,24 @@
                         <h6 class="text-uppercase text-muted small fw-bold">{{ _('Financial Summary') }}</h6>
                         <div class="d-flex justify-content-between mb-1">
                             <span>{{ _('Initial Estimate:') }}</span>
-                            <span class="text-muted">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.estimated_cost) }}</span>
+                            <span class="text-muted">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.estimated_cost or 0) }}</span>
                         </div>
                         <hr class="my-2">
                         <div class="d-flex justify-content-between mb-1">
                             <span>{{ _('Services:') }}</span>
-                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.services_total) }}</span>
+                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.services_total or 0) }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-1">
                             <span>{{ _('Materials:') }}</span>
-                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.parts_total) }}</span>
+                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.parts_total or 0) }}</span>
                         </div>
                         <div class="d-flex justify-content-between border-top pt-2 mb-1 fw-bold">
                             <span>{{ _('Grand Total:') }}</span>
-                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.grand_total) }}</span>
+                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.grand_total or 0) }}</span>
                         </div>
                         <div class="d-flex justify-content-between text-success mb-1">
                             <span>{{ _('Paid:') }}</span>
-                            <span>- {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.total_paid) }}</span>
+                            <span>- {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.total_paid or 0) }}</span>
                         </div>
                         <div class="d-flex justify-content-between border-top pt-2 fw-bold text-{{ 'success' if ticket.balance_due <= 0 else 'danger' }}">
                             {% if ticket.balance_due < 0 %}
@@ -187,7 +189,7 @@
                                 <span style="font-size: 1.2rem;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.balance_due|abs) }}</span>
                             {% else %}
                                 <span>{{ _('Balance Due:') }}</span>
-                                <span style="font-size: 1.2rem;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.balance_due) }}</span>
+                                <span style="font-size: 1.2rem;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.balance_due or 0) }}</span>
                             {% endif %}
                         </div>
                     </div>
@@ -214,7 +216,7 @@
                             <tr>
                                 <td>{{ _(log.old_phase) or _('Intake') }}</td>
                                 <td><span class="badge bg-info text-dark">{{ _(log.new_phase) }}</span></td>
-                                <td>{{ log.technician_user.full_name }}</td>
+                                <td>{{ log.technician_user.full_name if log.technician_user else _('System') }}</td>
                                 <td>{{ log.changed_at.strftime('%Y-%m-%d %H:%M') }}</td>
                             </tr>
                             {% endfor %}
@@ -229,7 +231,7 @@
             <div class="col-md-12">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h5>{{ _('Payment History') }}</h5>
-                    <span class="fw-bold">{{ _('Total Paid:') }} {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.total_paid) }}</span>
+                    <span class="fw-bold">{{ _('Total Paid:') }} {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.total_paid or 0) }}</span>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover">
@@ -245,16 +247,16 @@
                         <tbody>
                             {% for payment in ticket.payments|sort(attribute='paid_at', reverse=True) %}
                             <tr>
-                                <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, payment.amount) }}</td>
+                                <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, payment.amount or 0) }}</td>
                                 <td>{{ _(payment.payment_method) }}</td>
                                 <td>{{ payment.transaction_reference or '-' }}</td>
-                                <td>{{ payment.recorded_by_user.full_name }}</td>
+                                <td>{{ payment.recorded_by_user.full_name if payment.recorded_by_user else _('System') }}</td>
                                 <td class="text-end">
                                     {{ payment.paid_at.strftime('%Y-%m-%d %H:%M') }}
                                     {% if current_user.has_permission('process_payments') and ticket.current_phase != 'Already Taken' %}
                                     <form action="{{ url_for('ticket.void_payment', ticket_id=ticket.id, payment_id=payment.id) }}" method="POST" class="d-inline ms-2">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" data-confirm="{{ _('Void this payment? This will update the invoice balance.') }}"><i class="fas fa-trash-alt"></i></button>
+                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" data-confirm="{{ _('Void this payment? This will update the invoice balance.')|forceescape }}"><i class="fas fa-trash-alt"></i></button>
                                     </form>
                                     {% endif %}
                                 </td>
@@ -279,8 +281,8 @@
                             <h6 class="mb-1">{{ _(note.note_type) }} {% if note.is_internal %}<span class="badge bg-secondary">{{ _('Internal') }}</span>{% endif %}</h6>
                             <small>{{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                         </div>
-                        <p class="mb-1">{{ note.content }}</p>
-                        <small class="text-muted">{{ _('by') }} {{ note.author.full_name }}</small>
+                        <p class="mb-1" style="white-space: pre-wrap;">{{ note.content }}</p>
+                        <small class="text-muted">{{ _('by') }} {{ note.author.full_name if note.author else _('Unknown') }}</small>
                     </div>
                     {% else %}
                     <p class="text-center text-muted py-4">{{ _('No notes or timeline entries for this ticket.') }}</p>
@@ -299,31 +301,31 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
                     <h5 class="modal-title">{{ _('Update Ticket Phase') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">{{ _('New Phase') }}</label>
-                        <select name="phase" class="form-select" required>
-                            <option value="" disabled selected>{{ _('-- Select Phase --') }}</option>
-                            <option value="Open" {% if ticket.current_phase == 'Open' or not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Open') }}</option>
-                            <option value="Diagnostic" {% if ticket.current_phase == 'Diagnostic' or not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Diagnostic') }}</option>
-                            <option value="Waiting for Parts" {% if ticket.current_phase == 'Waiting for Parts' or not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Waiting for Parts') }}</option>
-                            <option value="Repairing" {% if ticket.current_phase == 'Repairing' or not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Repairing') }}</option>
-                            <option value="Finished" {% if ticket.current_phase == 'Finished' or not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Finished') }}</option>
-                            <option value="Fully Paid" {% if ticket.current_phase == 'Fully Paid' or not current_user.has_permission('mark_as_paid') %}disabled{% endif %}>{{ _('Fully Paid') }}</option>
-                            <option value="Already Taken" {% if ticket.current_phase == 'Already Taken' or not current_user.has_permission('mark_as_taken') %}disabled{% endif %}>{{ _('Already Taken') }}</option>
-                            <option value="Cancelled" {% if ticket.current_phase == 'Cancelled' or not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Cancelled') }}</option>
+                        <label for="newPhaseSelect" class="form-label">{{ _('New Phase') }}</label>
+                        <select name="phase" id="newPhaseSelect" class="form-select" required>
+                            <option value="" disabled {% if not ticket.current_phase %}selected{% endif %}>{{ _('-- Select Phase --') }}</option>
+                            <option value="Open" {% if ticket.current_phase == 'Open' %}selected{% endif %} {% if not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Open') }}</option>
+                            <option value="Diagnostic" {% if ticket.current_phase == 'Diagnostic' %}selected{% endif %} {% if not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Diagnostic') }}</option>
+                            <option value="Waiting for Parts" {% if ticket.current_phase == 'Waiting for Parts' %}selected{% endif %} {% if not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Waiting for Parts') }}</option>
+                            <option value="Repairing" {% if ticket.current_phase == 'Repairing' %}selected{% endif %} {% if not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Repairing') }}</option>
+                            <option value="Finished" {% if ticket.current_phase == 'Finished' %}selected{% endif %} {% if not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Finished') }}</option>
+                            <option value="Fully Paid" {% if ticket.current_phase == 'Fully Paid' %}selected{% endif %} {% if not current_user.has_permission('mark_as_paid') %}disabled{% endif %}>{{ _('Fully Paid') }}</option>
+                            <option value="Already Taken" {% if ticket.current_phase == 'Already Taken' %}selected{% endif %} {% if not current_user.has_permission('mark_as_taken') %}disabled{% endif %}>{{ _('Already Taken') }}</option>
+                            <option value="Cancelled" {% if ticket.current_phase == 'Cancelled' %}selected{% endif %} {% if not current_user.has_permission('update_phase') %}disabled{% endif %}>{{ _('Cancelled') }}</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ _('Technician Commentary (Optional)') }}</label>
-                        <textarea name="commentary" class="form-control" rows="3" placeholder="{{ _('Describe the work done or reason for phase change...') }}"></textarea>
+                        <label for="phaseCommentary" class="form-label">{{ _('Technician Commentary (Optional)') }}</label>
+                        <textarea name="commentary" id="phaseCommentary" class="form-control" rows="3" placeholder="{{ _('Describe the work done or reason for phase change...') }}"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ _('Update Phase') }}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-outline-primary">{{ _('Update Phase') }}</button>
                 </div>
             </form>
         </div>
@@ -338,7 +340,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
                     <h5 class="modal-title">{{ _('Return Change / Refund') if ticket.balance_due < 0 else _('Record Payment') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-{{ 'danger' if ticket.balance_due < 0 else 'secondary' }} py-2 mb-3">
@@ -349,21 +351,21 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">{{ _('Amount to Record') }}</label>
+                        <label for="paymentAmount" class="form-label">{{ _('Amount to Record') }}</label>
                         <div class="input-group">
                             <span class="input-group-text">{{ currency_symbol }}</span>
                             <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" 
                                    name="amount" id="paymentAmount" class="form-control" required
                                    placeholder="{{ '%.*f'|format(currency_decimals, 0) }}"
-                                   data-balance="{{ ticket.balance_due|float }}"
+                                   data-balance="{{ ticket.balance_due|abs|float }}"
                                    data-decimals="{{ currency_decimals }}"
-                                   value="{{ "%.*f"|format(currency_decimals, ticket.balance_due) if ticket.balance_due > 0 else '' }}">
+                                   value="{{ "%.*f"|format(currency_decimals, ticket.balance_due|abs) if ticket.balance_due != 0 else '' }}">
                             <button type="button" class="btn btn-outline-secondary" id="fillBalanceBtn">
                                 {{ _('Return All') if ticket.balance_due < 0 else _('Pay Full') }}
                             </button>
                         </div>
                         {% if ticket.balance_due < 0 %}
-                        <small class="text-danger">{{ _('Enter <strong>%(amount)s</strong> to record that the change was handed back to the customer.', amount="%.*f"|format(currency_decimals, ticket.balance_due)) }}</small>
+                        <small class="text-danger">{{ _('Enter <strong>%(amount)s</strong> to record that the change was handed back to the customer.', amount="%.*f"|format(currency_decimals, ticket.balance_due|abs))|safe }}</small>
                         {% endif %}
                     </div>
 
@@ -372,7 +374,7 @@
                             <label class="form-label small text-uppercase text-muted fw-bold">{{ _('Change Calculator') }}</label>
                             <div class="row g-2">
                                 <div class="col-6">
-                                    <label class="small">{{ _('Cash Received') }}</label>
+                                    <label for="cashReceived" class="small">{{ _('Cash Received') }}</label>
                                     <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" id="cashReceived" class="form-control form-control-sm" placeholder="{{ '%.*f'|format(currency_decimals, 0) }}">
                                 </div>
                                 <div class="col-6">
@@ -384,8 +386,8 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">{{ _('Payment Method') }}</label>
-                        <select name="method" class="form-select">
+                        <label for="paymentMethodSelect" class="form-label">{{ _('Payment Method') }}</label>
+                        <select name="method" id="paymentMethodSelect" class="form-select">
                             <option value="Cash">{{ _('Cash') }}</option>
                             <option value="Card">{{ _('Card') }}</option>
                             <option value="Transfer">{{ _('Bank Transfer') }}</option>
@@ -394,12 +396,12 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ _('Transaction Reference (Optional)') }}</label>
-                        <input type="text" name="reference" class="form-control" placeholder="{{ _('E.g., Receipt #, Auth ID') }}">
+                        <label for="paymentReference" class="form-label">{{ _('Transaction Reference (Optional)') }}</label>
+                        <input type="text" name="reference" id="paymentReference" class="form-control" placeholder="{{ _('E.g., Receipt #, Auth ID') }}">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
                     <button type="submit" class="btn btn-{{ 'danger' if ticket.balance_due < 0 else 'success' }}">
                         {{ _('Record Return') if ticket.balance_due < 0 else _('Record Payment') }}
                     </button>
@@ -415,25 +417,28 @@
         <div class="modal-content">
             <form action="{{ url_for('ticket.add_service', ticket_id=ticket.id) }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header"><h5>{{ _('Add Repair Service') }}</h5></div>
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ _('Add Repair Service') }}</h5>
+                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">{{ _('Service Type') }}</label>
-                        <select name="service_id" class="form-select" required>
+                        <label for="serviceSelect" class="form-label">{{ _('Service Type') }}</label>
+                        <select name="service_id" id="serviceSelect" class="form-select" required>
                             <option value="">{{ _('-- Select Service --') }}</option>
-                            {% for service in services %}
+                            {% for service in (services or []) %}
                             <option value="{{ service.id }}">{{ _(service.name) }} ({{ currency_symbol }}{{ "%.*f"|format(currency_decimals, service.price) }})</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ _('Quantity') }}</label>
-                        <input type="number" name="quantity" class="form-control" value="1" min="1">
+                        <label for="serviceQty" class="form-label">{{ _('Quantity') }}</label>
+                        <input type="number" name="quantity" id="serviceQty" class="form-control" value="1" min="1">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ _('Add Service') }}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-outline-primary">{{ _('Add Service') }}</button>
                 </div>
             </form>
         </div>
@@ -446,26 +451,29 @@
         <div class="modal-content">
             <form action="{{ url_for('ticket.add_part', ticket_id=ticket.id) }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header"><h5>{{ _('Add Replaced Part') }}</h5></div>
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ _('Add Replaced Part') }}</h5>
+                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">{{ _('Choice from Inventory') }}</label>
+                        <label for="partSelect" class="form-label">{{ _('Choice from Inventory') }}</label>
                         <select name="part_id" id="partSelect" class="form-select">
                             <option value="">{{ _('-- Or type manually below --') }}</option>
-                            {% for part in parts %}
+                            {% for part in (parts or []) %}
                             <option value="{{ part.id }}">{{ _(part.name) }} ({{ _('Stock:') }} {{ part.stock_quantity }})</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ _('Manual Description') }}</label>
+                        <label for="manualPartName" class="form-label">{{ _('Manual Description') }}</label>
                         <input type="text" name="manual_name" id="manualPartName" class="form-control" placeholder="{{ _('E.g. Custom Screw, Generic Cable') }}">
-                        <small class="text-muted">{{ _('Fill this only if not selecting from inventory.') }}</small>
+                        <small class="text-muted">{{ _('Required if not selecting from inventory.') }}</small>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">{{ _('Wholesale Cost') }}</label>
+                                <label for="partCost" class="form-label">{{ _('Wholesale Cost') }}</label>
                                 <div class="input-group">
                                     <span class="input-group-text">{{ currency_symbol }}</span>
                                     <input type="number" name="cost" id="partCost" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" class="form-control" placeholder="{{ '%.*f'|format(currency_decimals, 0) }}">
@@ -475,7 +483,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">{{ _('Selling Price') }}</label>
+                                <label for="partPrice" class="form-label">{{ _('Selling Price') }}</label>
                                 <div class="input-group">
                                     <span class="input-group-text">{{ currency_symbol }}</span>
                                     <input type="number" name="price" id="partPrice" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" class="form-control" placeholder="{{ '%.*f'|format(currency_decimals, 0) }}">
@@ -485,18 +493,23 @@
                         </div>
                         <div class="col-md-12">
                             <div class="mb-3">
-                                <label class="form-label">{{ _('Quantity') }}</label>
-                                <input type="number" name="quantity" class="form-control" value="1" min="1">
+                                <label for="partQty" class="form-label">{{ _('Quantity') }}</label>
+                                <input type="number" name="quantity" id="partQty" class="form-control" value="1" min="1">
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ _('Add Part') }}</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-outline-primary">{{ _('Add Part') }}</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/ticket_detail.js') }}" defer></script>
 {% endblock %}

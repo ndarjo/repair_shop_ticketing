@@ -6,6 +6,7 @@ from typing import Tuple, Any, Optional, Dict, List
 from flask import current_app
 from flask_babel import _
 from sqlalchemy import func, or_, desc
+from sqlalchemy.orm import joinedload, selectinload
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
@@ -18,7 +19,7 @@ class FinancialService:
     @staticmethod
     def get_or_create_invoice(ticket_id: int) -> Invoice:
         """Ensures a draft or active invoice exists for the ticket"""
-        invoice = db.session.execute(db.select(Invoice).filter_by(ticket_id=ticket_id)).scalar()
+        invoice = db.session.scalar(db.select(Invoice).filter_by(ticket_id=ticket_id))
         if not invoice:
             invoice = Invoice(
                 invoice_number=f"INV-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
@@ -36,8 +37,14 @@ class FinancialService:
         if not invoice:
             return
         
+        # INTEGRITY: If invoice is empty and no money taken, keep it in Draft
+        if invoice.total_amount == 0 and invoice.full_payment_received == 0:
+            invoice.status = 'Draft'
+            db.session.flush()
+            return
+            
         balance = invoice.remaining_balance
-        if balance <= 0 and invoice.total_amount > 0:
+        if balance <= 0:
             invoice.status = 'Paid'
         elif balance < invoice.total_amount:
             invoice.status = 'Partial'
@@ -53,11 +60,11 @@ class FinancialService:
             return
 
         # Aggregate wholesale costs from all parts on all invoices for this ticket
-        wholesale_sum = db.session.execute(
+        wholesale_sum = db.session.scalar(
             db.select(func.sum(InvoiceItem.cost_price * InvoiceItem.quantity))
             .join(Invoice)
             .filter(Invoice.ticket_id == ticket_id)
-        ).scalar() or Decimal('0.00')
+        ) or Decimal('0.00')
 
         ticket.actual_cost = wholesale_sum
         db.session.flush()
@@ -84,8 +91,11 @@ class FinancialService:
         if not ticket:
             return False, _('Ticket not found')
 
+        invoice = FinancialService.get_or_create_invoice(ticket_id)
+
         payment = Payment(
             ticket_id=ticket.id,
+            invoice_id=invoice.id,
             user_id=user_id,
             amount=amount,
             payment_method=method,
@@ -98,9 +108,8 @@ class FinancialService:
         user = db.session.get(User, user_id)
         currency_map = {'USD': '$', 'IDR': 'Rp', 'EUR': '€', 'GBP': '£'}
         symbol = currency_map.get(user.currency, '$') if user else '$'
-        decimals = user.currency_decimals if user else 2
+        decimals = user.currency_decimals if user and user.currency_decimals is not None else 2
 
-        invoice = FinancialService.get_or_create_invoice(ticket_id)
         FinancialService.sync_invoice_status(invoice.id)
 
         note_type = _('Payment Received') if amount > 0 else _('Change Given / Refund')
@@ -201,6 +210,7 @@ class InventoryService:
             total_price=item_price * quantity
         )
         db.session.add(item)
+        db.session.flush()
         invoice.calculate_total()
         FinancialService.sync_ticket_summaries(ticket_id)
         FinancialService.sync_invoice_status(invoice.id)
@@ -210,10 +220,10 @@ class InventoryService:
     def remove_service(ticket_id: int, ts_id: int) -> Tuple[bool, Optional[str]]:
         """Removes a service and updates the invoice total"""
         ts = db.session.get(TicketServiceBridge, ts_id)
-        if not ts:
+        if not ts or ts.ticket_id != ticket_id:
             return False, _('Service entry not found')
             
-        invoice = db.session.execute(db.select(Invoice).filter_by(ticket_id=ticket_id)).scalar()
+        invoice = db.session.scalar(db.select(Invoice).filter_by(ticket_id=ticket_id))
         db.session.delete(ts)
         db.session.flush()
         
@@ -232,16 +242,18 @@ class InventoryService:
 
         # Inventory Management: Restore stock if linked to a catalog part
         if item.spare_part_id:
-            part = db.session.get(SparePart, item.spare_part_id)
+            # Integrity: Lock the part row for update to prevent race conditions during stock restoration
+            part = db.session.execute(db.select(SparePart).filter_by(id=item.spare_part_id).with_for_update()).scalar()
             if part:
                 part.stock_quantity += item.quantity
 
         invoice = item.invoice
+        ticket_id = invoice.ticket_id
         db.session.delete(item)
         db.session.flush()
         invoice.calculate_total()
         FinancialService.sync_invoice_status(invoice.id)
-        FinancialService.sync_ticket_summaries(invoice.ticket_id)
+        FinancialService.sync_ticket_summaries(ticket_id)
         return True, None
 
 class CustomerService:
@@ -290,12 +302,13 @@ class ReportingService:
     @staticmethod
     def get_financial_analysis(location_id: int) -> List[Dict[str, Any]]:
         """Aggregates revenue and costs by month for financial reporting"""
+        month_expr = func.to_char(Payment.paid_at, 'YYYY-MM')
         rev_stmt = db.select(
-            func.to_char(Payment.paid_at, 'YYYY-MM').label('month'),
+            month_expr.label('month'),
             func.sum(Payment.amount)
         ).join(Ticket, Payment.ticket_id == Ticket.id)\
          .filter(Ticket.location_id == location_id)\
-         .group_by('month')
+         .group_by(month_expr)
         rev_results = db.session.execute(rev_stmt).all()
 
         monthly_data = {}
@@ -303,13 +316,14 @@ class ReportingService:
             if month:
                 monthly_data[month] = {'revenue': Decimal(str(total or 0)), 'costs': Decimal('0.00'), 'profit': Decimal(str(total or 0))}
 
+        cost_month_expr = func.to_char(Invoice.created_at, 'YYYY-MM')
         cost_stmt = db.select(
-            func.to_char(Invoice.created_at, 'YYYY-MM').label('month'),
+            cost_month_expr.label('month'),
             func.sum(InvoiceItem.cost_price * InvoiceItem.quantity)
         ).join(Invoice, InvoiceItem.invoice_id == Invoice.id)\
          .join(Ticket, Invoice.ticket_id == Ticket.id)\
          .filter(Ticket.location_id == location_id)\
-         .group_by('month')
+         .group_by(cost_month_expr)
         cost_results = db.session.execute(cost_stmt).all()
 
         for month, total in cost_results:
@@ -325,13 +339,21 @@ class DocumentService:
     @staticmethod
     def generate_invoice_pdf(ticket_id: int) -> Tuple[bool, Any]:
         """Handles receipt-style PDF generation"""
-        ticket = db.session.get(Ticket, ticket_id)
-        if not ticket or not ticket.invoices:
-            return False, _('Invoice not found')
+        # Optimization: Eager load relationships to prevent N+1 queries during PDF generation
+        stmt = db.select(Ticket).options(
+            joinedload(Ticket.customer),
+            joinedload(Ticket.device),
+            selectinload(Ticket.ticket_services).joinedload(TicketServiceBridge.service),
+            selectinload(Ticket.invoices).selectinload(Invoice.items)
+        ).where(Ticket.id == ticket_id)
+        ticket = db.session.scalar(stmt)
+
+        if not ticket:
+            return False, _('Ticket not found')
         
-        invoice = ticket.invoices[0]
+        invoice = FinancialService.get_or_create_invoice(ticket_id)
         # Multi-tenancy: Fetch branding settings specific to the ticket's branch location
-        shop_info = db.session.execute(db.select(ShopSetting).filter_by(location_id=ticket.location_id)).scalar()
+        shop_info = db.session.scalar(db.select(ShopSetting).filter_by(location_id=ticket.location_id))
         
         # UI Integrity: Ensure PDF matches the viewing admin's currency settings
         from flask_login import current_user
@@ -339,6 +361,7 @@ class DocumentService:
         # Safely get currency info from current user (PDF is generated in request context)
         symbol = currency_map.get(getattr(current_user, 'currency', 'USD'), '$')
         decimals = getattr(current_user, 'currency_decimals', 2)
+        if decimals is None: decimals = 2
 
         buffer = io.BytesIO()
         page_width = 80 * mm
