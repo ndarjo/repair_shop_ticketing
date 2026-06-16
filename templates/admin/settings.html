@@ -4,61 +4,116 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8 offset-md-2">
-        <div class="card shadow-sm">
-            <div class="card-header ">
-                <h4 class="mb-0">{{ _('Global Shop Settings') }}</h4>
-            </div>
+    <div class="col-md-10 offset-md-1">
+        {% if current_user.is_superuser or current_user.has_role('admin') %}
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('admin.dashboard') }}" class="btn-link p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Admin Panel') }}"><i class="fas fa-arrow-circle-left" aria-hidden="true"></i></a>
+            <h1 class="mb-0">{{ _('Shop Branding & Settings') }}</h1>
+        </div>
+        
+        <div class="card">
             <div class="card-body">
                 <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="row mb-4">
-                        <div class="col-md-4 text-center">
-                            <label for="shop_logo" class="form-label d-block fw-bold">{{ _('Shop Logo') }}</label>
-                            <div class="mb-3">
-                                {% if settings and settings.logo_path %}
-                                    <img src="{{ url_for('static', filename='uploads/logos/' + settings.logo_path) }}" alt="Current Logo" class="img-thumbnail" style="max-height: 120px; max-width: 100%; object-fit: contain;">
-                                {% else %}
-                                    <div class="bg-light border rounded d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
-                                        <i class="fas fa-image text-muted fs-1"></i>
+
+                    <!-- Identity & Branding Section -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ _('Identity & Branding') }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 text-center mb-3">
+                                    <label for="shop_logo" class="form-label d-block">{{ _('Shop Logo') }}</label>
+                                    <div class="mb-3">
+                                        {% if settings and settings.logo_path %}
+                                            <img src="{{ url_for('static', filename='uploads/logos/' + settings.logo_path) }}" alt="{{ _('Shop Logo') }}" class="img-thumbnail" style="max-height: 120px; max-width: 100%; object-fit: contain;">
+                                        {% else %}
+                                            <div class="bg-light border rounded d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                                                <i class="fas fa-image text-muted fs-1" aria-hidden="true"></i>
+                                            </div>
+                                        {% endif %}
                                     </div>
-                                {% endif %}
-                            </div>
-                            <input type="file" id="shop_logo" name="shop_logo" class="form-control form-control-sm" accept="image/*">
-                            <small class="text-muted d-block mt-1">{{ _('Recommended: Square PNG/SVG') }}</small>
-                        </div>
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label for="shop_name" class="form-label fw-bold">{{ _('Shop Name') }} *</label>
-                                <input type="text" id="shop_name" name="shop_name" class="form-control" value="{{ settings.shop_name if settings and settings.shop_name else _('Repair Shop') }}" required placeholder="{{ _('e.g., My Repair Shop') }}">
-                            </div>
-                            <div class="mb-3">
-                                <label for="shop_address" class="form-label fw-bold">{{ _('Shop Address (Location)') }}</label>
-                                <textarea id="shop_address" name="shop_address" class="form-control" rows="3" placeholder="{{ _('Street, City, State, Zip') }}">{{ settings.shop_address if settings and settings.shop_address else '' }}</textarea>
-                                <small class="text-muted">{{ _('This will appear on invoices.') }}</small>
+                                    <input type="file" id="shop_logo" name="shop_logo" class="form-control form-control-sm" accept="image/*" aria-describedby="logoHelp">
+                                    <small id="logoHelp" class="text-muted d-block mt-1">{{ _('Recommended: Square PNG/SVG (Max 2MB)') }}</small>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label for="shop_name" class="form-label">{{ _('Shop Name') }} *</label>
+                                        <input type="text" class="form-control" id="shop_name" name="shop_name" value="{{ shop_name if shop_name is defined else (settings.shop_name if settings and settings.shop_name else '') or _('Repair Shop') }}" required placeholder="{{ _('e.g., My Repair Shop') }}" maxlength="100" autocomplete="organization" aria-required="true">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="shop_address" class="form-label">{{ _('Shop Address (Location)') }}</label>
+                                        <textarea class="form-control" id="shop_address" name="shop_address" rows="3" placeholder="{{ _('Street, City, State, Zip') }}" maxlength="500" aria-describedby="addressHelp" autocomplete="street-address">{{ shop_address if shop_address is defined else (settings.shop_address if settings and settings.shop_address else '') }}</textarea>
+                                        <small id="addressHelp" class="text-muted">{{ _('This will appear on customer invoices and reports.') }}</small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="shop_phone" class="form-label fw-bold">{{ _('Contact Phone') }}</label>
-                            <input type="tel" id="shop_phone" name="shop_phone" class="form-control" value="{{ settings.shop_phone if settings and settings.shop_phone else '' }}" placeholder="{{ _('+1 (555) 000-0000') }}">
+                    <!-- Regional & Currency Settings -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ _('Regional & Currency') }}</h5>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="shop_email" class="form-label fw-bold">{{ _('Contact Email') }}</label>
-                            <input type="email" id="shop_email" name="shop_email" class="form-control" value="{{ settings.shop_email if settings and settings.shop_email else '' }}" placeholder="{{ _('contact@example.com') }}">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="currency" class="form-label">{{ _('Shop Currency') }}</label>
+                                    <select id="currency" name="currency" class="form-select">
+                                        {% set active_currency = selected_currency if selected_currency is defined else (settings.currency if settings else 'USD') %}
+                                        {% for code, label in all_currencies %}
+                                            <option value="{{ code }}" {% if active_currency == code %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="currency_decimals" class="form-label">{{ _('Currency Decimals') }}</label>
+                                    <select id="currency_decimals" name="currency_decimals" class="form-select">
+                                        {% set active_decimals = selected_currency_decimals if selected_currency_decimals is defined else (settings.currency_decimals if settings else 2) %}
+                                        <option value="0" {% if active_decimals == 0 %}selected{% endif %}>{{ _('0 (e.g. 1500)') }}</option>
+                                        <option value="2" {% if active_decimals == 2 %}selected{% endif %}>{{ _('2 (e.g. 15.00)') }}</option>
+                                        <option value="3" {% if active_decimals == 3 %}selected{% endif %}>{{ _('3') }}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information Section -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ _('Contact Information') }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="shop_phone" class="form-label">{{ _('Contact Phone') }}</label>
+                                    <input type="tel" class="form-control" id="shop_phone" name="shop_phone" value="{{ shop_phone if shop_phone is defined else (settings.shop_phone if settings and settings.shop_phone else '') }}" placeholder="{{ _('+1 (555) 000-0000') }}" maxlength="20" autocomplete="tel">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="shop_email" class="form-label">{{ _('Contact Email') }}</label>
+                                    <input type="email" class="form-control" id="shop_email" name="shop_email" value="{{ shop_email if shop_email is defined else (settings.shop_email if settings and settings.shop_email else '') }}" placeholder="{{ _('contact@example.com') }}" maxlength="120" autocomplete="email">
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <hr>
-                    <div class="text-end">
-                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary px-4 me-2">{{ _('Cancel') }}</a>
-                        <button type="submit" class="btn btn-outline-warning px-4">{{ _('Save Changes') }}</button>
+                    <!-- Submit Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-outline-primary">{{ _('Save Changes') }}</button>
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary">{{ _('Cancel') }}</a>
                     </div>
                 </form>
             </div>
         </div>
+        {% else %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>
+            {{ _('Access Denied: You do not have permission to view or modify branding settings.') }}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -4,19 +4,42 @@
 {% block title %}{{ _('Manage Services - Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-    <h2 class="mb-0 ">{{ _('Service Types & Pricing') }}</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ _('Service Types & Pricing') }}</h2>
     {% if current_user.has_permission('manage_settings') %}
     <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">
-        <i class="fas fa-plus-circle me-1" aria-hidden="true"></i> {{ _('New Service') }}
+        <i class="fas fa-plus-square me-1" aria-hidden="true"></i> {{ _('New Service') }}
     </button>
     {% endif %}
 </div>
 
-<div class="card shadow-sm border-0">
-    <div class="card-header">
-        <h5 class="mb-0 "><i class="fas fa-concierge-bell me-2" aria-hidden="true"></i>{{ _('Service Catalog') }}</h5>
+<!-- Service Search -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <form action="{{ url_for('services.manage_services') }}" method="GET" class="d-flex">
+            {% if current_user.is_superuser and locations %}
+            <select name="location_id" class="form-select me-2" style="width: 180px;" onchange="this.form.submit()">
+                <option value="">{{ _('All Locations') }}</option>
+                {% for loc in locations %}
+                <option value="{{ loc.id }}" {{ 'selected' if selected_location == loc.id else '' }}>
+                    {{ loc.name }}
+                </option>
+                {% endfor %}
+            </select>
+            {% endif %}
+            <input type="text" name="q" class="form-control flex-grow-1 me-2" 
+            placeholder="{{ _('Search services...') }}" 
+            value="{{ search_query or '' }}">
+            <button type="submit" class="btn btn-outline-primary" style="width: 110px;"><i class="fas fa-search" aria-hidden="true"></i> {{ _('Search') }}</button>
+            
+            {% if search_query %}
+            <a href="{{ url_for('services.manage_services', location_id=selected_location) }}" class="btn btn-outline-primary ms-2" style="width: 110px;"><i class="fas fa-times me-1" aria-hidden="true"></i>{{ _('Clear') }}</a>
+            {% endif %}
+        </form>
     </div>
+</div>
+
+<div class="card shadow-sm border-0">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead>
@@ -24,7 +47,7 @@
                     <th scope="col">{{ _('Service Name') }}</th>
                     <th scope="col" class="text-end">{{ _('Price') }}</th>
                     <th scope="col">{{ _('Status') }}</th>
-                    <th scope="col" class="text-end">{{ _('Actions') }}</th>
+                    <th scope="col" class="text-end">{{ _('Action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -50,25 +73,25 @@
                                 data-description="{{ service.description or '' }}"
                                 data-price="{{ '%.*f'|format(currency_decimals, service.price or 0) }}"
                                 data-active="{{ 'true' if service.is_active else 'false' }}">
-                            <i class="fas fa-edit me-1" aria-hidden="true"></i> {{ _('Edit') }}
+                            <i class="fas fa-edit" aria-hidden="true"></i>
                         </button>
-                        <form action="{{ url_for('main.delete_service', service_id=service.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this service?') }}">
+                        <form action="{{ url_for('services.delete_service', service_id=service.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this service?') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-outline-danger">
-                                <i class="fas fa-trash-alt me-1" aria-hidden="true"></i> {{ _('Delete') }}
+                                <i class="fas fa-trash-alt" aria-hidden="true"></i>
                             </button>
                         </form>
                         {% endif %}
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="4" class="text-center text-muted py-4">{{ _('No services defined.') }}</td></tr>
+                <tr><td colspan="4" class="text-center text-muted py-4">{{ _('No services found matching your criteria.') if search_query else _('No services defined.') }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     <div class="card-footer">
-        {{ render_pagination(services, 'main.manage_services') }}
+        {{ render_pagination(services, 'services.manage_services', q=search_query if search_query else None, location_id=selected_location if selected_location else None) }}
     </div>
 </div>
 
@@ -81,7 +104,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
                     <h5 class="modal-title" id="editServiceModalLabel">{{ _('Edit Service') }}</h5>
-                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -106,7 +129,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-outline-primary">{{ _('Save Changes') }}</button>
+                    <button type="submit" class="btn btn-outline-primary"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Save Changes') }}</button>
                 </div>
             </form>
         </div>
@@ -117,11 +140,11 @@
 <div class="modal fade" id="addServiceModal" tabindex="-1" aria-labelledby="addServiceModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ url_for('main.add_service') }}" method="POST">
+            <form action="{{ url_for('services.add_service') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
                     <h5 class="modal-title" id="addServiceModalLabel">{{ _('Add New Service Type') }}</h5>
-                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -142,7 +165,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-outline-primary">{{ _('Create Service') }}</button>
+                    <button type="submit" class="btn btn-outline-primary"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Create Service') }}</button>
                 </div>
             </form>
         </div>
@@ -158,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const id = button.getAttribute('data-id');
             
             const form = document.getElementById('editServiceForm');
-            form.action = "{{ url_for('main.edit_service', service_id=0) }}".replace('/0', '/' + id);
+            form.action = "{{ url_for('services.edit_service', service_id=0) }}".replace('/0', '/' + id);
             
             document.getElementById('edit_service_name').value = button.getAttribute('data-name') || '';
             document.getElementById('edit_service_description').value = button.getAttribute('data-description') || '';

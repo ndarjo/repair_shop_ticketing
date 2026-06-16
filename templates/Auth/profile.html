@@ -1,37 +1,41 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('My Profile') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
+{% block title %}{{ _('My Profile') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name and shop_info.shop_name != 'None' else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="mb-0">{{ _('My Profile') }}</h1>
-            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary btn-sm">{{ _('Back to Dashboard') }}</a>
+<div class="row justify-content-center">
+    <div class="col-md-10 offset-md-1">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('main.dashboard') }}" class="btn-link p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Dashboard') }}"><i class="fas fa-arrow-circle-left" aria-hidden="true"></i></a>
+            <h2 class="mb-0">{{ _('My Profile') }}</h2>
         </div>
         
-        <div class="row">
-            <div class="col-md-6 mb-4">
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
                 <div class="card shadow-sm h-100">
                     <div class="card-header">
                         <h5 class="mb-0">{{ _('Account Information') }}</h5>
                     </div>
                     <div class="card-body">
-                        <p class="text-break"><strong>{{ _('Username') }}:</strong> {{ current_user.username }}</p>
+                        <p class="text-break"><strong>{{ _('Username') }}:</strong> {{ current_user.username or '' }}</p>
                         <p class="text-break"><strong>{{ _('Full Name') }}:</strong> {{ current_user.full_name or _('Not set') }}</p>
                         <p class="text-break"><strong>{{ _('Email') }}:</strong> {{ current_user.email or _('Not set') }}</p>
                         <p><strong>{{ _('Roles') }}:</strong> 
-                            {% if current_user.is_superuser %}
-                                <span class="badge bg-danger me-1">{{ _('Superuser') }}</span>
+                            {% if current_user.is_superuser or current_user.has_role('admin') %}
+                                <span class="badge bg-danger">{{ _('Superuser') }}</span>
+                            {% else %}
+                                {% for role in current_user.roles %}
+                                    <span class="badge bg-primary me-1">{{ _(role.name) }}</span>
+                                {% else %}
+                                    <span class="text-muted small"><em>{{ _('No roles assigned') }}</em></span>
+                                {% endfor %}
                             {% endif %}
-                            {% for role in current_user.roles %}<span class="badge bg-primary me-1">{{ _(role.name) }}</span>{% endfor %}
-                            {% if not current_user.is_superuser and not current_user.roles %}<span class="text-muted small"><em>{{ _('No roles assigned') }}</em></span>{% endif %}
                         </p>
                     </div>
                 </div>
             </div>
             
-            <div class="col-md-6 mb-4">
+            <div class="col-md-6">
                 <div class="card shadow-sm h-100">
                     <div class="card-header">
                         <h5 class="mb-0">{{ _('Appearance Settings') }}</h5>
@@ -44,8 +48,9 @@
                             <div class="mb-3">
                                 <label for="theme" class="form-label">{{ _('Theme') }}</label>
                                 <select class="form-select" id="theme" name="theme" data-theme-control>
-                                    <option value="light" {% if current_user.theme_preference == 'light' %}selected{% endif %}>{{ _('☀️ Light') }}</option>
-                                    <option value="dark" {% if current_user.theme_preference == 'dark' %}selected{% endif %}>{{ _('🌙 Dark') }}</option>
+                                    <option value="light" {% if current_user.theme_preference == 'light' %}selected{% endif %}>☀️ {{ _('Light') }}</option>
+                                    <option value="dark" {% if current_user.theme_preference == 'dark' %}selected{% endif %}>🌙 {{ _('Dark') }}</option>
+                                    <option value="system" {% if current_user.theme_preference == 'system' %}selected{% endif %}>🖥️ {{ _('System') }}</option>
                                 </select>
                             </div>
 
@@ -58,73 +63,51 @@
                                 </select>
                             </div>
 
-                            {% if current_user.has_permission('view_reports') %}
-                            <div class="mb-3">
-                                <label for="currency" class="form-label">{{ _('Currency') }}</label>
-                                <select name="currency" class="form-select">
-                                    {% for code, label in all_currencies %}
-                                        <option value="{{ code }}" {% if current_user.currency == code %}selected{% endif %}>
-                                            {{ label }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="currency_decimals" class="form-label">{{ _('Currency Decimals') }}</label>
-                                <select class="form-select" id="currency_decimals" name="currency_decimals">
-                                    <option value="0" {% if current_user.currency_decimals == 0 %}selected{% endif %}>{{ _('0 (e.g. Rp 1500)') }}</option>
-                                    <option value="2" {% if current_user.currency_decimals == 2 %}selected{% endif %}>{{ _('2 (e.g. $15.00)') }}</option>
-                                    <option value="3" {% if current_user.currency_decimals == 3 %}selected{% endif %}>{{ _('3') }}</option>
-                                </select>
-                            </div>
-                            {% endif %}
-                            
                             <div class="mb-3">
                                 <label class="form-label">{{ _('Color Scheme') }}</label>
                                 <div class="color-scheme-picker">
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio" name="color_theme" id="color_blue" value="blue" data-color-control {% if current_user.color_theme == 'blue' %}checked{% endif %}>
                                         <label class="form-check-label" for="color_blue">
-                                            <span class="color-swatch blue"></span> {{ _('Blue') }}
+                                            <span class="color-swatch blue" aria-hidden="true"></span> {{ _('Blue') }}
                                         </label>
                                     </div>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio" name="color_theme" id="color_green" value="green" data-color-control {% if current_user.color_theme == 'green' %}checked{% endif %}>
                                         <label class="form-check-label" for="color_green">
-                                            <span class="color-swatch green"></span> {{ _('Green') }}
+                                            <span class="color-swatch green" aria-hidden="true"></span> {{ _('Green') }}
                                         </label>
                                     </div>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio" name="color_theme" id="color_purple" value="purple" data-color-control {% if current_user.color_theme == 'purple' %}checked{% endif %}>
                                         <label class="form-check-label" for="color_purple">
-                                            <span class="color-swatch purple"></span> {{ _('Purple') }}
+                                            <span class="color-swatch purple" aria-hidden="true"></span> {{ _('Purple') }}
                                         </label>
                                     </div>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio" name="color_theme" id="color_red" value="red" data-color-control {% if current_user.color_theme == 'red' %}checked{% endif %}>
                                         <label class="form-check-label" for="color_red">
-                                            <span class="color-swatch red"></span> {{ _('Red') }}
+                                            <span class="color-swatch red" aria-hidden="true"></span> {{ _('Red') }}
                                         </label>
                                     </div>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio" name="color_theme" id="color_orange" value="orange" data-color-control {% if current_user.color_theme == 'orange' %}checked{% endif %}>
                                         <label class="form-check-label" for="color_orange">
-                                            <span class="color-swatch orange"></span> {{ _('Orange') }}
+                                            <span class="color-swatch orange" aria-hidden="true"></span> {{ _('Orange') }}
                                         </label>
                                     </div>
                                 </div>
                             </div>
                             
-                            <button type="submit" class="btn btn-outline-warning">{{ _('Save Preferences') }}</button>
+                            <button type="submit" class="btn btn-outline-primary"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Save Preferences') }}</button>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
         
-        <div class="row">
-            <div class="col-md-6 mb-4">
+        <div class="row g-4">
+            <div class="col-md-6">
                 <div class="card shadow-sm h-100">
                     <div class="card-header">
                         <h5 class="mb-0">{{ _('Change Username') }}</h5>
@@ -135,15 +118,15 @@
                             <input type="hidden" name="action" value="change_username">
                             <div class="mb-3">
                                 <label for="new_username" class="form-label">{{ _('New Username') }}</label>
-                                <input type="text" class="form-control" id="new_username" name="new_username" required autocomplete="username" placeholder="{{ _('New Username') }}">
+                                <input type="text" class="form-control" id="new_username" name="new_username" required autocomplete="username" aria-required="true" maxlength="80">
                             </div>
-                            <button type="submit" class="btn btn-outline-warning">{{ _('Change Username') }}</button>
+                            <button type="submit" class="btn btn-outline-warning"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Change Username') }}</button>
                         </form>
                     </div>
                 </div>
             </div>
             
-            <div class="col-md-6 mb-4">
+            <div class="col-md-6">
                 <div class="card shadow-sm h-100">
                     <div class="card-header">
                         <h5 class="mb-0">{{ _('Change Password') }}</h5>
@@ -154,17 +137,18 @@
                             <input type="hidden" name="action" value="change_password">
                             <div class="mb-3">
                                 <label for="old_password" class="form-label">{{ _('Current Password') }}</label>
-                                <input type="password" class="form-control" id="old_password" name="old_password" required autocomplete="current-password" placeholder="{{ _('Current Password') }}">
+                                <input type="password" class="form-control" id="old_password" name="old_password" required autocomplete="current-password" aria-required="true">
                             </div>
                             <div class="mb-3">
                                 <label for="new_password" class="form-label">{{ _('New Password') }}</label>
-                                <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8" autocomplete="new-password" placeholder="{{ _('Min. 8 characters') }}">
+                                <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8" autocomplete="new-password" aria-required="true" aria-describedby="newPasswordHelp">
+                                <small id="newPasswordHelp" class="text-muted">{{ _('Minimum 8 characters.') }}</small>
                             </div>
                             <div class="mb-3">
                                 <label for="confirm_password" class="form-label">{{ _('Confirm New Password') }}</label>
-                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="8" autocomplete="new-password" placeholder="{{ _('Repeat New Password') }}">
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="8" autocomplete="new-password" aria-required="true" aria-describedby="newPasswordHelp">
                             </div>
-                            <button type="submit" class="btn btn-outline-warning">{{ _('Change Password') }}</button>
+                            <button type="submit" class="btn btn-outline-warning"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Change Password') }}</button>
                         </form>
                     </div>
                 </div>

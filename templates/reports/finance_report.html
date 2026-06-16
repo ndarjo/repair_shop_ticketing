@@ -6,11 +6,26 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h2>{{ _('Financial Analytics') }}</h2>
     <div class="d-flex gap-2">
-        <form action="{{ url_for('report.finance_report') }}" method="GET" class="d-inline-flex gap-2">
-            <input type="month" name="month" class="form-control form-control-sm w-auto" value="{{ selected_month or '' }}">
+        <form action="{{ url_for('report.finance_report') }}" method="GET" class="d-inline-flex gap-2 align-items-center">
+            {% if current_user.is_superuser and locations %}
+            <select name="location_id" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                <option value="">{{ _('All Locations') }}</option>
+                {% for loc in locations %}
+                <option value="{{ loc.id }}" {{ 'selected' if selected_location == loc.id else '' }}>
+                    {{ loc.name }}
+                </option>
+                {% endfor %}
+            </select>
+            {% endif %}
+            <div class="input-group input-group-sm w-auto">
+                <span class="input-group-text bg-transparent border-end-0 text-muted small">{{ _('From') }}</span>
+                <input type="month" name="start_month" class="form-control border-start-0 ps-0" value="{{ start_month or '' }}">
+                <span class="input-group-text bg-transparent border-start-0 border-end-0 text-muted small">{{ _('To') }}</span>
+                <input type="month" name="end_month" class="form-control border-start-0 ps-0" value="{{ end_month or '' }}">
+            </div>
             <button type="submit" class="btn btn-sm btn-outline-primary">{{ _('Filter') }}</button>
-            {% if selected_month %}
-                <a href="{{ url_for('report.finance_report') }}" class="btn btn-sm btn-outline-secondary">{{ _('Clear') }}</a>
+            {% if start_month or end_month %}
+                <a href="{{ url_for('report.finance_report', location_id=selected_location if selected_location else None) }}" class="btn btn-sm btn-outline-secondary">{{ _('Clear') }}</a>
             {% endif %}
         </form>
         <a href="{{ url_for('report.reports') }}" class="btn btn-sm btn-outline-secondary">{{ _('Back to Reports') }}</a>
@@ -50,12 +65,12 @@
     <div class="card shadow-sm border-0">
         <div class="card-body p-2">
             <div class="d-flex flex-wrap gap-2">
-                <a href="{{ url_for('report.finance_report') }}" 
+                <a href="{{ url_for('report.finance_report', location_id=selected_location if selected_location else None) }}" 
                    class="btn btn-sm {{ 'btn-outline-primary' if not selected_month else 'btn-outline-secondary' }}">
                     {{ _('All Time') }}
                 </a>
                 {% for month_str in (available_months or []) %}
-                    <a href="{{ url_for('report.finance_report', month=month_str) }}"
+                    <a href="{{ url_for('report.finance_report', month=month_str, location_id=selected_location if selected_location else None) }}"
                        class="btn btn-sm {{ 'btn-outline-primary' if selected_month == month_str else 'btn-outline-secondary' }}">
                         {{ month_str }}
                     </a>
@@ -65,7 +80,7 @@
     </div>
 </div>
 
-<div class="card shadow-sm mb-4">
+<div class="card shadow-sm border-0 mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="fas fa-chart-line me-2 "></i>{{ _('Net Income Trends') }}</h5>
     </div>
@@ -86,7 +101,7 @@
     </div>
 </div>
 
-<div class="card shadow-sm">
+<div class="card shadow-sm border-0">
     <div class="card-header ">
         <h5 class="mb-0">{{ _('Customer Payment History') }}</h5>
     </div>
@@ -105,7 +120,7 @@
             <tbody>
                 {% for payment in (payment_history or []) %}
                 {% set ticket = payment.ticket %}
-                {% set customer = ticket.customer if ticket else None %}
+                {% set customer = ticket.customer if ticket else (payment.invoice.customer if payment.invoice else None) %}
                 <tr>
                     <td><small>{{ payment.paid_at.strftime('%Y-%m-%d %H:%M') if payment.paid_at else '-' }}</small></td>
                     <td>
@@ -122,7 +137,7 @@
                             {{ ticket.ticket_number }}
                         </a>
                         {% else %}
-                        <span class="text-muted">-</span>
+                        <span class="badge bg-secondary">{{ _('POS Sale') }}</span>
                         {% endif %}
                     </td>
                     <td>{{ _(payment.payment_method) if payment.payment_method else '-' }}</td>
@@ -139,7 +154,7 @@
     </div>
 </div>
 
-<div class="card shadow-sm mt-4">
+<div class="card shadow-sm border-0 mt-4">
     <div class="card-header  d-flex justify-content-between align-items-center">
         <h5 class="mb-0">{{ _('Material Usage & Hardware Tracking') }}</h5>
         <small class="fw-bold ">{{ _('Includes Inventory & Manual Items') }}</small>
@@ -161,7 +176,7 @@
             <tbody>
                 {% for item in (material_usage or []) %}
                 {% set ticket = item.invoice.ticket if item.invoice else None %}
-                {% set customer = ticket.customer if ticket else None %}
+                {% set customer = ticket.customer if ticket else (item.invoice.customer if item.invoice else None) %}
                 <tr>
                     <td class="text-break"><strong>{{ item.description or '' }}</strong></td>
                     <td>
@@ -185,7 +200,7 @@
                                 {{ ticket.ticket_number }}
                             </a>
                         {% else %}
-                        <span class="text-muted">-</span>
+                        <span class="badge bg-secondary">{{ _('Direct Sale') }}</span>
                         {% endif %}
                     </td>
                     <td class="text-end">{{ item.quantity or 0 }}</td>

@@ -36,3 +36,4 @@ translations/*/*/*.mo
 backups/
 htmlcov/
 .venv/
+migrations/

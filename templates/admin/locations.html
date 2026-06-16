@@ -4,32 +4,40 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ _('Manage Locations') }}</h2>
-    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">{{ _('+ Add New Location') }}</button>
+    <div class="d-flex align-items-center">
+            <a href="{{ url_for('admin.dashboard') }}" class="btn-link p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Admin Panel') }}"><i class="fas fa-arrow-circle-left" aria-hidden="true"></i></a>
+        <h2 class="mb-0">{{ _('Manage Locations') }}</h2>
+    </div>
+    {% if current_user.is_superuser or current_user.has_role('admin') %}
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal"><i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('Add New Location') }}</button>
+    {% endif %}
 </div>
 
-<div class="card shadow-sm">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>{{ _('Location Name') }}</th>
-                    <th>{{ _('Address') }}</th>
-                    <th>{{ _('Phone') }}</th>
-                    <th>{{ _('Email') }}</th>
-                    <th>{{ _('Created') }}</th>
-                    <th class="text-end">{{ _('Action') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for loc in locations %}
-                <tr>
-                    <td><strong>{{ loc.name }}</strong></td>
-                    <td style="white-space: pre-wrap;">{{ loc.address or _('N/A') }}</td>
-                    <td class="text-nowrap">{{ loc.phone or _('N/A') }}</td>
-                    <td class="text-break">{{ loc.email or _('N/A') }}</td>
-                    <td class="text-nowrap">{{ loc.created_at.strftime('%Y-%m-%d') if loc.created_at else '' }}</td>
-                    <td class="text-end">
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-sm h-100">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="locationsTable">
+                    <thead>
+                        <tr class="table-light">
+                            <th class="ps-3">{{ _('Location Name') }}</th>
+                            <th>{{ _('Address') }}</th>
+                            <th>{{ _('Phone') }}</th>
+                            <th>{{ _('Email') }}</th>
+                            <th>{{ _('Created') }}</th>
+                            <th class="text-end pe-4">{{ _('Action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loc in locations %}
+                        <tr>
+                            <td class="ps-3 text-break"><strong>{{ loc.name }}</strong></td>
+                            <td class="text-break" style="white-space: pre-wrap;">{{ loc.address or _('N/A') }}</td>
+                            <td class="text-nowrap">{{ loc.phone or _('N/A') }}</td>
+                            <td class="text-break">{{ loc.email or _('N/A') }}</td>
+                            <td class="text-nowrap">{{ loc.created_at.strftime('%Y-%m-%d') if loc.created_at else '' }}</td>
+                            <td class="text-end pe-3">
+                        {% if current_user.is_superuser or current_user.has_role('admin') %}
                         <button class="btn btn-sm btn-outline-warning edit-location-btn" 
                                 data-bs-toggle="modal" data-bs-target="#editLocationModal"
                                 data-id="{{ loc.id }}" 
@@ -37,19 +45,23 @@
                                 data-address="{{ loc.address or '' }}"
                                 data-phone="{{ loc.phone or '' }}"
                                 data-email="{{ loc.email or '' }}">
-                            <i class="fas fa-edit"></i>
+                            <i class="fas fa-edit" aria-hidden="true"></i>
                         </button>
                         <form action="{{ url_for('admin.delete_location', location_id=loc.id) }}" method="POST" class="d-inline confirm-action" data-confirm="{{ _('Are you sure? This will affect all users and tickets linked to this branch.') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash-alt" aria-hidden="true"></i>
                         </form>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="6" class="text-center text-muted py-4">{{ _('No locations defined yet.') }}</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="text-center text-muted py-4">{{ _('No locations defined yet.') }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -61,29 +73,29 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
                     <h5 class="modal-title" id="addLocationModalLabel">{{ _('Add New Location') }}</h5>
-                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="locationName" class="form-label">{{ _('Location Name') }} *</label>
-                        <input type="text" class="form-control" id="locationName" name="name" value="{{ name or '' }}" required placeholder="{{ _('e.g., Downtown Branch') }}">
+                        <input type="text" class="form-control" id="locationName" name="name" value="{{ name if name is defined else '' }}" required placeholder="{{ _('e.g., Downtown Branch') }}" maxlength="100">
                     </div>
                     <div class="mb-3">
                         <label for="locationAddress" class="form-label">{{ _('Address') }}</label>
-                        <textarea class="form-control" id="locationAddress" name="address" rows="2" placeholder="{{ _('Street, City, State, Zip') }}">{{ address or '' }}</textarea>
+                        <textarea class="form-control" id="locationAddress" name="address" rows="2" placeholder="{{ _('Street, City, State, Zip') }}" maxlength="500">{{ address if address is defined else '' }}</textarea>
                     </div>
                     <div class="mb-3">
                         <label for="locationPhone" class="form-label">{{ _('Phone') }}</label>
-                        <input type="tel" class="form-control" id="locationPhone" name="phone" value="{{ phone or '' }}" placeholder="{{ _('+1 (555) 123-4567') }}">
+                        <input type="tel" class="form-control" id="locationPhone" name="phone" value="{{ phone if phone is defined else '' }}" placeholder="{{ _('+1 (555) 123-4567') }}" maxlength="20">
                     </div>
                     <div class="mb-3">
                         <label for="locationEmail" class="form-label">{{ _('Email') }}</label>
-                        <input type="email" class="form-control" id="locationEmail" name="email" value="{{ email or '' }}" placeholder="{{ _('branch@example.com') }}">
+                        <input type="email" class="form-control" id="locationEmail" name="email" value="{{ email if email is defined else '' }}" placeholder="{{ _('branch@example.com') }}" maxlength="120">
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-outline-primary">{{ _('Create Location') }}</button>
+                    <button type="submit" class="btn btn-outline-primary"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Create Location') }}</button>
                 </div>
             </form>
         </div>
@@ -98,29 +110,29 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
                     <h5 class="modal-title" id="editLocationModalLabel">{{ _('Edit Location') }}</h5>
-                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="editLocationName" class="form-label">{{ _('Location Name') }} *</label>
-                        <input type="text" class="form-control" id="editLocationName" name="name" required>
+                        <input type="text" class="form-control" id="editLocationName" name="name" required maxlength="100">
                     </div>
                     <div class="mb-3">
                         <label for="editLocationAddress" class="form-label">{{ _('Address') }}</label>
-                        <textarea class="form-control" id="editLocationAddress" name="address" rows="2"></textarea>
+                        <textarea class="form-control" id="editLocationAddress" name="address" rows="2" maxlength="500"></textarea>
                     </div>
                     <div class="mb-3">
                         <label for="editLocationPhone" class="form-label">{{ _('Phone') }}</label>
-                        <input type="tel" class="form-control" id="editLocationPhone" name="phone">
+                        <input type="tel" class="form-control" id="editLocationPhone" name="phone" maxlength="20">
                     </div>
                     <div class="mb-3">
                         <label for="editLocationEmail" class="form-label">{{ _('Email') }}</label>
-                        <input type="email" class="form-control" id="editLocationEmail" name="email">
+                        <input type="email" class="form-control" id="editLocationEmail" name="email" maxlength="120">
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-outline-warning">{{ _('Update Location') }}</button>
+                    <button type="submit" class="btn btn-outline-warning"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Save Changes') }}</button>
                 </div>
             </form>
         </div>

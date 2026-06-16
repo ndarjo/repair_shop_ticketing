@@ -107,8 +107,8 @@ def create_app(config_name=None):
     app.config['LANGUAGES'] = discovered
 
     # Initialize WhiteNoise for static files
-    app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(app.root_path, 'static'))
-    app.wsgi_app.add_files(os.path.join(app.root_path, 'static', 'uploads')) # For logos etc.
+    app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(app.root_path, 'static'), prefix='static/')
+    app.wsgi_app.add_files(os.path.join(app.root_path, 'static', 'uploads'), prefix='static/uploads/') # For logos etc.
 
     # Initialize extensions safely
     db.init_app(app)
@@ -154,6 +154,7 @@ def create_app(config_name=None):
         ],
         'style-src': [
             '\'self\'',
+            '\'unsafe-inline\'',
             'https://cdn.jsdelivr.net',
             'https://cdnjs.cloudflare.com'
         ],
@@ -179,7 +180,7 @@ def create_app(config_name=None):
     @login_manager.unauthorized_handler
     def unauthorized():
         """Handle unauthorized access with AJAX support for UX integrity"""
-        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/'):
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path:
             return jsonify({"error": _("Unauthorized: Please log in")}), 401
         
         flash(_('Please log in to access this page.'), 'info')
@@ -191,35 +192,36 @@ def create_app(config_name=None):
         try:
             return db.session.get(User, int(user_id))
         except Exception:
+            try:
+                db.session.rollback()
+            except:
+                pass
             return None
 
     @app.context_processor
     def inject_now():
         """Provides the current time to all templates for footers and headers"""
-        user_currency = 'USD'
-        decimals = None
-
-        # Optimization: Pull from current_user if authenticated to avoid redundant Admin queries
-        if current_user.is_authenticated:
-            user_currency = getattr(current_user, 'currency', 'USD')
-            decimals = current_user.currency_decimals
-        
-        locale = get_locale()
-        symbol = get_currency_symbol(user_currency, locale=locale)
-        if decimals is None:
-            decimals = get_currency_precision(user_currency)
-        
         # Defensive lookup for ShopSetting to prevent recursive 500 errors during DB failure
         shop_info = None
+        location_info = None
         try:
-            if current_user.is_authenticated and getattr(current_user, 'location_id', None):
-                shop_info = db.session.scalar(db.select(ShopSetting).filter_by(location_id=current_user.location_id))
-            
-            if not shop_info:
-                # Fallback to the first available shop
-                shop_info = db.session.scalar(db.select(ShopSetting).limit(1))
+            # 1. Fetch Global Branding (Brand Identity)
+            shop_info = db.session.scalar(db.select(ShopSetting).limit(1))
+
+            # 2. Determine and fetch the active Location context (Branch Details)
+            if current_user.is_authenticated:
+                loc_id = None
+                if current_user.is_superuser or current_user.has_role('admin'):
+                    loc_id = request.args.get('location_id', type=int)
+                if not loc_id:
+                    loc_id = getattr(current_user, 'location_id', None)
+                if loc_id:
+                    location_info = db.session.get(Location, loc_id)
         except Exception:
-            pass
+            try:
+                db.session.rollback()
+            except:
+                pass
             
         # UX Integrity: Provide a fallback dictionary so templates don't crash on null shop_info
         if not shop_info:
@@ -230,13 +232,40 @@ def create_app(config_name=None):
                 'shop_email': '',
                 'logo_path': None
             }
+        
+        if not location_info and current_user.is_authenticated:
+            location_info = {
+                'name': _('Main Branch'),
+                'address': '',
+                'phone': '',
+                'email': ''
+            }
             
+        # INTEGRITY: Currency settings are now shop-wide to ensure consistency across all staff accounts.
+        # Prioritize branch settings with fallback to authenticated user's individual preference.
+        user_currency = 'USD'
+        decimals = None
+
+        if shop_info and hasattr(shop_info, 'currency') and shop_info.currency:
+            user_currency = shop_info.currency
+            decimals = shop_info.currency_decimals
+        elif current_user.is_authenticated:
+            user_currency = getattr(current_user, 'currency', 'USD') or 'USD'
+            decimals = current_user.currency_decimals
+
+        if decimals is None:
+            decimals = get_currency_precision(user_currency or 'USD')
+
+        locale = get_locale()
+        symbol = get_currency_symbol(user_currency, locale=locale)
+
         return {
             'now': datetime.now(), 
             'current_locale': get_locale(),
             'currency_symbol': symbol, 
             'currency_decimals': decimals, 
             'shop_info': shop_info,
+            'location_info': location_info,
             'languages': app.config['LANGUAGES'],
             'all_currencies': sorted([
                 (code, f"{get_currency_name(code, locale=locale)} ({get_currency_symbol(code, locale=locale)})")
@@ -280,8 +309,9 @@ def create_app(config_name=None):
 
     # Modular Blueprint Hub: Import all controllers from the routes package
     from routes import (
-        main_bp, auth_bp, ticket_bp, customer_bp, 
-        device_bp, admin_bp, report_bp, onboarding_bp
+        main_bp, auth_bp, ticket_bp, customer_bp, inventory_bp,
+        device_bp, admin_bp, report_bp, onboarding_bp, pos_bp,
+        services_bp
     )
 
     # Register blueprints
@@ -291,8 +321,11 @@ def create_app(config_name=None):
     app.register_blueprint(customer_bp, url_prefix='/customer')
     app.register_blueprint(device_bp, url_prefix='/device')
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(inventory_bp, url_prefix='/inventory')
+    app.register_blueprint(services_bp, url_prefix='/services')
     app.register_blueprint(report_bp, url_prefix='/report')
     app.register_blueprint(onboarding_bp, url_prefix='/onboarding')
+    app.register_blueprint(pos_bp, url_prefix='/pos')
 
     @app.errorhandler(403)
     def forbidden_error(error):
@@ -428,10 +461,19 @@ def create_app(config_name=None):
         """Redirect superusers to onboarding if setup is incomplete"""
         if request.endpoint and \
            not any(p in request.endpoint for p in ['static', 'auth', 'onboarding', 'health_check']):
-            if current_user.is_authenticated and current_user.is_superuser:
-                settings = db.session.scalar(db.select(ShopSetting).limit(1))
-                if not settings or not settings.setup_completed:
-                    return redirect(url_for('onboarding.setup'))
+            try:
+                # INTEGRITY: Handle potential schema mismatches during startup safely
+                if current_user.is_authenticated and (current_user.is_superuser or current_user.has_role('admin')):
+                    with db.session.begin_nested(): # Atomic sub-transaction to prevent session poisoning
+                        settings = db.session.scalar(db.select(ShopSetting).limit(1))
+                        if not settings or not settings.setup_completed:
+                            return redirect(url_for('onboarding.setup'))
+            except Exception:
+                # Silently skip onboarding check if the schema is currently being updated or is inaccessible
+                try:
+                    db.session.rollback()
+                except:
+                    pass
     
     # Initialize Scheduler for automated backups
     scheduler = APScheduler()

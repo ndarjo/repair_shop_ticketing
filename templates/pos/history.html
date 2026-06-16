@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+
+{% block title %}{{ _('Sales History') }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0"><i class="fas fa-history me-2 text-primary" aria-hidden="true"></i>{{ _('Sales History') }}</h1>
+        <div class="d-flex gap-2 align-items-center">
+            {% if (current_user.is_superuser or current_user.has_role('admin')) and locations %}
+            <form action="{{ url_for('pos.history') }}" method="GET" class="d-flex gap-2 align-items-center me-3">
+                <label for="location-select" class="small fw-bold text-muted text-uppercase mb-0">{{ _('Branch View:') }}</label>
+                <select id="location-select" name="location_id" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                    <option value="">{{ _('All Branches') }}</option>
+                    {% for loc in locations %}
+                    <option value="{{ loc.id }}" {{ 'selected' if selected_location == loc.id else '' }}>
+                        {{ loc.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </form>
+            {% endif %}
+            <a href="{{ url_for('pos.index') }}" class="btn btn-outline-primary">
+                <i class="fas fa-plus me-2" aria-hidden="true"></i>{{ _('New Sale') }}
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">{{ _('Date') }}</th>
+                            <th>{{ _('Invoice #') }}</th>
+                            <th>{{ _('Customer') }}</th>
+                            <th>{{ _('Type') }}</th>
+                            <th class="text-end">{{ _('Total') }}</th>
+                            <th class="text-center">{{ _('Status') }}</th>
+                            <th class="text-end pe-4">{{ _('Action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices.items %}
+                        <tr>
+                            <td class="ps-4">
+                                <span class="text-muted small">{{ invoice.created_at.strftime('%Y-%m-%d %H:%M') if invoice.created_at else _('Unknown') }}</span>
+                            </td>
+                            <td class="fw-bold">{{ invoice.invoice_number or '' }}</td>
+                            <td>
+                                {% set customer_obj = invoice.customer or (invoice.ticket.customer if invoice.ticket else none) %}
+                                {{ customer_obj.name if customer_obj else _('Walk-in') }}
+                            </td>
+                            <td>
+                                {% if invoice.ticket_id %}
+                                <span class="badge bg-info text-dark">{{ _('Repair') }} #{{ invoice.ticket.ticket_number if (invoice.ticket and invoice.ticket.ticket_number) else '' }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ _('Direct Sale') }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end fw-bold">
+                                {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.total_amount) }}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge {{ 'bg-success' if invoice.status == 'Paid' else ('bg-warning text-dark' if invoice.status == 'Partial' else 'bg-danger') }}">
+                                    {{ _(invoice.status) if invoice.status else _('N/A') }}
+                                </span>
+                            </td>
+                            <td class="text-end pe-4 text-nowrap">
+                                <div class="btn-group btn-group-sm">
+                                    {% if invoice.ticket_id %}
+                                    <a href="{{ url_for('ticket.view_invoice', ticket_id=invoice.ticket_id) }}" class="btn btn-outline-primary" title="{{ _('View Invoice') }}" aria-label="{{ _('View Invoice') }}">
+                                        <i class="fas fa-file-invoice" aria-hidden="true"></i>
+                                    </a>
+                                    {% else %}
+                                    <a href="{{ url_for('pos.cart', invoice_id=invoice.id) }}" class="btn btn-outline-primary" title="{{ _('View Details') if invoice.status == 'Paid' else _('View/Edit Cart') }}" aria-label="{{ _('View Details') if invoice.status == 'Paid' else _('View/Edit Cart') }}">
+                                        <i class="fas {{ 'fa-eye' if invoice.status == 'Paid' else 'fa-shopping-cart' }}" aria-hidden="true"></i>
+                                    </a>
+                                    {% endif %}
+
+                                    {% if not invoice.ticket_id and invoice.status != 'Paid' and (invoice.full_payment_received or 0) == 0 %}
+                                    <form action="{{ url_for('pos.delete_sale', invoice_id=invoice.id) }}" method="POST" class="confirm-action" data-confirm="{{ _('Permanently erase this draft sale and restore stock?')|forceescape }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-outline-danger" title="{{ _('Erase Draft') }}" aria-label="{{ _('Erase Draft') }}"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not invoices.items %}
+                        <tr class="text-center">
+                            <td colspan="7" class="py-5 text-muted fst-italic">{{ _('No sales records found.') }}</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="p-3 border-top">
+                {{ render_pagination(invoices, 'pos.history', location_id=selected_location) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

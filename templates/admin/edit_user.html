@@ -5,12 +5,16 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-10 offset-md-1">
-        <h1 class="mb-4">{{ _('Edit User') }}: {{ user.full_name }}</h1>
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('admin.manage_users') }}" class="btn-link p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Manage Users') }}"><i class="fas fa-arrow-circle-left" aria-hidden="true"></i></a>
+            <h1 class="mb-0">{{ _('Edit User: %(name)s', name=user.full_name) }}</h1>
+        </div>
         
         <div class="card">
             <div class="card-body">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
                     <!-- Basic Info -->
                     <div class="card mb-4">
                         <div class="card-header">
@@ -20,39 +24,45 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="full_name" class="form-label">{{ _('Full Name') }} *</label>
-                                    <input type="text" class="form-control" id="full_name" name="full_name" value="{{ full_name if full_name is defined else user.full_name }}" required>
+                                    <input type="text" class="form-control" id="full_name" name="full_name" value="{{ full_name if full_name is defined else user.full_name }}" required autocomplete="name" maxlength="120">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="email" class="form-label">{{ _('Email') }} *</label>
-                                    <input type="email" class="form-control" id="email" name="email" value="{{ email if email is defined else user.email or '' }}" required>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ email if email is defined else user.email or '' }}" required autocomplete="email" maxlength="120">
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="username" class="form-label">{{ _('Username') }}</label>
+                                    <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" readonly maxlength="80" autocomplete="username">
+                                    <small class="text-muted">{{ _('Username cannot be changed.') }}</small>
                                 </div>
                                 <div class="col-md-12 mb-3">
                                     <label for="location_id" class="form-label">{{ _('Assigned Location') }} *</label>
                                     <select name="location_id" id="location_id" class="form-select" required>
+                                        <option value="">{{ _('-- Select Location --') }}</option>
                                         {% for loc in locations %}
-                                            <option value="{{ loc.id }}" {% if (location_id if location_id is defined else user.location_id) == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+                                            <option value="{{ loc.id }}" {% if (location_id if location_id is defined else user.location_id)|string == loc.id|string %}selected{% endif %}>{{ loc.name }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if (is_active if is_active is defined else user.is_active) %}checked{% endif %}>
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if (is_active if is_active is defined else user.is_active) %}checked{% endif %}>
                                     <label class="form-check-label" for="is_active">{{ _('Active (user can log in)') }}</label>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Reset Password Section -->
+                    <!-- Security Credentials -->
                     <div class="card mb-4">
-                        <div class="card-header ">
-                            <h5 class="mb-0">{{ _('Reset Password') }}</h5>
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ _('Security Credentials') }}</h5>
                         </div>
                         <div class="card-body">
                             <div class="mb-0">
                                 <label for="password" class="form-label">{{ _('New Password') }}</label>
-                                <input type="password" class="form-control" id="password" name="password" placeholder="{{ _('Leave blank to keep current password') }}" minlength="8">
+                                <input type="password" class="form-control" id="password" name="password" placeholder="{{ _('Leave blank to keep current password') }}" minlength="8" autocomplete="new-password">
                                 <small class="text-muted">{{ _('Minimum 8 characters. Use this field only if you need to override the user\'s current password.') }}</small>
                             </div>
                         </div>
@@ -69,9 +79,7 @@
                                 <select name="role_id" id="role_id" class="form-select" required>
                                     <option value="">{{ _('-- Select Role --') }}</option>
                                     {% for role in roles %}
-                                        <option value="{{ role.id }}"
-                                            {% if (role_id if role_id is defined else (user.roles[0].id if user.roles else none)) == role.id %}selected{% endif %}
-                                        >{{ _(role.name) }}</option>
+                                        <option value="{{ role.id }}" {% if (role_id if role_id is defined else (user.roles[0].id if user.roles else ''))|string == role.id|string %}selected{% endif %}>{{ _(role.name) }}</option>
                                     {% endfor %}
                                 </select>
                                 <small class="text-muted">{{ _('Permissions are derived from the assigned role.') }}</small>
@@ -81,8 +89,8 @@
                     
                     <!-- Submit Buttons -->
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-outline-warning">{{ _('Save Changes') }}</button>
-                        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
+                        <button type="submit" class="btn btn-outline-warning"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Save Changes') }}</button>
+                        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-primary">{{ _('Cancel') }}</a>
                     </div>
                 </form>
             </div>

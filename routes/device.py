@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
-from flask_login import login_required, current_user
-from sqlalchemy import desc, or_, select, func
-from sqlalchemy.orm import joinedload, selectinload
-from models import db, Customer, Device, Ticket
+from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, url_for
 from flask_babel import _
+from flask_login import current_user, login_required
+from sqlalchemy import desc, func, or_
+from sqlalchemy.orm import joinedload, selectinload
+
+from models import Customer, Device, Location, Ticket, db
 from services.core import DeviceService
 from .utils import require_permission
 
@@ -14,17 +15,38 @@ device_bp = Blueprint('device', __name__)
 @require_permission('view_device')
 def devices_list():
     page = request.args.get('page', 1, type=int)
+    search_query = request.args.get('q', '').strip()
+    selected_location = request.args.get('location_id', type=int)
     
-    # SCALABILITY: Filter by location with global visibility for superusers
-    location_filter = Customer.location_id == current_user.location_id if not current_user.is_superuser else True
-    
+    # Multi-tenancy: Staff see their branch, superusers can filter or see all
+    locations = []
+    if current_user.is_superuser:
+        # Fetch all locations for the filter dropdown
+        locations = db.session.scalars(db.select(Location).order_by(Location.name)).all()
+        location_filter = Customer.location_id == selected_location if selected_location else True
+    else:
+        location_filter = Customer.location_id == current_user.location_id
+
     stmt = db.select(Device).options(
         joinedload(Device.customer),
         selectinload(Device.tickets)
-    ).join(Customer).filter(location_filter).order_by(desc(Device.created_at))
+    ).join(Customer).where(location_filter)
+
+    if search_query:
+        stmt = stmt.where(
+            or_(
+                Device.brand.ilike(f'%{search_query}%'),
+                Device.model_number.ilike(f'%{search_query}%'),
+                Device.serial_number.ilike(f'%{search_query}%'),
+                Customer.name.ilike(f'%{search_query}%'),
+                Customer.phone_hash == Customer.get_search_hash(search_query)
+            )
+        )
     
-    devices = db.paginate(stmt, page=page, per_page=15)
-    return render_template('devices/devices.html', devices=devices)
+    stmt = stmt.order_by(desc(Device.created_at))
+    
+    devices = db.paginate(stmt, page=page, per_page=15) # type: ignore
+    return render_template('devices/devices.html', devices=devices, search_query=search_query, locations=locations, selected_location=selected_location)
 
 @device_bp.route('/view/<int:device_id>')
 @login_required
@@ -32,7 +54,7 @@ def devices_list():
 def view_device(device_id):
     # Optimization: Eager load the owner and the full repair history 
     # to prevent N+1 queries in the detail template.
-    stmt = select(Device).options(
+    stmt = db.select(Device).options(
         joinedload(Device.customer),
         selectinload(Device.tickets)
     ).where(Device.id == device_id)
@@ -52,8 +74,15 @@ def view_device(device_id):
 @login_required
 @require_permission('create_device')
 def new_device():
+    # Unified SQLAlchemy 2.0 query for customer selection with multi-tenancy override
+    location_filter = Customer.location_id == current_user.location_id if not current_user.is_superuser else True
+    cust_stmt = db.select(Customer).where(location_filter).order_by(Customer.name)
+    customers = db.session.scalars(cust_stmt).all()
+
     if request.method == 'POST':
         customer_id = request.form.get('customer_id', type=int)
+        raw_serial = request.form.get('serial_number', '').strip().upper()
+        serial_number = raw_serial or None
         
         # Scoping check: Ensure the customer belongs to this location
         customer = db.session.get(Customer, customer_id)
@@ -65,7 +94,7 @@ def new_device():
                 device_type=request.form.get('device_type'),
                 brand=request.form.get('brand'),
                 model_number=request.form.get('model_number'),
-                serial_number=request.form.get('serial_number', '').strip().upper() or None,
+                serial_number=serial_number,
                 color=request.form.get('color'),
                 cpu=request.form.get('cpu'),
                 ram=request.form.get('ram'),
@@ -86,26 +115,19 @@ def new_device():
                 flash(result, 'error')
         
         # UX: Return form data to prevent data loss on validation error
-        location_filter = Customer.location_id == current_user.location_id if not current_user.is_superuser else True
-        customers = db.session.execute(db.select(Customer).where(location_filter).order_by(Customer.name)).scalars().all()
         return render_template('devices/new_device.html', 
                                customers=customers,
                                customer_id=customer_id,
                                device_type=request.form.get('device_type'),
                                brand=request.form.get('brand'),
                                model_number=request.form.get('model_number'),
-                               serial_number=request.form.get('serial_number'),
+                               serial_number=raw_serial,
                                color=request.form.get('color'),
                                cpu=request.form.get('cpu'),
                                ram=request.form.get('ram'),
                                storage_type=request.form.get('storage_type'),
                                storage_capacity=request.form.get('storage_capacity'),
                                notes=request.form.get('notes'))
-
-    # Unified SQLAlchemy 2.0 query for customer selection with multi-tenancy override
-    location_filter = Customer.location_id == current_user.location_id if not current_user.is_superuser else True
-    cust_stmt = db.select(Customer).where(location_filter).order_by(Customer.name)
-    customers = db.session.execute(cust_stmt).scalars().all()
     return render_template('devices/new_device.html', customers=customers)
 
 @device_bp.route('/edit/<int:device_id>', methods=['GET', 'POST'])
@@ -194,7 +216,7 @@ def search_devices(customer_id):
     )
     if query:
         device_stmt = device_stmt.where(or_(Device.brand.ilike(f'%{query}%'), Device.model_number.ilike(f'%{query}%')))
-    devices = db.session.execute(device_stmt.limit(10)).scalars().all()
+    devices = db.session.scalars(device_stmt.limit(10)).all()
     return jsonify([{'id': d.id, 'display': d.display} for d in devices])
 
 @device_bp.route('/new', methods=['POST'])

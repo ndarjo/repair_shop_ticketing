@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="card shadow-sm border-0">
-    <div class="card-header bg-warning text-dark">
+    <div class="card-header bg-shadow text-dark">
         <h4 class="mb-0"><i class="fas fa-edit me-2"></i>{{ _('Edit Repair Ticket:') }} {{ ticket.ticket_number }}</h4>
     </div>
     <div class="card-body">
@@ -48,7 +48,7 @@
                 <div class="col-12 text-end mt-4">
                     <hr>
                     <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-outline-secondary px-4 me-2">{{ _('Cancel') }}</a>
-                    <button type="submit" class="btn btn-outline-primary btn-lg px-5">{{ _('Save Changes') }}</button>
+                    <button type="submit" class="btn btn-outline-warning btn-lg px-5"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Save Changes') }}</button>
                 </div>
             </div>
         </form>

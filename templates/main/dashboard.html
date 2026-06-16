@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
 
-{% block title %}{{ _('Dashboard') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
+{% block title %}{{ _('Dashboard') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name and shop_info.shop_name != 'None' else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="row mb-4 g-3">
@@ -39,52 +39,90 @@
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-header  d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">{{ _('Recent Tickets') }}</h5>
-        {% if current_user.has_permission('create_ticket') %}
-        <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-plus me-1" aria-hidden="true"></i> {{ _('Create Ticket') }}</a>
-        {% endif %}
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ _('Recent Tickets') }}</h5>
+                {% if current_user.has_permission('create_ticket') %}
+                <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-plus me-2" aria-hidden="true"></i>{{ _('Create Ticket') }}</a>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Ticket #') }}</th>
+                            <th>{{ _('Customer') }}</th>
+                            <th>{{ _('Device') }}</th>
+                            <th class="text-center">{{ _('Status') }}</th>
+                            <th>{{ _('Date') }}</th>
+                            <th class="text-end">{{ _('Action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {# INTEGRITY: Filter out tickets belonging to anonymized/deleted customers from the recent activity feed #}
+                        {% for ticket in (tickets.items if tickets else []) if ticket.customer and not ticket.customer.is_anonymized and not (ticket.customer.name and ticket.customer.name.startswith('DELETED_USER_')) %}
+                        <tr>
+                            <td><strong class="text-break">{{ ticket.ticket_number }}</strong></td>
+                            <td class="text-break">{{ ticket.customer.name if (ticket.customer and ticket.customer.name and ticket.customer.name != 'None') else _('Customer') }}</td>
+                            <td>
+                                <div class="text-break">{{ ticket.device.display if (ticket.device and ticket.device.display and ticket.device.display != 'None') else _('N/A') }}</div>
+                                <small class="text-muted">{{ _('S/N') }}: <code class="text-break">{{ (ticket.device.serial_number if (ticket.device and ticket.device.serial_number != 'None') else None) or _('N/A') }}</code></small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
+                                    {{ _(ticket.current_phase) if (ticket.current_phase and ticket.current_phase != 'None') else _('N/A') }}
+                                </span>
+                            </td>
+                            <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if (ticket.created_at and ticket.created_at|string != 'None') else _('Unknown') }}</td>
+                            <td class="text-end text-nowrap">
+                                <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="text-center text-muted py-4">{{ _('No recent tickets found.') }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="p-3 border-top">
+                {{ render_pagination(tickets, 'main.dashboard') }}
+            </div>
+        </div>
     </div>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>{{ _('Ticket #') }}</th>
-                    <th>{{ _('Customer') }}</th>
-                    <th>{{ _('Device') }}</th>
-                    <th class="text-center">{{ _('Status') }}</th>
-                    <th>{{ _('Date') }}</th>
-                    <th class="text-end">{{ _('Actions') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ticket in (tickets.items if tickets else []) %}
-                <tr>
-                    <td><strong class="text-break">{{ ticket.ticket_number }}</strong></td>
-                    <td class="text-break">{{ ticket.customer.name if ticket.customer else _('N/A') }}</td>
-                    <td>
-                        <div class="text-break">{{ ticket.device.display if ticket.device else _('N/A') }}</div>
-                        <small class="text-muted">{{ _('S/N:') }} <code class="text-break">{{ (ticket.device.serial_number if ticket.device else None) or _('N/A') }}</code></small>
-                    </td>
-                    <td class="text-center">
-                        <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
-                            {{ _(ticket.current_phase) if ticket.current_phase else _('N/A') }}
-                        </span>
-                    </td>
-                    <td><small>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if ticket.created_at else _('Unknown') }}</small></td>
-                    <td class="text-end">
-                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="6" class="text-center text-muted py-4">{{ _('No recent tickets found.') }}</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <div class="card-footer">
-        {{ render_pagination(tickets, 'main.dashboard') }}
+
+    <!-- Quick Sale Widget -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-dark text-white py-3">
+                <h5 class="mb-0"><i class="fas fa-cash-register me-2" aria-hidden="true"></i>{{ _('Start New Sale') }}</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('pos.create_sale') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-4">
+                        <label for="customer_id" class="form-label fw-bold">{{ _('Select Customer') }}</label>
+                        <select name="customer_id" id="customer_id" class="form-select">
+                            <option value="">-- {{ _('Walk-in Customer') }} --</option>
+                            {# INTEGRITY: Only list active, non-anonymized customers for the quick sale widget #}
+                            {% for customer in customers if not customer.is_anonymized and not (customer.name and customer.name.startswith('DELETED_USER_')) %}
+                            <option value="{{ customer.id }}">
+                                {{ customer.name if (customer.name and customer.name != 'None') else _('Customer') }} ({{ customer.phone if (customer.phone and customer.phone != 'None') else _('No phone') }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-shopping-basket me-2" aria-hidden="true"></i>{{ _('Open Cart') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

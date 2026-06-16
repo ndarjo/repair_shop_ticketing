@@ -1,12 +1,17 @@
 from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, current_app
-from flask_login import login_required, current_user
-from sqlalchemy import select, desc, and_
-from sqlalchemy.orm import joinedload, selectinload
-from models import db, Ticket, Customer, Device, Service, SparePart, Invoice, PhaseLog, Note, User, CommonProblem, Role, Payment, InvoiceItem
-from services import RepairTicketService, InventoryService, FinancialService, DocumentService
-from .utils import require_permission, safe_decimal
+
+from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_babel import _
+from flask_login import login_required, current_user
+from sqlalchemy import and_, desc, or_
+from sqlalchemy.orm import joinedload, selectinload
+
+from models import (CommonProblem, Customer, Device, Invoice, InvoiceItem,
+                    Location, Note, Payment, PhaseLog, Role, Service,
+                    SparePart, Ticket, User, db)
+from services import (DocumentService, FinancialService, InventoryService,
+                      RepairTicketService)
+from .utils import require_permission, safe_decimal
 
 ticket_bp = Blueprint('ticket', __name__)
 
@@ -14,18 +19,13 @@ ticket_bp = Blueprint('ticket', __name__)
 @login_required
 @require_permission('create_ticket')
 def new_ticket():
-    # Fetch context needed for both GET and failed POST rendering
-    loc_filter = CommonProblem.location_id == current_user.location_id if not current_user.is_superuser else True
-    common_problems = db.session.scalars(db.select(CommonProblem).where(loc_filter, CommonProblem.is_active == True)).all()
-    
-    # Integrity Fix: Only fetch users with the 'technician' role for assignment within current context
-    user_loc_filter = User.location_id == current_user.location_id if not current_user.is_superuser else True
-    users_stmt = db.select(User).join(User.roles).where(
-        user_loc_filter,
-        User.is_active == True,
-        Role.name == 'technician'
-    )
-    users = db.session.scalars(users_stmt).all()
+    # Integrity: Identify specific branch context for technicians and common problems
+    loc_id = current_user.location_id or db.session.scalar(db.select(Location.id).limit(1))
+
+    # Scoping common problems to the active location prevents data leakage between branches
+    common_problems = db.session.scalars(db.select(CommonProblem).where(CommonProblem.location_id == loc_id, CommonProblem.is_active == True)).all()
+
+    users = RepairTicketService.get_assignable_technicians(loc_id)
     now = datetime.now()
 
     if request.method == 'POST':
@@ -63,7 +63,14 @@ def new_ticket():
                     try:
                         created_at = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
                     except ValueError:
-                        created_at = None
+                        flash(_('Invalid date or time format.'), 'error')
+                        return render_template('tickets/new_ticket.html', 
+                                               common_problems=common_problems, users=users, 
+                                               now_date=date_str, now_time=time_str,
+                                               customer_id=customer_id, device_id=device_id,
+                                               items_included=items_included, problem_description=problem_description,
+                                               down_payment=request.form.get('down_payment'), payment_method=request.form.get('payment_method'),
+                                               assigned_to=request.form.get('assigned_to', type=int))
 
                 try:
                     # SCALABILITY: Fallback to customer location if superuser is not assigned to a specific branch
@@ -109,7 +116,7 @@ def new_ticket():
 @require_permission('view_ticket')
 def view_ticket(ticket_id):
     # Optimization: Eager load relations including audit logs and notes for the timeline UI
-    stmt = select(Ticket).options(
+    stmt = db.select(Ticket).options(
         joinedload(Ticket.customer),
         joinedload(Ticket.device),
         joinedload(Ticket.creator),
@@ -126,8 +133,8 @@ def view_ticket(ticket_id):
     
     # FIXED: Context-aware lookup for services and parts based on the ticket's branch
     # This allows global admins to see appropriate options for the specific location.
-    services = db.session.scalars(db.select(Service).filter_by(location_id=ticket.location_id, is_active=True)).all()
-    parts = db.session.scalars(db.select(SparePart).filter_by(location_id=ticket.location_id, is_active=True)).all()
+    services = db.session.scalars(db.select(Service).where(Service.location_id == ticket.location_id, Service.is_active == True)).all()
+    parts = db.session.scalars(db.select(SparePart).where(SparePart.location_id == ticket.location_id, SparePart.is_active == True)).all()
     
     return render_template('tickets/ticket_detail.html', ticket=ticket, services=services, parts=parts)
 
@@ -138,22 +145,49 @@ def tickets_list():
     """Comprehensive repository view for all branch tickets"""
     page = request.args.get('page', 1, type=int)
     view = request.args.get('view', 'active')
+    search_query = request.args.get('q', '').strip()
+    selected_location = request.args.get('location_id', type=int)
     
     filters = []
-    if not current_user.is_superuser:
+
+    # Multi-tenancy: Staff see their branch, superusers can filter or see all
+    locations = []
+    if current_user.is_superuser:
+        locations = db.session.scalars(db.select(Location).order_by(Location.name)).all()
+        if selected_location:
+            filters.append(Ticket.location_id == selected_location)
+    else:
         filters.append(Ticket.location_id == current_user.location_id)
     
     filters.append(Ticket.is_archived == (True if view == 'history' else False))
 
-    stmt = select(Ticket).options(
+    stmt = db.select(Ticket).options(
         joinedload(Ticket.customer), 
         joinedload(Ticket.device),
         joinedload(Ticket.creator),
         joinedload(Ticket.assigned_to_user)
-    ).where(and_(*filters)).order_by(desc(Ticket.created_at))
+    ).where(and_(*filters))
+
+    if search_query:
+        stmt = stmt.join(Customer).join(Device).where(
+            or_(
+                Ticket.ticket_number.ilike(f'%{search_query}%'),
+                Customer.name.ilike(f'%{search_query}%'),
+                Device.brand.ilike(f'%{search_query}%'),
+                Device.model_number.ilike(f'%{search_query}%'),
+                Device.serial_number.ilike(f'%{search_query}%')
+            )
+        )
+
+    stmt = stmt.order_by(desc(Ticket.created_at))
     
     tickets = db.paginate(stmt, page=page, per_page=20)
-    return render_template('tickets/tickets_list.html', tickets=tickets, current_view=view)
+    return render_template('tickets/tickets_list.html', 
+                           tickets=tickets, 
+                           current_view=view, 
+                           search_query=search_query, 
+                           locations=locations, 
+                           selected_location=selected_location)
 
 @ticket_bp.route('/edit/<int:ticket_id>', methods=['GET', 'POST'])
 @login_required
@@ -165,11 +199,8 @@ def edit_ticket(ticket_id):
         flash(_('Ticket not found'), 'error')
         return redirect(url_for('main.dashboard'))
     
-    # Context lookup for technicians (defined early for use in all return paths)
-    user_loc_filter = User.location_id == ticket.location_id if not current_user.is_superuser else True
-    users = db.session.scalars(db.select(User).join(User.roles).where(
-        user_loc_filter, User.is_active == True, Role.name == 'technician'
-    )).all()
+    # Optimization: Use the service layer to fetch technicians scoped to the ticket's branch
+    users = RepairTicketService.get_assignable_technicians(ticket.location_id)
 
     if request.method == 'POST':
         ticket.items_included = request.form.get('items_included', '').strip()
@@ -249,6 +280,7 @@ def view_invoice(ticket_id):
     if invoice.status != 'Paid' or ticket.balance_due != 0: # Check for any remaining balance, positive or negative
         try:
             invoice.calculate_total()
+            db.session.flush() # Ensure the total change is visible to ticket.balance_due
             if ticket.balance_due <= 0:
                 invoice.status = 'Paid'
             elif ticket.total_paid > 0:
@@ -313,9 +345,10 @@ def add_service(ticket_id):
     if success:
         try:
             # INTEGRITY: Synchronize invoice totals within the same transaction
-            invoice = db.session.scalar(select(Invoice).filter_by(ticket_id=ticket_id))
+            invoice = db.session.scalar(db.select(Invoice).where(Invoice.ticket_id == ticket_id))
             if invoice:
                 invoice.calculate_total()
+                db.session.flush() # Ensure the total change is visible to ticket.balance_due
                 if ticket.balance_due <= 0:
                     invoice.status = 'Paid'
                 elif ticket.total_paid > 0:
@@ -371,9 +404,10 @@ def add_part(ticket_id):
     if success:
         try:
             # INTEGRITY: Synchronize invoice totals within the same transaction
-            invoice = db.session.scalar(select(Invoice).filter_by(ticket_id=ticket_id))
+            invoice = db.session.scalar(db.select(Invoice).where(Invoice.ticket_id == ticket_id))
             if invoice:
                 invoice.calculate_total()
+                db.session.flush() # Ensure the total change is visible to ticket.balance_due
                 if ticket.balance_due <= 0:
                     invoice.status = 'Paid'
                 elif ticket.total_paid > 0:
@@ -416,6 +450,7 @@ def record_payment(ticket_id):
             # Update invoice status immediately following payment recording
             invoice = FinancialService.get_or_create_invoice(ticket_id)
             invoice.calculate_total()
+            db.session.flush() # Ensure the total change is visible to ticket.balance_due
             if ticket.balance_due <= 0:
                 invoice.status = 'Paid'
             elif ticket.total_paid > 0:
@@ -452,13 +487,16 @@ def void_payment(ticket_id, payment_id):
         try:
             db.session.flush() # Ensure property-based calculations are updated
             # INTEGRITY: Re-sync invoice status after payment removal
-            invoice = db.session.scalar(select(Invoice).filter_by(ticket_id=ticket_id))
+            invoice = db.session.scalar(db.select(Invoice).where(Invoice.ticket_id == ticket_id))
             if invoice:
                 invoice.calculate_total()
-                if ticket.balance_due > 0:
-                    invoice.status = 'Partial' if ticket.total_paid > 0 else 'Unpaid'
-                else:
+                db.session.flush() # Ensure the total change is visible to ticket.balance_due
+                if ticket.balance_due <= 0:
                     invoice.status = 'Paid'
+                elif ticket.total_paid > 0:
+                    invoice.status = 'Partial'
+                else:
+                    invoice.status = 'Unpaid'
             db.session.commit()
             flash(result, 'success')
         except Exception as e:
@@ -488,9 +526,10 @@ def remove_service(ticket_id, ts_id):
     if success:
         try:
             # INTEGRITY: Synchronize invoice totals within the same transaction
-            invoice = db.session.scalar(select(Invoice).filter_by(ticket_id=ticket_id))
+            invoice = db.session.scalar(db.select(Invoice).where(Invoice.ticket_id == ticket_id))
             if invoice:
                 invoice.calculate_total()
+                db.session.flush() # Ensure the total change is visible to ticket.balance_due
                 if ticket.balance_due <= 0:
                     invoice.status = 'Paid'
                 elif ticket.total_paid > 0:
@@ -527,9 +566,10 @@ def remove_part(ticket_id, item_id):
     if success:
         try:
             # INTEGRITY: Synchronize invoice totals within the same transaction
-            invoice = db.session.scalar(select(Invoice).filter_by(ticket_id=ticket_id))
+            invoice = db.session.scalar(db.select(Invoice).where(Invoice.ticket_id == ticket_id))
             if invoice:
                 invoice.calculate_total()
+                db.session.flush() # Ensure the total change is visible to ticket.balance_due
                 if ticket.balance_due <= 0:
                     invoice.status = 'Paid'
                 elif ticket.total_paid > 0:
@@ -562,6 +602,8 @@ def archive_ticket(ticket_id):
             current_app.logger.error(f"Archive error: {str(e)}")
             flash(_('Error archiving ticket.'), 'error')
         return redirect(url_for('ticket.tickets_list', view='history'))
+
+    flash(_('Ticket not found or access denied.'), 'error')
     return redirect(url_for('main.dashboard'))
 
 @ticket_bp.route('/delete/<int:ticket_id>', methods=['POST'])
@@ -594,6 +636,7 @@ def create_invoice(ticket_id):
     
     invoice = FinancialService.get_or_create_invoice(ticket_id)
     invoice.calculate_total()
+    db.session.flush() # Ensure the total change is visible to ticket.balance_due
     if ticket.balance_due <= 0: # If balance is zero or negative, it's paid
         invoice.status = 'Paid'
     elif ticket.total_paid > 0:

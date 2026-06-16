@@ -1,41 +1,88 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
 
-{% block title %}{{ _('Manage Common Problems') }}{% endblock %}
+{% block title %}{{ _('Manage Common Problems - Admin') }}{% endblock %}
+
 {% block content %}
-<h3 class="mb-4">{{ _('Manage Common Problems') }}</h3>
-<div class="card mb-4 shadow-sm">
-    <div class="card-body">
-        <form method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="input-group">
-                <label for="problem_text" class="visually-hidden">{{ _('Problem Description') }}</label>
-                <input type="text" id="problem_text" name="problem_text" class="form-control" placeholder="{{ _('New problem description...') }}" required>
-                <button class="btn btn-outline-primary" type="submit"><i class="fas fa-plus me-1"></i> {{ _('Add Problem') }}</button>
-            </div>
-        </form>
-    </div>
-</div>
-<div class="card shadow-sm mb-3">
-    <div class="list-group list-group-flush">
-        {% for problem in problems.items %}
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <div class="pe-3">
-                    <span class="text-break">{{ _(problem.problem_text) }}</span>
-                    {% if not problem.is_active %}<span class="badge bg-secondary ms-2">{{ _('Inactive') }}</span>{% endif %}
-                </div>
-                <form method="POST" action="{{ url_for('main.delete_problem', problem_id=problem.id) }}" class="confirm-action" data-confirm="{{ _('Are you sure you want to delete this problem?') }}" style="display:inline;">
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>{{ _('Manage Common Problems') }}</h2>
+        </div>
+
+        <!-- Add Problem Form -->
+        {% if current_user.is_superuser or current_user.has_role('admin') %}
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('main.manage_common_problems', location_id=selected_location if selected_location else None) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Delete') }}</button>
+                    <div class="input-group">
+                        {% if current_user.is_superuser and locations %}
+                        <div style="min-width: 180px;">
+                            <select name="location_id_filter" class="form-select rounded-0 rounded-start" onchange="window.location.href='{{ url_for('main.manage_common_problems') }}?location_id=' + this.value">
+                                <option value="">{{ _('All Locations') }}</option>
+                                {% for loc in locations %}
+                                <option value="{{ loc.id }}" {{ 'selected' if selected_location == loc.id else '' }}>
+                                    {{ loc.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <label for="problem_text" class="visually-hidden">{{ _('Problem Description') }}</label>
+                        <input type="text" id="problem_text" name="problem_text" class="form-control {{ 'rounded-0' if current_user.is_superuser and locations else '' }}" 
+                               value="{{ problem_text if problem_text is defined else '' }}"
+                               placeholder="{{ _('e.g., Broken Screen, Water Damage') }}" required aria-required="true" maxlength="200">
+                        <button class="btn btn-outline-primary" type="submit">
+                            <i class="fas fa-plus-square me-2" aria-hidden="true"></i>
+                            {{ _('Add Problem') }}
+                        </button>
+                    </div>
                 </form>
             </div>
-        {% else %}
-            <div class="list-group-item text-center text-muted py-3">
-                {{ _('No common problems defined yet.') }}
+        </div>
+        {% endif %}
+
+        <!-- Problems List -->
+        <div class="card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Problem Description') }}</th>
+                            <th>{{ _('Status') }}</th>
+                            <th class="text-end">{{ _('Action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for problem in problems.items %}
+                            <tr>
+                                <td class="text-break">{{ problem.problem_text if problem.problem_text and problem.problem_text != 'None' else '' }}</td>
+                                <td>
+                                    <span class="badge bg-{% if problem.is_active %}success{% else %}danger{% endif %}">{{ _('Active') if problem.is_active else _('Inactive') }}</span>
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    {% if current_user.is_superuser or current_user.has_role('admin') %}
+                                    <form method="POST" action="{{ url_for('main.delete_problem', problem_id=problem.id, location_id=selected_location, page=problems.page) }}" 
+                                          class="d-inline confirm-action" data-confirm="{{ _('Are you sure you want to delete this problem?') }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger me-2"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="3" class="text-center text-muted py-4">{{ _('No system problems found.') }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-        {% endfor %}
+            <!-- Pagination -->
+            <div class="card-footer">
+                {{ render_pagination(problems, 'main.manage_common_problems', location_id=selected_location if selected_location else None) }}
+            </div>
+        </div>
     </div>
 </div>
-
-{{ render_pagination(problems, 'main.manage_common_problems') }}
 {% endblock %}

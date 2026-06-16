@@ -23,6 +23,8 @@ graph TD
     route_routes_admin_py__admin_users_edit__user_id["GET /users/edit/:user_id"]:::ssr
     route_routes_admin_py__admin_users_delete__user_id["POST /users/delete/:user_id"]:::ssr
     route_routes_admin_py__admin_locations["GET /locations"]:::ssr
+    route_routes_admin_py__admin_locations_edit__location_id["POST /locations/edit/:location_id"]:::ssr
+    route_routes_admin_py__admin_locations_delete__location_id["POST /locations/delete/:location_id"]:::ssr
     route_routes_admin_py__admin_status["/status"]:::ssr
     route_routes_admin_py__admin_backup["GET /backup"]:::ssr
     route_routes_admin_py__admin_backup_download__filename["/backup/download/:filename"]:::ssr
@@ -34,7 +36,9 @@ graph TD
     route_routes_admin_py__admin_users_create --- route_routes_admin_py__admin_users_edit__user_id
     route_routes_admin_py__admin_users_edit__user_id --- route_routes_admin_py__admin_users_delete__user_id
     route_routes_admin_py__admin_users_delete__user_id --- route_routes_admin_py__admin_locations
-    route_routes_admin_py__admin_locations --- route_routes_admin_py__admin_status
+    route_routes_admin_py__admin_locations --- route_routes_admin_py__admin_locations_edit__location_id
+    route_routes_admin_py__admin_locations_edit__location_id --- route_routes_admin_py__admin_locations_delete__location_id
+    route_routes_admin_py__admin_locations_delete__location_id --- route_routes_admin_py__admin_status
     route_routes_admin_py__admin_status --- route_routes_admin_py__admin_backup
     route_routes_admin_py__admin_backup --- route_routes_admin_py__admin_backup_download__filename
     route_routes_admin_py__admin_backup_download__filename --- route_routes_admin_py__admin_backup_restore
@@ -60,13 +64,15 @@ graph TD
     route_routes_customer_py__customer["/"]:::ssr
     route_routes_customer_py__customer_view__customer_id["/view/:customer_id"]:::ssr
     route_routes_customer_py__customer_new_customer["GET /new_customer"]:::ssr
+    route_routes_customer_py__customer_edit__customer_id["GET /edit/:customer_id"]:::ssr
     route_routes_customer_py__customer_search["GET /search"]:::ssr
     route_routes_customer_py__customer_export__customer_id["/export/:customer_id"]:::ssr
     route_routes_customer_py__customer_anonymize__customer_id["POST /anonymize/:customer_id"]:::ssr
     route_routes_customer_py__customer_new["POST /new"]:::ssr
     route_routes_customer_py__customer --- route_routes_customer_py__customer_view__customer_id
     route_routes_customer_py__customer_view__customer_id --- route_routes_customer_py__customer_new_customer
-    route_routes_customer_py__customer_new_customer --- route_routes_customer_py__customer_search
+    route_routes_customer_py__customer_new_customer --- route_routes_customer_py__customer_edit__customer_id
+    route_routes_customer_py__customer_edit__customer_id --- route_routes_customer_py__customer_search
     route_routes_customer_py__customer_search --- route_routes_customer_py__customer_export__customer_id
     route_routes_customer_py__customer_export__customer_id --- route_routes_customer_py__customer_anonymize__customer_id
     route_routes_customer_py__customer_anonymize__customer_id --- route_routes_customer_py__customer_new
@@ -90,6 +96,20 @@ graph TD
     route_routes_device_py__device_search__customer_id --- route_routes_device_py__device_new
   end
   leaf_device --> endpoints_device
+  leaf_inventory["📄 inventory [/inventory]"]:::ssr
+  subgraph endpoints_inventory["endpoints"]
+    direction TB
+    route_routes_inventory_py__inventory["/"]:::ssr
+    route_routes_inventory_py__inventory_add["POST /add"]:::ssr
+    route_routes_inventory_py__inventory_edit__part_id["POST /edit/:part_id"]:::ssr
+    route_routes_inventory_py__inventory_history__part_id["/history/:part_id"]:::ssr
+    route_routes_inventory_py__inventory_delete__part_id["POST /delete/:part_id"]:::ssr
+    route_routes_inventory_py__inventory --- route_routes_inventory_py__inventory_add
+    route_routes_inventory_py__inventory_add --- route_routes_inventory_py__inventory_edit__part_id
+    route_routes_inventory_py__inventory_edit__part_id --- route_routes_inventory_py__inventory_history__part_id
+    route_routes_inventory_py__inventory_history__part_id --- route_routes_inventory_py__inventory_delete__part_id
+  end
+  leaf_inventory --> endpoints_inventory
   leaf_main["📄 main"]:::ssr
   subgraph endpoints_main["endpoints"]
     direction TB
@@ -97,27 +117,35 @@ graph TD
     route_routes_main_py__health["/health"]:::ssr
     route_routes_main_py__common_problems["GET /common-problems"]:::ssr
     route_routes_main_py__common_problems_delete__problem_id["POST /common-problems/delete/:problem_id"]:::ssr
-    route_routes_main_py__inventory["/inventory"]:::ssr
-    route_routes_main_py__inventory_add["POST /inventory/add"]:::ssr
-    route_routes_main_py__inventory_edit__part_id["POST /inventory/edit/:part_id"]:::ssr
-    route_routes_main_py__inventory_delete__part_id["POST /inventory/delete/:part_id"]:::ssr
-    route_routes_main_py__services["/services"]:::ssr
-    route_routes_main_py__services_add["POST /services/add"]:::ssr
-    route_routes_main_py__services_edit__service_id["POST /services/edit/:service_id"]:::ssr
-    route_routes_main_py__services_delete__service_id["POST /services/delete/:service_id"]:::ssr
     route_routes_main_py__dashboard --- route_routes_main_py__health
     route_routes_main_py__health --- route_routes_main_py__common_problems
     route_routes_main_py__common_problems --- route_routes_main_py__common_problems_delete__problem_id
-    route_routes_main_py__common_problems_delete__problem_id --- route_routes_main_py__inventory
-    route_routes_main_py__inventory --- route_routes_main_py__inventory_add
-    route_routes_main_py__inventory_add --- route_routes_main_py__inventory_edit__part_id
-    route_routes_main_py__inventory_edit__part_id --- route_routes_main_py__inventory_delete__part_id
-    route_routes_main_py__inventory_delete__part_id --- route_routes_main_py__services
-    route_routes_main_py__services --- route_routes_main_py__services_add
-    route_routes_main_py__services_add --- route_routes_main_py__services_edit__service_id
-    route_routes_main_py__services_edit__service_id --- route_routes_main_py__services_delete__service_id
   end
   leaf_main --> endpoints_main
+  leaf_pos["📄 pos [/pos]"]:::ssr
+  subgraph endpoints_pos["endpoints"]
+    direction TB
+    route_routes_pos_py__pos["/"]:::ssr
+    route_routes_pos_py__pos_history["/history"]:::ssr
+    route_routes_pos_py__pos_create_sale["POST /create_sale"]:::ssr
+    route_routes_pos_py__pos_cart__invoice_id["/cart/:invoice_id"]:::ssr
+    route_routes_pos_py__pos_add_item__invoice_id["POST /add_item/:invoice_id"]:::ssr
+    route_routes_pos_py__pos_checkout__invoice_id["POST /checkout/:invoice_id"]:::ssr
+    route_routes_pos_py__pos_remove_item__invoice_id__item_id["POST /remove_item/:invoice_id/:item_id"]:::ssr
+    route_routes_pos_py__pos_remove_service__invoice_id__ts_id["POST /remove_service/:invoice_id/:ts_id"]:::ssr
+    route_routes_pos_py__pos_delete__invoice_id["POST /delete/:invoice_id"]:::ssr
+    route_routes_pos_py__pos_add_by_sku__invoice_id["POST /add_by_sku/:invoice_id"]:::ssr
+    route_routes_pos_py__pos --- route_routes_pos_py__pos_history
+    route_routes_pos_py__pos_history --- route_routes_pos_py__pos_create_sale
+    route_routes_pos_py__pos_create_sale --- route_routes_pos_py__pos_cart__invoice_id
+    route_routes_pos_py__pos_cart__invoice_id --- route_routes_pos_py__pos_add_item__invoice_id
+    route_routes_pos_py__pos_add_item__invoice_id --- route_routes_pos_py__pos_checkout__invoice_id
+    route_routes_pos_py__pos_checkout__invoice_id --- route_routes_pos_py__pos_remove_item__invoice_id__item_id
+    route_routes_pos_py__pos_remove_item__invoice_id__item_id --- route_routes_pos_py__pos_remove_service__invoice_id__ts_id
+    route_routes_pos_py__pos_remove_service__invoice_id__ts_id --- route_routes_pos_py__pos_delete__invoice_id
+    route_routes_pos_py__pos_delete__invoice_id --- route_routes_pos_py__pos_add_by_sku__invoice_id
+  end
+  leaf_pos --> endpoints_pos
   leaf_report["📄 report [/report]"]:::ssr
   subgraph endpoints_report["endpoints"]
     direction TB
@@ -126,6 +154,18 @@ graph TD
     route_routes_report_py__report --- route_routes_report_py__report_finance
   end
   leaf_report --> endpoints_report
+  leaf_services["📄 services [/services]"]:::ssr
+  subgraph endpoints_services["endpoints"]
+    direction TB
+    route_routes_services_py__services["/"]:::ssr
+    route_routes_services_py__services_add["POST /add"]:::ssr
+    route_routes_services_py__services_edit__service_id["POST /edit/:service_id"]:::ssr
+    route_routes_services_py__services_delete__service_id["POST /delete/:service_id"]:::ssr
+    route_routes_services_py__services --- route_routes_services_py__services_add
+    route_routes_services_py__services_add --- route_routes_services_py__services_edit__service_id
+    route_routes_services_py__services_edit__service_id --- route_routes_services_py__services_delete__service_id
+  end
+  leaf_services --> endpoints_services
   leaf_setup["📄 setup [/onboarding]"]:::ssr
   subgraph endpoints_setup["endpoints"]
     direction TB

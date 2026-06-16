@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Edit Customer') }} - {{ customer.name }} - {{ shop_info.shop_name or _('Repair Shop') }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 offset-md-1">
+        <h1 class="mb-4">{{ _('Edit Customer Profile') }}</h1>
+        
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- Customer Details -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ _('Customer Information') }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="name" class="form-label">{{ _('Full Name') }} *</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ customer.name }}" required autofocus maxlength="120">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="phone" class="form-label">{{ _('Phone Number') }} *</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ customer.phone }}" required maxlength="20">
+                                </div>
+                                <div class="col-md-12 mb-0">
+                                    <label for="address" class="form-label">{{ _('Address') }}</label>
+                                    <textarea class="form-control" id="address" name="address" rows="3" maxlength="500">{{ customer.address }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-outline-warning"><i class="fas fa-edit me-1" aria-hidden="true"></i>{{ _('Save Changes') }}</button>
+                        <a href="{{ url_for('customer.view_customer', customer_id=customer.id) }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

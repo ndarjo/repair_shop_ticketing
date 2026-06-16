@@ -1,58 +1,95 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Create User - Repair Shop') }}{% endblock %}
+{% block title %}{{ _('Create User - Admin') }}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2">
+<div class="row justify-content-center">
+    <div class="col-md-10 offset-md-1">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('admin.manage_users') }}" class="btn-link p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Manage Users') }}"><i class="fas fa-arrow-circle-left" aria-hidden="true"></i></a>
+            <h1 class="mb-0">{{ _('Create New User') }}</h1>
+        </div>
+        
         <div class="card">
-            <div class="card-header">
-                <h4>{{ _('Create New User Account') }}</h4>
-            </div>
             <div class="card-body">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="username" class="form-label">{{ _('Username') }} *</label>
-                            <input type="text" class="form-control" id="username" name="username" value="{{ username or '' }}" required>
+
+                    <!-- Basic Info -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ _('Basic Information') }}</h5>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="email" class="form-label">{{ _('Email') }} *</label>
-                            <input type="email" class="form-control" id="email" name="email" value="{{ email or '' }}" required>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="full_name" class="form-label">{{ _('Full Name') }} *</label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name" value="{{ full_name if full_name is defined else '' }}" required autocomplete="name" maxlength="120">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">{{ _('Email') }} *</label>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ email if email is defined else '' }}" required autocomplete="email" maxlength="120">
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="username" class="form-label">{{ _('Username') }} *</label>
+                                    <input type="text" class="form-control" id="username" name="username" value="{{ username if username is defined else '' }}" required autocomplete="username" maxlength="80">
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="location_id" class="form-label">{{ _('Assigned Location') }} *</label>
+                                    <select name="location_id" id="location_id" class="form-select" required>
+                                        <option value="">{{ _('-- Select Location --') }}</option>
+                                        {% for loc in locations %}
+                                            <option value="{{ loc.id }}" {% if location_id is defined and location_id|string == loc.id|string %}selected{% endif %}>{{ loc.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if is_active is not defined or is_active %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_active">{{ _('Active (user can log in)') }}</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="full_name" class="form-label">{{ _('Full Name') }} *</label>
-                        <input type="text" class="form-control" id="full_name" name="full_name" value="{{ full_name or '' }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">{{ _('Password') }} *</label>
-                        <input type="password" class="form-control" id="password" name="password" required minlength="8">
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="role_id" class="form-label">{{ _('Primary Role') }} *</label>
-                            <select name="role_id" id="role_id" class="form-select" required>
-                                <option value="">{{ _('-- Select Role --') }}</option>
-                                {% for role in roles %}
-                                    <option value="{{ role.id }}" {% if role_id == role.id %}selected{% endif %}>{{ _(role.name) }}</option>
-                                {% endfor %}
-                            </select>
+
+                    <!-- Security Credentials -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ _('Security Credentials') }}</h5>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="location_id" class="form-label">{{ _('Assigned Location') }} *</label>
-                            <select name="location_id" id="location_id" class="form-select" required>
-                                <option value="">{{ _('-- Select Location --') }}</option>
-                                {% for loc in locations %}
-                                    <option value="{{ loc.id }}" {% if location_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
-                                {% endfor %}
-                            </select>
+                        <div class="card-body">
+                            <div class="mb-0">
+                                <label for="password" class="form-label">{{ _('Password') }} *</label>
+                                <input type="password" class="form-control" id="password" name="password" required minlength="8" autocomplete="new-password">
+                                <small class="text-muted">{{ _('Minimum 8 characters.') }}</small>
+                            </div>
                         </div>
                     </div>
-                    <div class="mb-3 d-flex gap-2">
-                        <button type="submit" class="btn btn-outline-primary">{{ _('Create User') }}</button>
-                        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
+
+                    <!-- Roles -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ _('Roles') }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="role_id" class="form-label">{{ _('Primary Role') }} *</label>
+                                <select name="role_id" id="role_id" class="form-select" required>
+                                    <option value="">{{ _('-- Select Role --') }}</option>
+                                    {% for role in roles %}
+                                        <option value="{{ role.id }}" {% if role_id is defined and role_id|string == role.id|string %}selected{% endif %}>{{ _(role.name) }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">{{ _('Permissions are derived from the assigned role.') }}</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-outline-primary"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Create User') }}</button>
+                        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-primary">{{ _('Cancel') }}</a>
                     </div>
                 </form>
             </div>

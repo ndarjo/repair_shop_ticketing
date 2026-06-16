@@ -1,18 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Add New Device') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
+{% block title %}{{ _('Add New Device') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name and shop_info.shop_name != 'None' else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-10 offset-md-1">
+        {% if current_user.has_permission('create_device') %}
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <h2 class="mb-0 visually-hidden">{{ _('Add New Device') }}</h2> {# Hidden as it will be in card header #}
-            <a href="{{ url_for('device.devices_list') }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i> {{ _('Back to Inventory') }}</a>
+            <h1 class="mb-0">{{ _('Add New Device') }}</h1>
+            <a href="{{ url_for('device.devices_list') }}" class="btn btn-outline-primary"><i class="fas fa-arrow-circle-left me-1" aria-hidden="true"></i>{{ _('Back to Devices') }}</a>
         </div>
 
-        <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">{{ _('Add New Device') }}</h5>
+        <div class="card shadow-sm border-0">
+            <div class="card-header">
+                <h5 class="mb-0">{{ _('Device Specifications') }}</h5>
             </div>
             <div class="card-body">
                 <form method="POST">
@@ -22,78 +23,88 @@
                             <div class="d-flex justify-content-between align-items-baseline flex-wrap">
                                 <label for="customer_id" class="form-label">{{ _('Owner (Customer)') }} *</label>
                                 {% if current_user.has_permission('create_customer') %}
-                                <a href="{{ url_for('customer.new_customer') }}" class="btn btn-link btn-sm p-0 mb-2">{{ _('Add New Customer') }}</a>
+                                <a href="{{ url_for('customer.new_customer') }}" class="btn btn-link btn-sm p-0 mb-2"><i class="fas fa-user-circle me-2" aria-hidden="true"></i>{{ _('Add New Customer') }}</a>
                                 {% endif %}
                             </div>
-                            <select id="customer_id" name="customer_id" class="form-select" required autofocus>
+                            <select id="customer_id" name="customer_id" class="form-select" required autofocus aria-required="true">
                                 <option value="">{{ _('-- Select Customer --') }}</option>
                                 {% for customer in customers %}
-                                <option value="{{ customer.id }}" {% if customer.id|string == request.args.get('customer_id') or customer.id == customer_id %}selected{% endif %}>{{ customer.name }}{% if customer.phone %} ({{ customer.phone }}){% endif %}</option>
+                                {% if not customer.is_anonymized and not customer.name.startswith('DELETED_USER_') %}
+                                <option value="{{ customer.id }}" {% if (customer_id|string if customer_id is defined else request.args.get('customer_id')) == customer.id|string %}selected{% endif %}>
+                                    {{ customer.name if (customer.name and customer.name != 'None') else _('Unknown') }}{% if customer.phone and customer.phone != 'None' %} ({{ customer.phone }}){% endif %}
+                                </option>
+                                {% endif %}
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label for="device_type" class="form-label">{{ _('Device Type') }} *</label>
-                            <select id="device_type" name="device_type" class="form-select" required>
+                            <select id="device_type" name="device_type" class="form-select" required aria-required="true">
                                 <option value="">{{ _('-- Select --') }}</option>
-                                <option value="Phone">{{ _('Phone') }}</option>
-                                <option value="Laptop">{{ _('Laptop') }}</option>
-                                <option value="Tablet">{{ _('Tablet') }}</option>
-                                <option value="Desktop">{{ _('Desktop') }}</option>
-                                <option value="Monitor">{{ _('Monitor') }}</option>
-                                <option value="Printer">{{ _('Printer') }}</option>
-                                <option value="Other">{{ _('Other') }}</option>
+                                <option value="Phone" {% if device_type == 'Phone' %}selected{% endif %}>{{ _('Phone') }}</option>
+                                <option value="Laptop" {% if device_type == 'Laptop' %}selected{% endif %}>{{ _('Laptop') }}</option>
+                                <option value="Tablet" {% if device_type == 'Tablet' %}selected{% endif %}>{{ _('Tablet') }}</option>
+                                <option value="Desktop" {% if device_type == 'Desktop' %}selected{% endif %}>{{ _('Desktop') }}</option>
+                                <option value="Monitor" {% if device_type == 'Monitor' %}selected{% endif %}>{{ _('Monitor') }}</option>
+                                <option value="Printer" {% if device_type == 'Printer' %}selected{% endif %}>{{ _('Printer') }}</option>
+                                <option value="Other" {% if device_type == 'Other' %}selected{% endif %}>{{ _('Other') }}</option>
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label for="brand" class="form-label">{{ _('Brand') }} *</label>
-                            <input type="text" id="brand" name="brand" class="form-control" placeholder="{{ _('e.g., Apple, Dell') }}" required>
+                            <input type="text" id="brand" name="brand" class="form-control" value="{{ brand if (brand is defined and brand and brand != 'None') else '' }}" placeholder="{{ _('e.g., Apple, Dell') }}" required aria-required="true" maxlength="100">
                         </div>
                         <div class="col-md-6">
                             <label for="model_number" class="form-label">{{ _('Model Number') }}</label>
-                            <input type="text" id="model_number" name="model_number" class="form-control" placeholder="{{ _('e.g., A2633') }}">
+                            <input type="text" id="model_number" name="model_number" class="form-control" value="{{ model_number if (model_number is defined and model_number and model_number != 'None') else '' }}" placeholder="{{ _('e.g., A2633') }}" maxlength="100">
                         </div>
                         <div class="col-md-6">
                             <label for="cpu" class="form-label">{{ _('CPU/Processor') }}</label>
-                            <input type="text" id="cpu" name="cpu" class="form-control" placeholder="{{ _('e.g., Core i7') }}">
+                            <input type="text" id="cpu" name="cpu" class="form-control" value="{{ cpu if (cpu is defined and cpu and cpu != 'None') else '' }}" placeholder="{{ _('e.g., Core i7') }}" maxlength="100">
                         </div>
                         <div class="col-md-6">
                             <label for="ram" class="form-label">{{ _('RAM') }}</label>
-                            <input type="text" id="ram" name="ram" class="form-control" placeholder="{{ _('e.g., 16GB') }}">
+                            <input type="text" id="ram" name="ram" class="form-control" value="{{ ram if (ram is defined and ram and ram != 'None') else '' }}" placeholder="{{ _('e.g., 16GB') }}" maxlength="100">
                         </div>
                         <div class="col-md-6">
                             <label for="storage_type" class="form-label">{{ _('Storage Type') }}</label>
                             <select id="storage_type" name="storage_type" class="form-select">
                                 <option value="">{{ _('-- Select --') }}</option>
-                                <option value="HDD">{{ _('HDD') }}</option>
-                                <option value="SSD">{{ _('SSD') }}</option>
-                                <option value="Mixed">{{ _('Mixed') }}</option>
+                                <option value="HDD" {% if storage_type == 'HDD' %}selected{% endif %}>{{ _('HDD') }}</option>
+                                <option value="SSD" {% if storage_type == 'SSD' %}selected{% endif %}>{{ _('SSD') }}</option>
+                                <option value="Mixed" {% if storage_type == 'Mixed' %}selected{% endif %}>{{ _('Mixed') }}</option>
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label for="storage_capacity" class="form-label">{{ _('Storage Capacity') }}</label>
-                            <input type="text" id="storage_capacity" name="storage_capacity" class="form-control" placeholder="{{ _('e.g., 512GB') }}">
+                            <input type="text" id="storage_capacity" name="storage_capacity" class="form-control" value="{{ storage_capacity if (storage_capacity is defined and storage_capacity and storage_capacity != 'None') else '' }}" placeholder="{{ _('e.g., 512GB') }}" maxlength="100">
                         </div>
                         <div class="col-md-6">
                             <label for="serial_number" class="form-label">{{ _('Serial Number') }}</label>
-                            <input type="text" id="serial_number" name="serial_number" class="form-control" placeholder="{{ _('e.g., C02ABCDEFGH') }}">
+                            <input type="text" id="serial_number" name="serial_number" class="form-control" value="{{ serial_number if (serial_number is defined and serial_number and serial_number != 'None') else '' }}" placeholder="{{ _('e.g., C02ABCDEFGH') }}" maxlength="100">
                         </div>
                         <div class="col-md-6">
                             <label for="color" class="form-label">{{ _('Color') }}</label>
-                            <input type="text" id="color" name="color" class="form-control" placeholder="{{ _('e.g., Space Gray') }}">
+                            <input type="text" id="color" name="color" class="form-control" value="{{ color if (color is defined and color and color != 'None') else '' }}" placeholder="{{ _('e.g., Space Gray') }}" maxlength="100">
                         </div>
                         <div class="col-12">
                             <label for="notes" class="form-label">{{ _('Notes') }}</label>
-                            <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="{{ _('Any additional notes about the device...') }}"></textarea>
+                            <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="{{ _('Any additional notes about the device...') }}" maxlength="2000">{{ notes if (notes is defined and notes and notes != 'None') else '' }}</textarea>
                         </div>
-                        <div class="col-12 mt-4 d-flex justify-content-end gap-2">
-                            <a href="{{ url_for('device.devices_list') }}" class="btn btn-outline-secondary px-4">{{ _('Cancel') }}</a>
-                            <button type="submit" class="btn btn-outline-primary px-4"><i class="fas fa-plus me-1" aria-hidden="true"></i> {{ _('Add Device') }}</button>
+                        <div class="col-12 mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-primary"><i class="fas fa-plus-square me-1" aria-hidden="true"></i>{{ _('Add Device') }}</button>
+                            <a href="{{ url_for('device.devices_list') }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
                         </div>
                     </div>
                 </form>
             </div>
         </div>
+        {% else %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>
+            {{ _('Access Denied: You do not have permission to add new devices.') }}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

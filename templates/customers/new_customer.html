@@ -1,37 +1,55 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('New Customer') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
+{% block title %}{{ _('New Customer') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name and shop_info.shop_name != 'None' else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header ">
-                <h5 class="mb-0">{{ _('Add New Customer') }}</h5>
-            </div>
+    <div class="col-md-10 offset-md-1">
+        {% if current_user.has_permission('create_customer') %}
+        <h1 class="mb-4">{{ _('Add New Customer') }}</h1>
+        
+        <div class="card shadow-sm border-0">
             <div class="card-body">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="mb-3">
-                        <label for="name" class="form-label">{{ _('Full Name') }} *</label>
-                        <input type="text" id="name" name="name" class="form-control" required autofocus autocomplete="name" placeholder="{{ _('e.g., John Doe') }}">
+
+                    <!-- Basic Info -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ _('Customer Information') }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="name" class="form-label">{{ _('Full Name') }} *</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ name if (name is defined and name and name != 'None') else '' }}" required autofocus autocomplete="name" placeholder="{{ _('e.g., John Doe') }}" aria-required="true" maxlength="120">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="phone" class="form-label">{{ _('Phone Number') }} *</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ phone if (phone is defined and phone and phone != 'None') else '' }}" required autocomplete="tel" placeholder="{{ _('e.g., +1 555-0123') }}" aria-required="true" maxlength="20">
+                                </div>
+                                <div class="col-md-12 mb-0">
+                                    <label for="address" class="form-label">{{ _('Address') }}</label>
+                                    <textarea class="form-control" id="address" name="address" rows="3" placeholder="{{ _('Customer\'s physical address') }}" maxlength="500">{{ address if (address is defined and address and address != 'None') else '' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="phone" class="form-label">{{ _('Phone Number') }} *</label>
-                        <input type="tel" id="phone" name="phone" class="form-control" required autocomplete="tel" placeholder="{{ _('e.g., +1 555-0123') }}">
-                    </div>
-                    <div class="mb-3">
-                        <label for="address" class="form-label">{{ _('Address') }}</label>
-                        <textarea id="address" name="address" class="form-control" rows="3" placeholder="{{ _('Customer\'s physical address') }}"></textarea>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-end gap-2">
-                        <a href="{{ url_for('customer.customers_list') }}" class="btn btn-outline-secondary px-4">{{ _('Cancel') }}</a>
-                        <button type="submit" class="btn btn-outline-primary px-4">{{ _('Create Customer') }}</button>
+
+                    <!-- Submit Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-outline-primary"><i class="fas fa-edit me-1" aria-hidden="true"></i>{{ _('Create Customer') }}</button>
+                        <a href="{{ url_for('customer.customers_list') }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
                     </div>
                 </form>
             </div>
         </div>
+        {% else %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>
+            {{ _('Access Denied: You do not have permission to add new customers.') }}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

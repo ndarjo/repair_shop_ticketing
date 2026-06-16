@@ -15,7 +15,7 @@
                 {% if current_user.has_permission('process_payments') %}
                 <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">{{ _('Record Payment') }}</button>
                 {% endif %}
-                <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-warning">{{ _('Edit Ticket') }}</a>
+                <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-warning"><i class="fas fa-edit" aria-hidden="true"></i></a>
             {% endif %}
 
             {% if current_user.has_permission('create_invoice') %}
@@ -56,7 +56,7 @@
             {% if current_user.has_permission('delete_ticket') %}
             <form action="{{ url_for('ticket.delete_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('ERASE TICKET: Are you sure? This will remove all history and records for this job.')|forceescape }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Erase Ticket') }}</button>
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
             </form>
             {% endif %}
             <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
@@ -94,10 +94,10 @@
                     {% if ticket.current_phase != 'Already Taken' %}
                     <div>
                         {% if current_user.has_permission('add_service') %}
-                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">{{ _('+ Add Service') }}</button>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal"><i class="fas fa-plus-square me-1" aria-hidden="true"></i>{{ _('Add Service') }}</button>
                         {% endif %}
                         {% if current_user.has_permission('add_part') %}
-                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPartModal">{{ _('+ Add Part') }}</button>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPartModal"><i class="fas fa-plus-square me-1" aria-hidden="true"></i>{{ _('Add Part') }}</button>
                         {% endif %}
                     </div>
                     {% endif %}
@@ -125,7 +125,7 @@
                                     {% if current_user.has_permission('remove_service') and ticket.current_phase != 'Already Taken' %}
                                     <form action="{{ url_for('ticket.remove_service', ticket_id=ticket.id, ts_id=ts.id) }}" method="POST" style="display:inline;">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" data-confirm="{{ _('Remove service?')|forceescape }}" aria-label="{{ _('Remove service') }}"><i class="fas fa-times"></i></button>
+                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" data-confirm="{{ _('Remove service?')|forceescape }}" aria-label="{{ _('Remove service') }}"><i class="fas fa-trash-alt"></i></button>
                                     </form>
                                     {% endif %}
                                 </td>
@@ -159,7 +159,7 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card shadow-sm">
+                <div class="card shadow-sm border-0">
                     <div class="card-body">
                         <h6 class="text-uppercase text-muted small fw-bold">{{ _('Financial Summary') }}</h6>
                         <div class="d-flex justify-content-between mb-1">
@@ -301,7 +301,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
                     <h5 class="modal-title">{{ _('Update Ticket Phase') }}</h5>
-                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -340,7 +340,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
                     <h5 class="modal-title">{{ _('Return Change / Refund') if ticket.balance_due < 0 else _('Record Payment') }}</h5>
-                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-{{ 'danger' if ticket.balance_due < 0 else 'secondary' }} py-2 mb-3">
@@ -419,7 +419,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
                     <h5 class="modal-title">{{ _('Add Repair Service') }}</h5>
-                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -453,15 +453,21 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
                     <h5 class="modal-title">{{ _('Add Replaced Part') }}</h5>
-                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="partSelect" class="form-label">{{ _('Choice from Inventory') }}</label>
+                        <label for="partSkuSearch" class="form-label">{{ _('Quick Search SKU / Barcode') }}</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                            <input type="text" id="partSkuSearch" class="form-control" placeholder="{{ _('Scan or type SKU...') }}" autocomplete="off">
+                        </div>
+
+                        <label for="partSelect" class="form-label fw-bold">{{ _('Inventory Item') }}</label>
                         <select name="part_id" id="partSelect" class="form-select">
                             <option value="">{{ _('-- Or type manually below --') }}</option>
                             {% for part in (parts or []) %}
-                            <option value="{{ part.id }}">{{ _(part.name) }} ({{ _('Stock:') }} {{ part.stock_quantity }})</option>
+                            <option value="{{ part.id }}" data-sku="{{ part.sku or '' }}">{% if part.sku %}[{{ part.sku }}] {% endif %}{{ _(part.name) }} ({{ _('Stock:') }} {{ part.stock_quantity }})</option>
                             {% endfor %}
                         </select>
                     </div>

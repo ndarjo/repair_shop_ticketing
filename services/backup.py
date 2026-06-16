@@ -37,8 +37,8 @@ class BackupService:
                 'created_at': l.created_at.isoformat() if l.created_at else None
             } for l in db.session.execute(db.select(Location)).scalars().all()],
             'customers': [{
-                'id': c.id, 'name': c.name, 'phone': c.phone, 'address': c.address, 
-                'location_id': c.location_id,
+                'id': c.id, 'name': c.name, 'phone': c.phone, 'phone_hash': c.phone_hash,
+                'address': c.address, 'location_id': c.location_id,
                 'created_at': c.created_at.isoformat() if c.created_at else None
             } for c in db.session.execute(db.select(Customer)).scalars().all()],
             'devices': [{
@@ -53,40 +53,41 @@ class BackupService:
                 'device_id': t.device_id, 'location_id': t.location_id, 'creator_id': t.creator_id,
                 'assigned_to': t.assigned_to, 'items_included': t.items_included,
                 'problem_description': t.problem_description,
-                'current_phase': t.current_phase, 'estimated_cost': str(t.estimated_cost),
-                'actual_cost': str(t.actual_cost), 'created_at': t.created_at.isoformat() if t.created_at else None,
-                'is_archived': t.is_archived, 'estimated_repair_time': str(t.estimated_repair_time) if t.estimated_repair_time else None,
-                'actual_repair_time': str(t.actual_repair_time) if t.actual_repair_time else None, 'down_payment': str(t.down_payment),
+                'current_phase': t.current_phase, 'actual_cost': str(t.actual_cost) if t.actual_cost is not None else None,
+                'created_at': t.created_at.isoformat() if t.created_at else None,
+                'is_archived': t.is_archived, 'down_payment': str(t.down_payment) if t.down_payment is not None else None,
                 'payment_method': t.payment_method, 'device_picked_up': t.device_picked_up,
                 'picked_up_date': t.picked_up_date.isoformat() if t.picked_up_date else None
             } for t in db.session.execute(db.select(Ticket)).scalars().all()],
             'ticket_services': [{
                 'id': ts.id, 'ticket_id': ts.ticket_id, 'service_id': ts.service_id,
-                'quantity': ts.quantity, 'price_charged': str(ts.price_charged)
+                'quantity': ts.quantity, 'price_charged': str(ts.price_charged) if ts.price_charged is not None else '0.00'
             } for ts in db.session.execute(db.select(TicketService)).scalars().all()],
             'services': [{
                 'id': s.id, 'name': s.name, 'description': s.description,
-                'price': str(s.price), 'location_id': s.location_id, 'is_active': s.is_active
+                'price': str(s.price) if s.price is not None else '0.00', 'location_id': s.location_id, 'is_active': s.is_active
             } for s in db.session.execute(db.select(Service)).scalars().all()],
             'parts': [{
-                'id': p.id, 'name': p.name, 'description': p.description,
-                'cost': str(p.cost), 'selling_price': str(p.selling_price),
+                'id': p.id, 'sku': p.sku, 'name': p.name,
+                'cost': str(p.cost) if p.cost is not None else None, 'selling_price': str(p.selling_price) if p.selling_price is not None else '0.00',
                 'stock_quantity': p.stock_quantity, 'location_id': p.location_id, 'is_active': p.is_active
             } for p in db.session.execute(db.select(SparePart)).scalars().all()],
             'invoices': [{
                 'id': i.id, 'invoice_number': i.invoice_number, 'ticket_id': i.ticket_id,
-                'status': i.status, 'total_amount': str(i.total_amount),
+                'customer_id': i.customer_id, 'location_id': i.location_id,
+                'status': i.status, 'total_amount': str(i.total_amount) if i.total_amount is not None else '0.00',
                 'created_at': i.created_at.isoformat() if i.created_at else None
             } for i in db.session.execute(db.select(Invoice)).scalars().all()],
             'invoice_items': [{
                 'id': ii.id, 'invoice_id': ii.invoice_id, 'description': ii.description,
                 'spare_part_id': ii.spare_part_id, 'quantity': ii.quantity,
-                'cost_price': str(ii.cost_price),
-                'unit_price': str(ii.unit_price), 'total_price': str(ii.total_price)
+                'cost_price': str(ii.cost_price) if ii.cost_price is not None else '0.00',
+                'unit_price': str(ii.unit_price) if ii.unit_price is not None else '0.00',
+                'total_price': str(ii.total_price) if ii.total_price is not None else '0.00'
             } for ii in db.session.execute(db.select(InvoiceItem)).scalars().all()],
             'payments': [{
                 'id': p.id, 'ticket_id': p.ticket_id, 'invoice_id': p.invoice_id,
-                'user_id': p.user_id, 'amount': str(p.amount), 
+                'user_id': p.user_id, 'amount': str(p.amount) if p.amount is not None else '0.00',
                 'payment_method': p.payment_method, 'transaction_reference': p.transaction_reference,
                 'paid_at': p.paid_at.isoformat() if p.paid_at else None
             } for p in db.session.execute(db.select(Payment)).scalars().all()],
@@ -127,8 +128,12 @@ class BackupService:
         snapshot_success = False
         if 'postgresql' in db_url:
             try:
-                # Clean URI: strip driver dialects (e.g. +psycopg or +psycopg2) for system tools
-                clean_url = db_url.replace('+psycopg2', '').replace('+psycopg', '')
+                # Clean URI: strip driver dialects for system tools like pg_dump
+                url_obj = make_url(db_url)
+                clean_url = url_obj.render_as_string(hide_password=False)
+                if '+' in url_obj.drivername:
+                    base_scheme = url_obj.drivername.split('+')[0]
+                    clean_url = base_scheme + clean_url[len(url_obj.drivername):] if clean_url.startswith(url_obj.drivername) else clean_url
                 subprocess.run(['pg_dump', '--dbname', clean_url, '-Fc', '-f', dump_path], check=True, capture_output=True)
                 snapshot_success = True
             except Exception as e:
@@ -139,8 +144,8 @@ class BackupService:
             data = BackupService.get_system_logical_data()
             json_name = f"autobackup_logical_{now_str}.json"
             json_path = os.path.join(backup_dir, json_name)
-            with open(json_path, 'w') as f:
-                json.dump(data, f, indent=4)
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
             
             msg = _("Automated backup completed. Logical: %(json)s", json=json_name)
             if snapshot_success:
@@ -148,7 +153,7 @@ class BackupService:
             return True, msg
         except Exception as e:
             current_app.logger.error(f"Automated logical backup failed: {str(e)}")
-            return False, str(e)
+            return False, _("Logical backup failed: %(error)s", error=str(e))
 
     @staticmethod
     def restore_full_backup(file_path: str) -> Tuple[bool, str]:
@@ -163,8 +168,11 @@ class BackupService:
         try:
             url = make_url(db_url)
             db_name = url.database
-            # System tools require raw postgresql:// syntax without driver dialects
-            clean_url = db_url.replace('+psycopg2', '').replace('+psycopg', '')
+            # System tools require raw scheme without driver dialects
+            clean_url = url.render_as_string(hide_password=False)
+            if '+' in url.drivername:
+                base_scheme = url.drivername.split('+')[0]
+                clean_url = base_scheme + clean_url[len(url.drivername):] if clean_url.startswith(url.drivername) else clean_url
 
             # 1. Release active connections (except this one) to prevent locks
             db.session.execute(text("""
@@ -186,7 +194,7 @@ class BackupService:
         except subprocess.CalledProcessError as e:
             err_msg = e.stderr.decode() if e.stderr else "pg_restore failed"
             current_app.logger.error(f"Restore failed: {err_msg}")
-            return False, f"Restore failed: {err_msg}"
+            return False, _("Restore failed: %(msg)s", msg=err_msg)
         except Exception as e:
             current_app.logger.error(f"Unexpected restore error: {str(e)}")
-            return False, str(e)
+            return False, _("Unexpected restore error: %(error)s", error=str(e))

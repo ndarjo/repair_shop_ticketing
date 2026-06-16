@@ -3,118 +3,133 @@
 {% block title %}{{ _('System Status - Admin') }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ _('System Integrity & Status') }}</h2>
-    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary btn-sm">{{ _('Back to Dashboard') }}</a>
-</div>
-
-<div class="row g-4">
-    <!-- Database Status -->
-    <div class="col-md-6">
-        <div class="card h-100 shadow-sm">
-            <div class="card-header  d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-database me-2" aria-hidden="true"></i>{{ _('Database Engine') }}</h5>
-                <span class="badge bg-{{ 'success' if db_status and (db_status|string|lower == 'online' or db_status == _('Online')) else 'danger' }}">{{ db_status or _('Offline') }}</span>
-            </div>
-            <div class="card-body">
-                <p class="small text-muted mb-2">{{ _('Database Engine Version:') }}</p>
-                <code class="text-break">{{ db_version or _('Unknown') }}</code>
-            </div>
+<div class="row justify-content-center">
+    <div class="col-md-10 offset-md-1">
+        {% if current_user.is_superuser or current_user.has_role('admin') %}
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('admin.dashboard') }}" class="btn-link p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Admin Panel') }}"><i class="fas fa-arrow-circle-left" aria-hidden="true"></i></a>
+            <h1 class="mb-0">{{ _('System Integrity & Status') }}</h1>
         </div>
-    </div>
+        <p class="text-muted mb-4">{{ _('Monitor database health, directory permissions, and active system configurations.') }}</p>
 
-    <!-- Directory Health -->
-    <div class="col-md-6">
-        <div class="card h-100 shadow-sm">
-            <div class="card-header ">
-                <h5 class="mb-0"><i class="fas fa-folder-open me-2" aria-hidden="true"></i>{{ _('Storage & Permissions') }}</h5>
+        <div class="row g-4 mb-4">
+            <!-- Database Status -->
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ _('Database Engine') }}</h5>
+                        <span class="badge bg-{{ 'success' if db_status and db_status|string|lower != 'none' and (db_status|string|lower == 'online' or db_status == _('Online')) else 'danger' }}">{{ db_status if (db_status and db_status|string|lower != 'none') else _('Offline') }}</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-2">{{ _('Database Engine Version:') }}</p>
+                        <code class="text-break text-dark">{{ db_version if (db_version and db_version|string|lower != 'none') else _('Unknown') }}</code>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-0">
-                <table class="table table-sm table-hover mb-0">
-                    <thead>
-                        <tr class="table-light">
-                            <th class="ps-3">{{ _('Volume') }}</th>
-                            <th class="text-center">{{ _('Status') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for name, info in (dir_status or {}).items() if info %}
-                            <tr>
-                                <td class="ps-3">
-                                    <strong>{{ name }}</strong><br>
-                                    <small class="text-muted text-break">{{ info.path }}</small>
-                                </td>
-                                <td class="text-center align-middle">
-                                    {% if not info.exists %}
-                                        <span class="text-danger"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> {{ _('Path Missing') }}</span>
-                                    {% elif info.writable %}
-                                        <span class="text-success"><i class="fas fa-check-circle" aria-hidden="true"></i> {{ _('Writable') }}</span>
+
+            <!-- Directory Health -->
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">{{ _('Storage & Permissions') }}</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr class="table-light">
+                                        <th class="ps-3">{{ _('Volume') }}</th>
+                                        <th class="text-center">{{ _('Status') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for name, info in (dir_status or {}).items() if info %}
+                                        <tr>
+                                            <td class="ps-3 align-middle">
+                                                <strong>{{ name }}</strong><br>
+                                                <small class="text-muted text-break">{{ info.path }}</small>
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                {% if not info.exists %}
+                                                    <span class="text-danger"><i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>{{ _('Path Missing') }}</span>
+                                                {% elif info.writable %}
+                                                    <span class="text-success"><i class="fas fa-check-circle me-2" aria-hidden="true"></i>{{ _('Writable') }}</span>
+                                                {% else %}
+                                                    <span class="text-danger"><i class="fas fa-times-circle me-2" aria-hidden="true"></i>{{ _('Read Only') }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
                                     {% else %}
-                                        <span class="text-danger"><i class="fas fa-times-circle" aria-hidden="true"></i> {{ _('Read Only') }}</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr><td colspan="2" class="text-center text-muted py-3">{{ _('No storage volumes monitored.') }}</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                        <tr><td colspan="2" class="text-center text-muted py-3">{{ _('No storage volumes monitored.') }}</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Environment Info -->
-    <div class="col-md-6">
-        <div class="card h-100 shadow-sm">
-            <div class="card-header ">
-                <h5 class="mb-0"><i class="fas fa-info-circle me-2" aria-hidden="true"></i>{{ _('Environment Summary') }}</h5>
+            <!-- Environment Info -->
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">{{ _('Environment Summary') }}</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            {% for key, val in (sys_info or {}).items() %}
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span class="text-muted me-2">{{ key|upper }}</span>
+                                    <span class="fw-bold text-end text-break">
+                                        {% if val is not none and val|string != 'None' and val|string != '' and ('SECRET' in key|upper or 'PASSWORD' in key|upper or 'KEY' in key|upper or 'SALT' in key|upper or 'TOKEN' in key|upper or 'URI' in key|upper or 'URL' in key|upper or 'DSN' in key|upper or 'AUTH' in key|upper) %}
+                                            ********
+                                        {% else %}
+                                            {{ val if (val is not none and val|string != 'None' and val|string != '') else _('N/A') }}
+                                        {% endif %}
+                                    </span>
+                                </li>
+                            {% else %}
+                                <li class="list-group-item text-center text-muted py-3">{{ _('No environment data available.') }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-0">
-                <ul class="list-group list-group-flush">
-                    {% for key, val in (sys_info or {}).items() %}
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span class="text-muted me-2">{{ key|upper }}</span>
-                            <span class="fw-bold text-end text-break">
-                                {% if val is not none and ('SECRET' in key|upper or 'PASSWORD' in key|upper or 'KEY' in key|upper or 'SALT' in key|upper or 'TOKEN' in key|upper or 'URI' in key|upper or 'URL' in key|upper or 'DSN' in key|upper or 'AUTH' in key|upper) %}
-                                    ********
-                                {% else %}
-                                    {{ val if val is not none else _('N/A') }}
-                                {% endif %}
-                            </span>
-                        </li>
-                    {% else %}
-                        <li class="list-group-item text-center text-muted py-3">{{ _('No environment data available.') }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-    </div>
 
-    <!-- Application Config -->
-    <div class="col-md-6">
-        <div class="card h-100 shadow-sm">
-            <div class="card-header ">
-                <h5 class="mb-0"><i class="fas fa-cogs me-2" aria-hidden="true"></i>{{ _('Active Configuration') }}</h5>
-            </div>
-            <div class="card-body p-0">
-                <ul class="list-group list-group-flush">
-                    {% for key, val in (config_summary or {}).items() %}
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span class="text-muted me-2">{{ key|upper }}</span>
-                            <span class="fw-bold text-end text-break">
-                                {% if val is not none and ('SECRET' in key|upper or 'PASSWORD' in key|upper or 'KEY' in key|upper or 'SALT' in key|upper or 'TOKEN' in key|upper or 'URI' in key|upper or 'URL' in key|upper or 'DSN' in key|upper or 'AUTH' in key|upper) %}
-                                    ********
-                                {% else %}
-                                    {{ val if val is not none else _('N/A') }}
-                                {% endif %}
-                            </span>
-                        </li>
-                    {% else %}
-                        <li class="list-group-item text-center text-muted py-3">{{ _('No configuration data available.') }}</li>
-                    {% endfor %}
-                </ul>
+            <!-- Application Config -->
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">{{ _('Active Configuration') }}</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            {% for key, val in (config_summary or {}).items() %}
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span class="text-muted me-2">{{ key|upper }}</span>
+                                    <span class="fw-bold text-end text-break">
+                                        {% if val is not none and val|string != 'None' and val|string != '' and ('SECRET' in key|upper or 'PASSWORD' in key|upper or 'KEY' in key|upper or 'SALT' in key|upper or 'TOKEN' in key|upper or 'URI' in key|upper or 'URL' in key|upper or 'DSN' in key|upper or 'AUTH' in key|upper) %}
+                                            ********
+                                        {% else %}
+                                            {{ val if (val is not none and val|string != 'None' and val|string != '') else _('N/A') }}
+                                        {% endif %}
+                                    </span>
+                                </li>
+                            {% else %}
+                                <li class="list-group-item text-center text-muted py-3">{{ _('No configuration data available.') }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
+
+        {% else %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>
+            {{ _('Access Denied: You do not have permission to view system status.') }}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

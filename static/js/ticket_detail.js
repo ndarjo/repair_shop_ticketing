@@ -1,6 +1,19 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Note: Global confirmations (.confirm-action) are handled centrally in main.js
 
+    // Integrity: Filter out technical null artifacts common in server-rendered templates
+    const getVal = (v) => (v && v !== 'None') ? v.trim() : '';
+
+    // 1. UX Fix: Auto-open modals if returning with validation errors
+    // Ensures a consistent experience when form validation fails.
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        document.querySelectorAll('.modal').forEach(modalEl => {
+            if (modalEl.querySelector('.is-invalid')) {
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+        });
+    }
+
     // 2. Payment Modal Logic (Calculator & Balance Filling)
     const payAmtInput = document.getElementById('paymentAmount');
     const fillBtn = document.getElementById('fillBalanceBtn');
@@ -9,9 +22,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (fillBtn && payAmtInput) {
         fillBtn.addEventListener('click', function() {
-            const bal = parseFloat(payAmtInput.dataset.balance || 0);
-            const dec = parseInt(payAmtInput.dataset.decimals || 2);
-            payAmtInput.value = bal.toFixed(dec);
+            // Integrity: Robust parsing for currency values and decimals
+            const balAttr = getVal(payAmtInput.dataset.balance);
+            const decAttr = getVal(payAmtInput.dataset.decimals);
+            const bal = parseFloat(balAttr) || 0;
+            const parsedDec = parseInt(decAttr, 10);
+            const dec = isNaN(parsedDec) ? 2 : parsedDec;
+            payAmtInput.value = isNaN(bal) ? (0).toFixed(dec) : bal.toFixed(dec);
             updateChange();
         });
     }
@@ -20,7 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!payAmtInput || !cashRecInput || !changeDiv) return;
         const amt = parseFloat(payAmtInput.value) || 0;
         const rec = parseFloat(cashRecInput.value) || 0;
-        const dec = parseInt(payAmtInput.dataset.decimals || 2);
+        const decAttr = getVal(payAmtInput.dataset.decimals);
+        const parsedDec = parseInt(decAttr, 10);
+        const dec = isNaN(parsedDec) ? 2 : parsedDec;
         const diff = rec - amt;
         changeDiv.textContent = (diff > 0 ? diff : 0).toFixed(dec);
     }
@@ -36,20 +55,47 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (partSel) {
         const togglePartFields = function() {
-            const hasInv = !!partSel.value;
-            manName.disabled = hasInv;
-            manCost.disabled = hasInv;
-            manPrice.disabled = hasInv;
-            manName.required = !hasInv;
-            manPrice.required = !hasInv;
-            if (hasInv) {
-                manName.value = '';
-                manCost.value = '';
-                manPrice.value = '';
+            const hasInv = !!getVal(partSel.value);
+            
+            if (manName) {
+                manName.disabled = hasInv;
+                manName.required = !hasInv;
+                if (hasInv) manName.value = '';
+            }
+            
+            if (manCost) {
+                manCost.disabled = hasInv;
+                if (hasInv) manCost.value = '';
+            }
+            
+            if (manPrice) {
+                manPrice.disabled = hasInv;
+                manPrice.required = !hasInv;
+                if (hasInv) manPrice.value = '';
             }
         };
+        
         partSel.addEventListener('change', togglePartFields);
         // Initialize state for correct validation on load
         togglePartFields();
+    }
+
+    // 4. SKU Quick Search Logic
+    const skuSearch = document.getElementById('partSkuSearch');
+    if (skuSearch && partSel) {
+        skuSearch.addEventListener('input', function() {
+            const val = this.value.trim().toLowerCase();
+            if (!val) return;
+
+            for (let i = 0; i < partSel.options.length; i++) {
+                const opt = partSel.options[i];
+                const skuVal = getVal(opt.dataset.sku).toLowerCase();
+                if (skuVal && (skuVal === val || skuVal.startsWith(val))) {
+                    partSel.selectedIndex = i;
+                    partSel.dispatchEvent(new Event('change'));
+                    break;
+                }
+            }
+        });
     }
 });

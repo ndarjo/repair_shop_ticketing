@@ -1,115 +1,125 @@
 {% extends "base.html" %}
 
-{% block title %}{{ customer.name }} - {{ _('Customer Profile') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
+{% block title %}{{ customer.name or _('Customer') }} - {{ _('Customer Profile') }} - {{ shop_info.shop_name or _('Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h2 class="mb-0">{{ _('Customer Details') }}</h2>
-    <a href="{{ url_for('customer.customers_list') }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i> {{ _('Back to List') }}</a>
-</div>
-
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card h-100 shadow-sm">
-            <div class="card-header ">
-                <h5 class="mb-0">{{ _('Customer Info') }}</h5>
-            </div>
-            <div class="card-body">
-                <h3 class="text-break">{{ customer.name }}</h3>
-                <p class="text-muted text-break"><i class="fas fa-phone me-2" aria-hidden="true"></i>{{ customer.phone or _('No phone provided') }}</p>
-                <hr>
-                <p><strong>{{ _('Address:') }}</strong><br><span class="text-break">{{ customer.address or _('No address provided') }}</span></p>
-                <p><small class="text-muted">{{ _('Registered:') }} {{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at else _('Unknown') }}</small></p>
-                
-                <hr>
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('customer.export_customer_data', customer_id=customer.id) }}" class="btn btn-sm btn-outline-danger w-100">
-                        <i class="fas fa-file-export me-1" aria-hidden="true"></i> {{ _('Export Data (GDPR)') }}
-                    </a>
-                    
-                    {% if current_user.has_permission('delete_customer') %}
-                    <div class="mt-2 pt-2 border-top">
-                        <h6 class="small text-danger fw-bold text-uppercase">{{ _('Danger Zone') }}</h6>
-                        <form method="POST" action="{{ url_for('customer.anonymize_customer', customer_id=customer.id) }}" class="confirm-action" data-confirm="{{ _('Anonymize this customer? This will scrub all PII (name, phone, address) but keep ticket history for financial reports. This cannot be undone.') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger w-100">{{ _('Anonymize Profile') }}</button>
-                        </form>
+<div class="row justify-content-center">
+    <div class="col-md-10 offset-md-1">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <h1 class="mb-0">{{ _('Customer Details') }}</h1>
+            <a href="{{ url_for('customer.customers_list') }}" class="btn btn-outline-primary"><i class="fas fa-arrow-circle-left me-1" aria-hidden="true"></i> {{ _('Back to Customer List') }}</a>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-header">
+                        <h5 class="mb-0">{{ _('Customer Info') }}</h5>
                     </div>
-                    {% endif %}
+                    <div class="card-body">
+                        <h3 class="text-break">{{ customer.name or _('Customer') }}</h3>
+                        <p class="text-muted text-break"><i class="fas fa-phone me-2" aria-hidden="true"></i>{{ customer.phone or _('No phone provided') }}</p>
+                        <hr>
+                        <p class="mb-2"><strong>{{ _('Address') }}:</strong><br><span class="text-break">{{ customer.address or _('No address provided') }}</span></p>
+                        <p class="mb-0"><strong>{{ _('Registered') }}:</strong> {{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at else _('Unknown') }}</p>
+                        
+                        <hr>
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('customer.export_customer_data', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary w-100">
+                                <i class="fas fa-file-export me-2" aria-hidden="true"></i> {{ _('Export Data (GDPR)') }}
+                            </a>
+                            {% if current_user.has_permission('edit_customer') %}
+                            <a href="{{ url_for('customer.edit_customer', customer_id=customer.id) }}" class="btn btn-sm btn-outline-warning w-100 mt-2">
+                                <i class="fas fa-edit me-2" aria-hidden="true"></i> {{ _('Edit Profile') }}
+                            </a>
+                            {% endif %}
+                            
+                            {% if current_user.has_permission('delete_customer') %}
+                            <div class="mt-2 pt-2 border-top">
+                                <h6 class="small text-danger fw-bold text-uppercase">{{ _('Danger Zone') }}</h6>
+                                <form method="POST" action="{{ url_for('customer.anonymize_customer', customer_id=customer.id) }}" class="confirm-action" data-confirm="{{ _('Anonymize this customer? This will scrub all PII (name, phone, address) but keep ticket history for financial reports. This cannot be undone.') }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">{{ _('Anonymize Profile') }}</button>
+                                </form>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
-    <div class="col-md-8">
-        <div class="card h-100 shadow-sm">
-            <div class="card-header  d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">{{ _('Registered Devices') }}</h5>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead>
+            <div class="col-md-8">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-header">
+                        <h5 class="mb-0">{{ _('Registered Devices') }}</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
                         <tr>
                             <th>{{ _('Device') }}</th>
                             <th>{{ _('Serial') }}</th>
-                            <th class="text-end">{{ _('Actions') }}</th>
+                            <th class="text-end">{{ _('Action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for device in customer.devices %}
                         <tr>
-                            <td><strong class="text-break">{{ device.display }}</strong></td>
-                            <td><code class="text-break">{{ device.serial_number or _('N/A') }}</code></td>
-                            <td class="text-end">
-                                <a href="{{ url_for('device.view_device', device_id=device.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View History') }}</a>
+                            <td class="text-break"><strong>{{ device.display or _('Unknown Device') }}</strong></td>
+                            <td class="text-break"><code>{{ device.serial_number or _('N/A') }}</code></td>
+                            <td class="text-end text-nowrap">
+                                <a href="{{ url_for('device.view_device', device_id=device.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-search-plus" aria-hidden="true"></i></a>
                             </td>
                         </tr>
                         {% else %}
                         <tr><td colspan="3" class="text-center text-muted py-4">{{ _('No devices registered.') }}</td></tr>
                         {% endfor %}
                     </tbody>
-                </table>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="row">
-    <div class="col-md-12">
-        <div class="card shadow-sm">
-            <div class="card-header ">
-                <h5 class="mb-0">{{ _('Recent Repair Tickets') }}</h5>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header">
+                        <h5 class="mb-0">{{ _('Recent Repair Tickets') }}</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
                         <tr>
                             <th>{{ _('Ticket #') }}</th>
                             <th>{{ _('Device') }}</th>
                             <th class="text-center">{{ _('Status') }}</th>
                             <th>{{ _('Date') }}</th>
-                            <th class="text-end">{{ _('Actions') }}</th>
+                            <th class="text-end">{{ _('Action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for ticket in customer.tickets|sort(attribute='created_at', reverse=True) %}
                         <tr>
-                            <td><strong class="text-break">{{ ticket.ticket_number }}</strong></td>
-                            <td class="text-break"><strong>{{ ticket.device.display if ticket.device else _('N/A') }}</strong></td>
+                            <td class="text-break"><strong>{{ ticket.ticket_number }}</strong></td>
+                            <td class="text-break"><strong>{{ ticket.device.display or _('Unknown Device') }}</strong></td>
                             <td class="text-center">
                                 <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
-                                    {{ _(ticket.current_phase) if ticket.current_phase else _('N/A') }}
+                                    {{ _(ticket.current_phase) or _('N/A') }}
                                 </span>
                             </td>
-                            <td><small>{{ ticket.created_at.strftime('%Y-%m-%d') if ticket.created_at else _('Unknown') }}</small></td>
-                            <td class="text-end">
-                                <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                            <td>{{ ticket.created_at.strftime('%Y-%m-%d') if ticket.created_at else _('Unknown') }}</td>
+                            <td class="text-end text-nowrap">
+                                <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-search-plus" aria-hidden="true"></i></a>
                             </td>
                         </tr>
                         {% else %}
                         <tr><td colspan="5" class="text-center text-muted py-4">{{ _('No tickets found for this customer.') }}</td></tr>
                         {% endfor %}
                     </tbody>
-                </table>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

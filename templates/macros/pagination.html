@@ -10,8 +10,8 @@
                 </a>
             </li>
         {% else %}
-            <li class="page-item disabled">
-                <span class="page-link" aria-label="{{ _('Previous') }}">&laquo;</span>
+            <li class="page-item disabled" aria-disabled="true">
+                <span class="page-link" aria-hidden="true">&laquo;</span>
             </li>
         {% endif %}
 
@@ -28,7 +28,9 @@
                     </li>
                 {% endif %}
             {% else %}
-                <li class="page-item disabled"><span class="page-link">...</span></li>
+                <li class="page-item disabled" aria-disabled="true">
+                    <span class="page-link" aria-hidden="true">...</span>
+                </li>
             {% endif %}
         {% endfor %}
 
@@ -40,8 +42,8 @@
                 </a>
             </li>
         {% else %}
-            <li class="page-item disabled">
-                <span class="page-link" aria-label="{{ _('Next') }}">&raquo;</span>
+            <li class="page-item disabled" aria-disabled="true">
+                <span class="page-link" aria-hidden="true">&raquo;</span>
             </li>
         {% endif %}
     </ul>

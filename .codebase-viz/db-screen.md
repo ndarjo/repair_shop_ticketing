@@ -13,6 +13,7 @@ erDiagram
 %% table:services path:models.py
 %% table:ticket_services path:models.py
 %% table:spare_parts path:models.py
+%% table:spare_part_price_history path:models.py
 %% table:common_problems path:models.py
 %% table:notes path:models.py
 %% table:phase_logs path:models.py
@@ -64,6 +65,7 @@ erDiagram
     Integer_FK location_id FK
     Text _address_encrypted
     Column phone_hash
+    Boolean is_anonymized
     DateTime created_at
     DateTime updated_at
   }
@@ -118,6 +120,7 @@ erDiagram
   }
   spare_parts {
     Integer id PK
+    Column sku
     Column name
     Text description
     Column cost
@@ -126,6 +129,17 @@ erDiagram
     Boolean is_active
     Integer_FK location_id FK
     DateTime created_at
+    DateTime updated_at
+  }
+  spare_part_price_history {
+    Integer id PK
+    Integer_FK spare_part_id FK
+    Integer_FK user_id FK
+    Column old_cost
+    Column new_cost
+    Column old_price
+    Column new_price
+    DateTime changed_at
   }
   common_problems {
     Integer id PK
@@ -155,6 +169,8 @@ erDiagram
     Integer id PK
     Column invoice_number
     Integer_FK ticket_id FK
+    Integer_FK customer_id FK
+    Integer_FK location_id FK
     Column total_amount
     Column status
     DateTime created_at
@@ -187,7 +203,21 @@ erDiagram
     Column shop_phone
     Column shop_email
     Column logo_path
+    Column currency
+    Integer currency_decimals
     Boolean setup_completed
+  }
+  services {
+    string name
+  }
+  services_add {
+    string name
+  }
+  services_edit__service_id {
+    string name
+  }
+  services_delete__service_id {
+    string name
   }
   users }o--|| locations : "location_id"
   customers }o--|| locations : "location_id"
@@ -201,16 +231,24 @@ erDiagram
   ticket_services }o--|| tickets : "ticket_id"
   ticket_services }o--|| services : "service_id"
   spare_parts }o--|| locations : "location_id"
+  spare_part_price_history }o--|| spare_parts : "spare_part_id"
+  spare_part_price_history }o--|| users : "user_id"
   common_problems }o--|| locations : "location_id"
   notes }o--|| tickets : "ticket_id"
   notes }o--|| users : "user_id"
   phase_logs }o--|| tickets : "ticket_id"
   phase_logs }o--|| users : "user_id"
   invoices }o--|| tickets : "ticket_id"
+  invoices }o--|| customers : "customer_id"
+  invoices }o--|| locations : "location_id"
   payments }o--|| invoices : "invoice_id"
   payments }o--|| tickets : "ticket_id"
   payments }o--|| users : "user_id"
   invoice_items }o--|| invoices : "invoice_id"
   invoice_items }o--|| spare_parts : "spare_part_id"
   shop_settings }o--|| locations : "location_id"
+  services }|--|| services : "queries"
+  services_add }|--|| services : "queries"
+  services_edit__service_id }|--|| services : "queries"
+  services_delete__service_id }|--|| services : "queries"
 ```

@@ -2,9 +2,9 @@ import secrets
 import base64
 
 def generate_keys():
-    print("="*50)
+    print("\n" + "="*40)
     print("   Repair Shop Security Key Generator")
-    print("="*50)
+    print("="*40)
     
     s_key = secrets.token_urlsafe(32)
     b_salt = secrets.token_urlsafe(32)
@@ -16,7 +16,7 @@ def generate_keys():
     print(f"BLIND_INDEX_SALT={b_salt}")
     print(f"ENCRYPTION_KEY={e_key}")
     
-    print("\n" + "="*50)
+    print("\n" + "="*40 + "\n")
 
 if __name__ == "__main__":
     generate_keys()

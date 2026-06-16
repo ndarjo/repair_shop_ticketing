@@ -18,10 +18,10 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-user" aria-hidden="true"></i></span>
                         <input type="text" id="customer_search" class="form-control" placeholder="{{ _('Type name or phone...') }}" autocomplete="off">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#newCustomerModal">{{ _('New') }} +</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#newCustomerModal"><i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('New') }}</button>
                     </div>
                     <input type="hidden" name="customer_id" id="customer_id">
-                    <div id="customer_results" class="list-group position-absolute w-100 z-3 shadow mt-1" style="display: none; max-height: 250px; overflow-y: auto;"></div>
+                    <div id="customer_results" class="list-group position-absolute w-100 z-3 shadow mt-1 bg-body" style="display: none; max-height: 250px; overflow-y: auto;"></div>
                 </div>
 
                 <!-- Device Search Section -->
@@ -29,11 +29,16 @@
                     <label for="device_search" class="form-label fw-bold">{{ _('2. Select Device') }} *</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-laptop" aria-hidden="true"></i></span>
-                        <input type="text" id="device_search" class="form-control" placeholder="{{ _('Search customer\'s devices...') }}" disabled autocomplete="off">
-                        <button type="button" id="new_device_btn" class="btn btn-outline-secondary" disabled data-bs-toggle="modal" data-bs-target="#newDeviceModal">{{ _('New') }} +</button>
+                        <input type="text" id="device_search" class="form-control" 
+                               placeholder="{{ _('Search customer\'s devices...') }}" 
+                               data-searching-text="{{ _('Searching...') }}"
+                               data-no-results-text="{{ _('No devices found.') }}"
+                               data-no-devices-registered-text="{{ _('No devices registered for this customer.') }}"
+                               disabled autocomplete="off">
+                        <button type="button" id="new_device_btn" class="btn btn-outline-secondary" disabled data-bs-toggle="modal" data-bs-target="#newDeviceModal"><i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('New') }}</button>
                     </div>
                     <input type="hidden" name="device_id" id="device_id">
-                    <div id="device_results" class="list-group position-absolute w-100 z-3 shadow mt-1" style="display: none; max-height: 250px; overflow-y: auto;"></div>
+                    <div id="device_results" class="list-group position-absolute w-100 z-3 shadow mt-1 bg-body" style="display: none; max-height: 250px; overflow-y: auto;"></div>
                 </div>
 
                 <div class="col-12 mt-4">
@@ -91,8 +96,8 @@
                 <div class="col-md-3">
                     <label for="created_date" class="form-label fw-bold">{{ _('Intake Date/Time') }}</label>
                     <div class="input-group">
-                        <input type="date" name="created_date" id="created_date" class="form-control" value="{{ now.strftime('%Y-%m-%d') if now else '' }}" aria-label="{{ _('Intake Date') }}">
-                        <input type="time" name="created_time" id="created_time" class="form-control" value="{{ now.strftime('%H:%M') if now else '' }}" aria-label="{{ _('Intake Time') }}">
+                        <input type="date" name="created_date" id="created_date" class="form-control" value="{{ now_date if now_date else '' }}" aria-label="{{ _('Intake Date') }}">
+                        <input type="time" name="created_time" id="created_time" class="form-control" value="{{ now_time if now_time else '' }}" aria-label="{{ _('Intake Time') }}">
                     </div>
                 </div>
 

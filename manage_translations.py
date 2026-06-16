@@ -2,34 +2,41 @@ import os
 import subprocess
 import sys
 import re
+from collections import Counter
 
 def check_babel_config():
     """Checks babel.cfg for legacy extensions that break in Jinja2 3.x."""
+    has_critical = False
     if os.path.exists("babel.cfg"):
+        warnings = []
         try:
             with open("babel.cfg", "r") as f:
                 content = f.read()
                 if "jinja2.ext.autoescape" in content or "jinja2.ext.with_" in content:
-                    print("\n" + "!"*65)
-                    print("[!] WARNING: Legacy extensions detected in 'babel.cfg'")
-                    print("    Jinja2 3.x (used in Python 3.10+) has deprecated")
-                    print("    'jinja2.ext.autoescape' and 'jinja2.ext.with_' as")
-                    print("    they are now built-in. Using them causes an AttributeError.")
-                    print("\n    FIX: Remove those extensions from your 'babel.cfg' file.")
+                    warnings.append(
+                        "Legacy extensions ('jinja2.ext.autoescape' or 'with_') detected.\n"
+                        "    Jinja2 3.x has these built-in. Remove them from babel.cfg to avoid errors."
+                    )
+                    has_critical = True
                 
                 if "[jinja2:" in content and "[extractors]" not in content:
-                    print("\n" + "!"*65)
-                    print("[!] WARNING: Missing [extractors] section for Jinja2.")
-                    print("    Python 3.12+ environments often require explicit mapping.")
-                    print("\n    FIX: Add '[extractors]\\njinja2 = jinja2.ext:babel_extract' to the top of babel.cfg")
+                    warnings.append(
+                        "Missing [extractors] section for Jinja2.\n"
+                        "    Add '[extractors]\\njinja2 = jinja2.ext:babel_extract' to the top of babel.cfg"
+                    )
 
                 if "method = jinja2" in content:
-                    print("\n[!] WARNING: Redundant 'method = jinja2' line detected.")
-                    print("    FIX: Remove the 'method = jinja2' line from the template section.")
+                    warnings.append("Redundant 'method = jinja2' line detected. Remove it from template sections.")
                 
-                print("!"*65 + "\n")
+            if warnings:
+                print("\n" + "!"*40)
+                print("[!] CONFIGURATION WARNINGS:")
+                for w in warnings:
+                    print(f"  - {w}")
+                print("!"*40 + "\n")
         except Exception:
             pass
+    return has_critical
 
 def run_command(cmd):
     """Executes a shell command and handles errors."""
@@ -46,7 +53,7 @@ def run_command(cmd):
 def run_auto_translate():
     """Automates the filling of empty translations using Google Translate."""
     try:
-        import polib, re
+        import polib
         from deep_translator import GoogleTranslator
     except ImportError:
         print("\n[!] Error: Missing dependencies for auto-translation.")
@@ -58,40 +65,53 @@ def run_auto_translate():
         print("[!] No translations directory found.")
         return
 
-    # Regex to find Python named placeholders like %(name)s or %(count)d
-    placeholder_pattern = r'%\([^)]+\)[sdif]'
+    # Regex to find Python named placeholders like %(name)s or %(count)02d
+    placeholder_pattern = re.compile(r'%\([^)]+\)[0-9.]*[sdif]')
 
     for locale in os.listdir(locales_dir):
+        # Integrity: Only process directories in the translations folder
+        if not os.path.isdir(os.path.join(locales_dir, locale)):
+            continue
+            
         po_path = os.path.join(locales_dir, locale, "LC_MESSAGES", "messages.po")
         if os.path.exists(po_path):
             print(f"[*] Auto-translating locale: {locale}...")
             po = polib.pofile(po_path)
-            # Map locale codes if necessary (e.g., 'id' is fine, but some might need mapping)
-            translator = GoogleTranslator(source='auto', target=locale)
+            # Ensure locale code compatibility for Google Translate (e.g., id, zh-CN)
+            target_locale = locale.replace('_', '-')
+            translator = GoogleTranslator(source='auto', target=target_locale)
             
             for entry in po:
-                if entry.obsolete:
+                if entry.obsolete or entry.msgid_plural:
+                    # Skip obsolete entries and plural entries (plurals are complex for auto-translation)
                     continue
 
                 # Check if translation is missing OR if placeholders were corrupted by previous runs
-                source_placeholders = re.findall(placeholder_pattern, entry.msgid)
-                target_placeholders = re.findall(placeholder_pattern, entry.msgstr) if entry.msgstr else []
+                source_placeholders = placeholder_pattern.findall(entry.msgid)
+                target_placeholders = placeholder_pattern.findall(entry.msgstr) if entry.msgstr else []
                 
-                needs_translation = not entry.msgstr or (set(source_placeholders) != set(target_placeholders))
+                # Use Counter for exact placeholder matching (including counts)
+                needs_translation = not entry.msgstr or (Counter(source_placeholders) != Counter(target_placeholders))
 
                 if needs_translation:
                     try:
                         text_to_translate = entry.msgid
                         # Temporarily replace placeholders with unique tokens the translator won't touch
                         for i, ph in enumerate(source_placeholders):
-                            text_to_translate = text_to_translate.replace(ph, f" __PH{i}__ ")
+                            # Replace only first occurrence to handle multiple identical placeholders correctly
+                            text_to_translate = text_to_translate.replace(ph, f" __PH{i}__ ", 1)
 
                         translated = translator.translate(text_to_translate)
                         
+                        # Integrity: Skip if translation failed or returned empty
+                        if not translated:
+                            continue
+
                         # Restore original placeholders
                         for i, ph in enumerate(source_placeholders):
-                            # Use regex sub to handle potential spacing added by the translator around tokens
-                            translated = re.sub(rf'__\s*PH{i}\s*__', ph, translated)
+                            # Use regex sub with lambda to ensure 'ph' is treated as a literal string (no backslash processing)
+                            # and to handle potential spacing or case changes (e.g. __ph 0 __) added by the translator
+                            translated = re.sub(rf'__\s*PH\s*{i}\s*__', lambda m: ph, translated, flags=re.IGNORECASE)
 
                         entry.msgstr = translated
                         print(f"    [+] Fixed/Translated: '{entry.msgid[:30]}...' -> '{translated[:30]}...'")
@@ -121,13 +141,19 @@ def main():
         return
 
     # Proactively check for configuration issues common in modern Python environments
-    check_babel_config()
+    if check_babel_config():
+        print("[!] Execution aborted due to configuration errors. Please fix babel.cfg as noted above.")
+        sys.exit(1)
 
     command = sys.argv[1].lower()
 
     # Centralized extraction parameters to ensure integrity across commands
-    # Includes standard Flask-Babel keywords for gettext (_) and lazy_gettext (_l)
-    extract_args = ["pybabel", "extract", "-F", "babel.cfg", "-k", "_", "-k", "_l", "-o", "messages.pot", "."]
+    # Includes standard Flask-Babel keywords plus full names for robust extraction consistency.
+    extract_args = [
+        "pybabel", "extract", "-F", "babel.cfg", 
+        "-k", "_", "-k", "_l", "-k", "gettext", "-k", "ngettext", "-k", "lazy_gettext",
+        "-o", "messages.pot", "."
+    ]
 
     # Check if there are any actual catalogs (locales) to work with
     has_catalogs = os.path.isdir("translations") and any(os.path.isdir(os.path.join("translations", d)) for d in os.listdir("translations"))
@@ -146,6 +172,7 @@ def main():
 
     if command == "extract":
         run_command(extract_args)
+        print("[+] Extraction complete: messages.pot updated.")
     elif command == "init":
         if len(sys.argv) < 3:
             print("[!] Error: Language code required. Example: python manage_translations.py init fr")
@@ -154,13 +181,16 @@ def main():
         if not os.path.exists("messages.pot"):
             run_command(extract_args)
         run_command(["pybabel", "init", "-i", "messages.pot", "-d", "translations", "-l", sys.argv[2]])
+        print(f"[+] Language '{sys.argv[2]}' initialized in translations/.")
     elif command == "update":
         run_command(extract_args)
         run_command(["pybabel", "update", "-i", "messages.pot", "-d", "translations"])
+        print("[+] Update complete: catalogs synchronized with source code.")
     elif command == "translate":
         run_auto_translate()
     elif command == "compile":
         run_command(["pybabel", "compile", "-d", "translations"])
+        print("[+] Compilation complete: .mo files generated.")
     else:
         print_help()
 

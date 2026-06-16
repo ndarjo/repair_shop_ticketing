@@ -1,72 +1,82 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
 
-{% block title %}{{ _('Devices') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
+{% block title %}{{ _('Devices') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name and shop_info.shop_name != 'None' else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h2>{{ _('Device Inventory') }}</h2>
-    {% if current_user.has_permission('create_device') %}
-    <a href="{{ url_for('device.new_device') }}" class="btn btn-outline-primary"><i class="fas fa-plus me-1" aria-hidden="true"></i> {{ _('Add Device') }}</a>
-    {% endif %}
-</div>
+{% set is_searching = search_query is defined and search_query and search_query != 'None' %}
 
-<div class="row mb-4">
-    <div class="col-md-6">
-        <form action="{{ url_for('device.devices_list') }}" method="GET" class="d-flex">
-            <label for="device_search" class="visually-hidden">{{ _('Search Devices') }}</label>
-            <input type="text" id="device_search" name="q" class="form-control me-2" placeholder="{{ _('Search by model or serial...') }}" value="{{ search_query or '' }}">
-            <button type="submit" class="btn btn-outline-primary"><i class="fas fa-search me-1" aria-hidden="true"></i> {{ _('Search') }}</button>
-            {% if search_query %}
-                <a href="{{ url_for('device.devices_list') }}" class="btn btn-outline-secondary ms-2 text-nowrap"><i class="fas fa-times me-1" aria-hidden="true"></i> {{ _('Clear') }}</a>
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <h2>{{ _('Device List') }}</h2>
+            {% if current_user.has_permission('create_device') %}
+            <a href="{{ url_for('device.new_device') }}" class="btn btn-outline-primary">
+                <i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('New Device') }}</a>
             {% endif %}
-        </form>
-    </div>
-</div>
+        </div>
 
-<div class="card shadow-sm">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead>
-                <tr class="table-light">
-                    <th>{{ _('Device') }}</th>
-                    <th>{{ _('Owner') }}</th>
-                    <th>{{ _('Serial Number') }}</th>
-                    <th class="text-center">{{ _('Tickets') }}</th>
-                    <th class="text-end">{{ _('Actions') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for device in devices.items %}
-                <tr>
-                    <td>
-                        <div class="fw-bold text-break">{{ device.display }}</div>
-                        <small class="text-muted">{{ _(device.device_type) }}</small>
-                    </td>
-                    <td>
-                        {% if device.customer %}
-                            <a href="{{ url_for('customer.view_customer', customer_id=device.customer.id) }}" class="text-break">{{ device.customer.name }}</a>
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <form action="{{ url_for('device.devices_list') }}" method="GET" class="d-flex">
+                    {% if current_user.is_superuser and locations %}
+                    <select name="location_id" class="form-select me-2" style="width: 180px;" onchange="this.form.submit()">
+                        <option value="">{{ _('All Locations') }}</option>
+                        {% for loc in locations %}
+                        <option value="{{ loc.id }}" {{ 'selected' if selected_location == loc.id else '' }}>
+                            {{ loc.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+
+                    <label for="device_search" class="visually-hidden">{{ _('Search Devices') }}</label>
+                    <input type="text" id="device_search" name="q" class="form-control flex-grow-1 me-2"
+                           placeholder="{{ _('Search by brand, model, serial or customer name...') }}"
+                           value="{{ search_query if is_searching else '' }}"
+                           autocomplete="off">
+                    <button type="submit" class="btn btn-outline-primary" style="width: 110px;"><i class="fas fa-search" aria-hidden="true"></i> {{ _('Search') }}</button>
+                    {% if is_searching %}
+                    <a href="{{ url_for('device.devices_list', location_id=selected_location) }}" class="btn btn-outline-primary ms-2" style="width: 110px;"><i class="fas fa-times me-1" aria-hidden="true"></i>{{ _('Clear') }}</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Device') }}</th>
+                            <th>{{ _('Customer') }}</th>
+                            <th>{{ _('Serial Number') }}</th>
+                            <th>{{ _('Created') }}</th>
+                            <th class="text-end">{{ _('Action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for device in devices.items %}
+                        <tr>
+                            <td class="text-break"><strong>{{ device.display }}</strong></td>
+                            <td class="text-break">{{ device.customer.name }}</td>
+                            <td class="text-break"><code>{{ device.serial_number or _('N/A') }}</code></td>
+                            <td>{{ device.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td class="text-end text-nowrap">
+                                <a href="{{ url_for('device.view_device', device_id=device.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-search-plus" aria-hidden="true"></i></a>
+                            </td>
+                        </tr>
                         {% else %}
-                            <span class="text-muted">{{ _('N/A') }}</span>
-                        {% endif %}
-                    </td>
-                    <td><code class="text-break">{{ device.serial_number or _('N/A') }}</code></td>
-                    <td class="text-center"><span class="badge bg-secondary">{{ device.tickets|length }}</span></td>
-                    <td class="text-end">
-                        <a href="{{ url_for('device.view_device', device_id=device.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
-                        {% if current_user.has_permission('edit_device') %}
-                        <a href="{{ url_for('device.edit_device', device_id=device.id) }}" class="btn btn-sm btn-outline-secondary">{{ _('Edit') }}</a>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="5" class="text-center text-muted py-4">{{ _('No devices found matching your search.') if search_query else _('No devices found in inventory.') }}</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <div class="card-footer">
-        {{ render_pagination(devices, 'device.devices_list', q=search_query) }}
+                        <tr><td colspan="5" class="text-center text-muted py-4">{{ _('No devices found matching your criteria.') if is_searching else _('No devices found.') }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+                {{ render_pagination(devices, 'device.devices_list', q=search_query if is_searching else None, location_id=selected_location if selected_location else None) }}
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

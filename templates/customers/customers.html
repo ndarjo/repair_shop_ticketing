@@ -1,60 +1,102 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
 
-{% block title %}{{ _('Customers') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name else _('Repair Shop') }}{% endblock %}
+{% block title %}{{ _('Customers') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name and shop_info.shop_name != 'None' else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h2>{{ _('Customer Directory') }}</h2>
-    {% if current_user.has_permission('create_customer') %}
-    <a href="{{ url_for('customer.new_customer') }}" class="btn btn-outline-primary"><i class="fas fa-plus me-1" aria-hidden="true"></i> {{ _('New Customer') }}</a>
-    {% endif %}
-</div>
+{% set is_searching = search_query is defined and search_query and search_query != 'None' %}
 
-<div class="row mb-4">
-    <div class="col-md-6">
-        <form action="{{ url_for('customer.customers_list') }}" method="GET" class="d-flex">
-            <label for="customer_search" class="visually-hidden">{{ _('Search Customers') }}</label>
-            <input type="text" id="customer_search" name="q" class="form-control me-2" placeholder="{{ _('Search by name or phone...') }}" value="{{ search_query or '' }}">
-            <button type="submit" class="btn btn-outline-primary"><i class="fas fa-search me-1" aria-hidden="true"></i> {{ _('Search') }}</button>
-            {% if search_query %}
-                <a href="{{ url_for('customer.customers_list') }}" class="btn btn-outline-secondary ms-2 text-nowrap"><i class="fas fa-times me-1" aria-hidden="true"></i> {{ _('Clear') }}</a>
-            {% endif %}
-        </form>
-    </div>
-</div>
-
-<div class="card shadow-sm">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead>
-                <tr class="table-light">
-                    <th>{{ _('Name') }}</th>
-                    <th>{{ _('Phone') }}</th>
-                    <th class="text-center">{{ _('Devices') }}</th>
-                    <th>{{ _('Created') }}</th>
-                    <th class="text-end">{{ _('Actions') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for customer in customers.items %}
-                <tr>
-                    <td><strong class="text-break">{{ customer.name }}</strong></td>
-                    <td class="text-nowrap">{{ customer.phone or _('N/A') }}</td>
-                    <td class="text-center"><span class="badge bg-secondary">{{ customer.devices|length }}</span></td>
-                    <td>{{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at else _('Unknown') }}</td>
-                    <td class="text-end">
-                        <a href="{{ url_for('customer.view_customer', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View Profile') }}</a>
-                    </td>
-                </tr>
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <h2>{{ _('Customer Directory') }}</h2>
+            <div class="d-flex gap-2">
+                {% if show_deleted %}
+                <a href="{{ url_for('customer.customers_list', show_deleted=0, q=search_query, location_id=selected_location) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-eye-slash me-2" aria-hidden="true"></i>{{ _('Hide Anonymized') }}
+                </a>
                 {% else %}
-                <tr><td colspan="5" class="text-center text-muted py-4">{{ _('No customers found matching your search.') if search_query else _('No customers found.') }}</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <div class="card-footer">
-        {{ render_pagination(customers, 'customer.customers_list', q=search_query) }}
+                <a href="{{ url_for('customer.customers_list', show_deleted=1, q=search_query, location_id=selected_location) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-eye me-2" aria-hidden="true"></i>{{ _('Show Anonymized') }}
+                </a>
+                {% endif %}
+
+                {% if current_user.has_permission('create_customer') %}
+                <a href="{{ url_for('customer.new_customer') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('New Customer') }}</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <form action="{{ url_for('customer.customers_list') }}" method="GET" class="d-flex">
+                    <input type="hidden" name="show_deleted" value="{{ show_deleted }}">
+                    {% if current_user.is_superuser and locations %}
+                    <select name="location_id" class="form-select me-2" style="width: 180px;" onchange="this.form.submit()">
+                        <option value="">{{ _('All Locations') }}</option>
+                        {% for loc in locations %}
+                        <option value="{{ loc.id }}" {{ 'selected' if selected_location == loc.id else '' }}>
+                            {{ loc.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+
+                    <label for="customer_search" class="visually-hidden">{{ _('Search Customers') }}</label>
+                    <input type="text" id="customer_search" name="q" class="form-control flex-grow-1 me-2" 
+                           placeholder="{{ _('Search by name or phone...') }}" 
+                           value="{{ search_query if is_searching else '' }}" 
+                           autocomplete="off">
+                    <button type="submit" class="btn btn-outline-primary" style="width: 110px;"><i class="fas fa-search" aria-hidden="true"></i> {{ _('Search') }}</button>
+                    {% if is_searching %}
+                    <a href="{{ url_for('customer.customers_list', location_id=selected_location, show_deleted=show_deleted) }}" class="btn btn-outline-primary ms-2" style="width: 110px;"><i class="fas fa-times me-1" aria-hidden="true"></i>{{ _('Clear') }}</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Name') }}</th>
+                            <th>{{ _('Phone') }}</th>
+                            <th class="text-center">{{ _('Devices') }}</th>
+                            <th>{{ _('Created') }}</th>
+                            <th class="text-end">{{ _('Action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in customers.items %}
+                        <tr>
+                            <td class="text-break">
+                                <strong>{{ customer.name or _('Customer') }}</strong>
+                                {% if customer.is_anonymized or customer.name.startswith('DELETED_USER_') %}
+                                <span class="badge bg-danger ms-2" title="{{ _('This record has been anonymized for GDPR compliance.') }}">
+                                    <i class="fas fa-user-slash me-1"></i>{{ _('Anonymized') }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-nowrap">{{ customer.phone or _('N/A') }}</td>
+                            <td class="text-center"><span class="badge bg-secondary">{{ customer.devices|length }}</span></td>
+                            <td>{{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at else _('Unknown') }}</td>
+                            <td class="text-end text-nowrap">
+                                <a href="{{ url_for('customer.view_customer', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-search-plus" aria-hidden="true"></i></a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">{{ _('No customers found matching your search.') if is_searching else _('No customers found.') }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+                {{ render_pagination(customers, 'customer.customers_list', q=search_query if is_searching else None, location_id=selected_location if selected_location else None, show_deleted=show_deleted if show_deleted else None) }}
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

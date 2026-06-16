@@ -1,202 +1,384 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
 
-{% block title %}{{ _('Manage Parts - Repair Shop') }}{% endblock %}
+{% block title %}{{ _('Manage Parts') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name and shop_info.shop_name != 'None' else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ _('Spare Parts & Hardware') }}</h2>
-    {% if current_user.has_permission('manage_inventory') %}
-    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPartModal">{{ _('+ New Inventory Item') }}</button>
-    {% endif %}
-</div>
+{% set is_searching = search_query is defined and search_query and search_query != 'None' %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>{{ _('Spare Parts & Hardware') }}</h2>
+            {% if current_user.has_permission('manage_inventory') %}
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPartModal">
+                <i class="fas fa-plus-square me-1" aria-hidden="true"></i>
+                {{ _('New Item') }}</button>
+            {% endif %}
+        </div>
+        <!-- Inventory Search -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <form action="{{ url_for('inventory.manage_inventory') }}" method="GET" class="d-flex">
+                    {% if current_user.is_superuser and locations %}
+                        <select name="location_id" class="form-select me-2" style="width: 180px;" onchange="this.form.submit()">
+                            <option value="">{{ _('All Locations') }}</option>
+                            {% for loc in locations %}
+                            <option value="{{ loc.id }}" {{ 'selected' if selected_location == loc.id else '' }}>
+                                {{ loc.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+                    <input type="text" name="q" class="form-control flex-grow-1 me-2" 
+                        placeholder="{{ _('Search by name or SKU...') }}"
+                        value="{{ search_query if is_searching else '' }}" 
+                        autocomplete="off">
+                    <button type="submit" class="btn btn-outline-primary" style="width: 110px;"><i class="fas fa-search" aria-hidden="true"></i> {{ _('Search') }}</button>
+                    
+                    {% if search_query %}
+                    <a href="{{ url_for('inventory.manage_inventory', location_id=selected_location) }}" class="btn btn-outline-primary ms-2" style="width: 110px;"><i class="fas fa-times me-1" aria-hidden="true"></i>{{ _('Clear') }}</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        <div class="card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ _('SKU / Barcode') }}</th>
+                            <th>{{ _('Part Name') }}</th>
+                            <th class="text-end">{{ _('Cost (Wholesale)') }}</th>
+                            <th class="text-end">{{ _('Selling Price') }}</th>
+                            <th class="text-center">{{ _('Stock') }}</th>
+                            <th>{{ _('Status') }}</th>
+                            <th class="text-end">{{ _('Action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for part in parts.items %}
+                        <tr>
+                            <td><code class="text-primary">{{ part.sku if (part.sku and part.sku != 'None') else '-' }}</code></td>
+                            <td>
+                                <strong class="text-break">{{ part.name if (part.name and part.name != 'None') else '' }}</strong><br>
+                                <small class="text-muted text-break">{{ part.description if (part.description and part.description != 'None') else '-' }}</small>
+                            </td>
+                            <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, part.cost or 0) }}</td>
+                            <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, part.selling_price or 0) }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-{{ 'danger' if (part.stock_quantity or 0) <= 0 else 'info' }}">
+                                    {{ part.stock_quantity or 0 }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if part.is_active else 'secondary' }}">
+                                    {{ _('Active') if part.is_active else _('Inactive') }}
+                                </span>
+                                {% if part.updated_at %}
+                                <div class="small text-muted mt-1" style="font-size: 0.75rem;" title="{{ _('Last movement') }}">
+                                    <i class="fas fa-clock me-1" aria-hidden="true"></i>{{ part.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="text-end text-nowrap">
+                                {% if current_user.has_permission('manage_inventory') %}
+                                <button class="btn btn-sm btn-outline-info view-history-btn" 
+                                        data-id="{{ part.id }}" 
+                                        data-name="{{ part.name }}"
+                                        title="{{ _('View Price History') }}">
+                                    <i class="fas fa-chart-line" aria-hidden="true"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning edit-part-btn" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editPartModal"
+                                        data-id="{{ part.id }}"
+                                        data-sku="{{ part.sku if (part.sku and part.sku != 'None') else '' }}"
+                                        data-name="{{ part.name if (part.name and part.name != 'None') else '' }}"
+                                        data-description="{{ part.description if (part.description and part.description != 'None') else '' }}"
+                                        data-cost="{{ '%.*f'|format(currency_decimals, part.cost or 0) }}"
+                                        data-price="{{ '%.*f'|format(currency_decimals, part.selling_price or 0) }}"
+                                        data-stock="{{ part.stock_quantity or 0 }}"
+                                        data-active="{{ 'true' if part.is_active else 'false' }}">
+                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                </button>
+                                <form action="{{ url_for('inventory.delete_part', part_id=part.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this part?') }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                {{ _('No spare parts found matching your search.') if is_searching else _('No spare parts found in inventory.') }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+                {{ render_pagination(parts, 'inventory.manage_inventory', q=search_query if is_searching else None, location_id=selected_location if selected_location else None) }}
+            </div>
+        </div>
 
-<div class="card shadow-sm">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>{{ _('Part Name') }}</th>
-                    <th class="text-end">{{ _('Cost (Wholesale)') }}</th>
-                    <th class="text-end">{{ _('Selling Price') }}</th>
-                    <th class="text-center">{{ _('Stock') }}</th>
-                    <th>{{ _('Status') }}</th>
-                    <th class="text-end">{{ _('Actions') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for part in parts.items %}
-                <tr>
-                    <td>
-                        <strong>{{ part.name }}</strong><br>
-                        <small class="text-muted">{{ part.description or '-' }}</small>
-                    </td>
-                    <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, part.cost or 0) }}</td>
-                    <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, part.selling_price or 0) }}</td>
-                    <td class="text-center">
-                        <span class="badge bg-{{ 'danger' if (part.stock_quantity or 0) <= 0 else 'info' }}">
-                            {{ part.stock_quantity or 0 }}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="badge bg-{{ 'success' if part.is_active else 'secondary' }}">
-                            {{ _('Active') if part.is_active else _('Inactive') }}
-                        </span>
-                    </td>
-                    <td class="text-end">
-                        {% if current_user.has_permission('manage_inventory') %}
-                        <button class="btn btn-sm btn-outline-primary edit-part-btn" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#editPartModal"
-                                data-id="{{ part.id }}"
-                                data-name="{{ part.name }}"
-                                data-description="{{ part.description or '' }}"
-                                data-cost="{{ '%.*f'|format(currency_decimals, part.cost or 0) }}"
-                                data-price="{{ '%.*f'|format(currency_decimals, part.selling_price or 0) }}"
-                                data-stock="{{ part.stock_quantity or 0 }}"
-                                data-active="{{ 'true' if part.is_active else 'false' }}">
-                            {{ _('Edit') }}
-                        </button>
-                        <form action="{{ url_for('main.delete_part', part_id=part.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this part?') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Delete') }}</button>
-                        </form>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="6" class="text-center text-muted py-4">{{ _('No spare parts in inventory.') }}</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <div class="card-footer">
-        {{ render_pagination(parts, 'main.manage_inventory') }}
-    </div>
-</div>
-
-{% if current_user.has_permission('manage_inventory') %}
-<!-- Single Shared Edit Modal (Prevents DOM Bloating) -->
-<div class="modal fade" id="editPartModal" tabindex="-1" aria-labelledby="editPartModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="editPartForm" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editPartModalLabel">{{ _('Edit Part Details') }}</h5>
-                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">{{ _('Part Name') }}</label>
-                        <input type="text" name="name" id="edit_part_name" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ _('Description') }}</label>
-                        <textarea name="description" id="edit_part_description" class="form-control" rows="2"></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ _('Wholesale Cost') }}</label>
-                            <div class="input-group">
-                                <span class="input-group-text">{{ currency_symbol }}</span>
-                                <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="cost" id="edit_part_cost" class="form-control" min="0">
+        {% if current_user.has_permission('manage_inventory') %}
+        <!-- Single Shared Edit Modal (Prevents DOM Bloating) -->
+        <div class="modal fade" id="editPartModal" tabindex="-1" aria-labelledby="editPartModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form id="editPartForm" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editPartModalLabel">{{ _('Edit Part Details') }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">{{ _('SKU / Barcode ID') }}</label>
+                                <input type="text" name="sku" id="edit_part_sku" class="form-control" placeholder="{{ _('Optional barcode or SKU') }}" maxlength="50">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ _('Part Name') }}</label>
+                                <input type="text" name="name" id="edit_part_name" class="form-control" required aria-required="true" maxlength="100">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ _('Description') }}</label>
+                                <textarea name="description" id="edit_part_description" class="form-control" rows="2" maxlength="500"></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">{{ _('Wholesale Cost') }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ currency_symbol }}</span>
+                                        <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="cost" id="edit_part_cost" class="form-control" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">{{ _('Selling Price') }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ currency_symbol }}</span>
+                                        <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="selling_price" id="edit_part_price" class="form-control" min="0" required aria-required="true">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ _('Stock Quantity') }}</label>
+                                <input type="number" name="stock_quantity" id="edit_part_stock" class="form-control" min="0" required aria-required="true">
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="edit_part_active">
+                                <label class="form-check-label" for="edit_part_active">{{ _('Active') }}</label>
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ _('Selling Price') }}</label>
-                            <div class="input-group">
-                                <span class="input-group-text">{{ currency_symbol }}</span>
-                                <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="selling_price" id="edit_part_price" class="form-control" min="0" required>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                            <button type="submit" class="btn btn-outline-warning"><i class="fas fa-edit me-1" aria-hidden="true"></i>{{ _('Save Changes') }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Part Modal -->
+        <div class="modal fade" id="addPartModal" tabindex="-1" aria-labelledby="addPartModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form action="{{ url_for('inventory.add_part') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addPartModalLabel">{{ _('Add New Item') }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">{{ _('SKU / Barcode ID') }}</label>
+                                <input type="text" name="sku" class="form-control" placeholder="{{ _('Optional barcode or SKU') }}" maxlength="50">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ _('Part Name') }}</label>
+                                <input type="text" name="name" class="form-control" placeholder="{{ _('e.g. iPhone 13 Screen') }}" required aria-required="true" maxlength="100">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ _('Description') }}</label>
+                                <textarea name="description" class="form-control" rows="2" maxlength="500"></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">{{ _('Wholesale Cost') }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ currency_symbol }}</span>
+                                        <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="cost" class="form-control" placeholder="{{ _('Your cost') }}" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">{{ _('Selling Price') }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ currency_symbol }}</span>
+                                        <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="selling_price" class="form-control" placeholder="{{ _('Customer price') }}" min="0" required aria-required="true">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ _('Initial Stock') }}</label>
+                                <input type="number" name="stock_quantity" class="form-control" value="0" min="0" required aria-required="true">
                             </div>
                         </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                            <button type="submit" class="btn btn-outline-primary"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Add to Inventory') }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Price History Modal -->
+        <div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="historyModalLabel">{{ _('Price & Cost Trends') }}: <span id="historyPartName"></span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ _('Stock Quantity') }}</label>
-                        <input type="number" name="stock_quantity" id="edit_part_stock" class="form-control" min="0" required>
+                    <div class="modal-body">
+                        <div style="height: 400px; width: 100%;">
+                            <canvas id="historyChart"></canvas>
+                        </div>
+                        <div id="noHistoryMsg" class="text-center py-5 d-none">
+                            <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">{{ _('No historical data points found for this part.') }}</p>
+                        </div>
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="is_active" id="edit_part_active">
-                        <label class="form-check-label" for="edit_part_active">{{ _('Active') }}</label>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-outline-primary">{{ _('Save Changes') }}</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
-
-<!-- Add Part Modal -->
-<div class="modal fade" id="addPartModal" tabindex="-1" aria-labelledby="addPartModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{{ url_for('main.add_part') }}" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addPartModalLabel">{{ _('Add New Inventory Item') }}</h5>
-                    <button type="button" class="btn-outline-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">{{ _('Part Name') }}</label>
-                        <input type="text" name="name" class="form-control" placeholder="{{ _('e.g. iPhone 13 Screen') }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ _('Description') }}</label>
-                        <textarea name="description" class="form-control" rows="2"></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ _('Wholesale Cost') }}</label>
-                            <div class="input-group">
-                                <span class="input-group-text">{{ currency_symbol }}</span>
-                                <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="cost" class="form-control" placeholder="{{ _('Your cost') }}" min="0">
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ _('Selling Price') }}</label>
-                            <div class="input-group">
-                                <span class="input-group-text">{{ currency_symbol }}</span>
-                                <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="selling_price" class="form-control" placeholder="{{ _('Customer price') }}" min="0" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ _('Initial Stock') }}</label>
-                        <input type="number" name="stock_quantity" class="form-control" value="0" min="0" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-outline-primary">{{ _('Add to Inventory') }}</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<!-- Load Chart.js for history visualization (Permitted by CSP) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    let historyChartInstance = null;
+
     const editPartModal = document.getElementById('editPartModal');
     if (editPartModal) {
         editPartModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
-            const id = button.getAttribute('data-id');
-            
+            if (!button || !button.hasAttribute('data-id')) return;
+
+            const getVal = (attr) => {
+                const val = button.getAttribute(attr);
+                return (val && val !== 'None') ? val : '';
+            };
+
+            const partId = parseInt(getVal('data-id'), 10);
+            if (isNaN(partId)) return;
+
             const form = document.getElementById('editPartForm');
-            form.action = "{{ url_for('main.manage_inventory') }}/edit/" + (id || '');
+            if (form) {
+                form.action = "{{ url_for('inventory.manage_inventory') }}edit/" + partId;
+            }
             
-            document.getElementById('edit_part_name').value = button.getAttribute('data-name') || '';
-            document.getElementById('edit_part_description').value = button.getAttribute('data-description') || '';
-            document.getElementById('edit_part_cost').value = button.getAttribute('data-cost') || '0';
-            document.getElementById('edit_part_price').value = button.getAttribute('data-price') || '0';
-            document.getElementById('edit_part_stock').value = button.getAttribute('data-stock') || '0';
+            document.getElementById('edit_part_sku').value = getVal('data-sku');
+            document.getElementById('edit_part_name').value = getVal('data-name');
+            document.getElementById('edit_part_description').value = getVal('data-description');
+            document.getElementById('edit_part_cost').value = getVal('data-cost') || '0';
+            document.getElementById('edit_part_price').value = getVal('data-price') || '0';
+            document.getElementById('edit_part_stock').value = getVal('data-stock') || '0';
             document.getElementById('edit_part_active').checked = button.getAttribute('data-active') === 'true';
         });
     }
+
+    // Price History Chart Logic
+    const historyModalEl = document.getElementById('historyModal');
+    const historyModal = historyModalEl ? new bootstrap.Modal(historyModalEl) : null;
+    
+    document.querySelectorAll('.view-history-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const partId = this.dataset.id;
+            const partName = this.dataset.name;
+            if (!partId) return;
+
+            document.getElementById('historyPartName').textContent = partName;
+            
+            if (historyChartInstance) {
+                historyChartInstance.destroy();
+            }
+
+            fetch(`/inventory/history/${partId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    const ctx = document.getElementById('historyChart').getContext('2d');
+                    const noHistoryMsg = document.getElementById('noHistoryMsg');
+                    
+                    if (!data.labels || data.labels.length === 0) {
+                        document.getElementById('historyChart').style.display = 'none';
+                        noHistoryMsg.classList.remove('d-none');
+                    } else {
+                        document.getElementById('historyChart').style.display = 'block';
+                        noHistoryMsg.classList.add('d-none');
+                        
+                        historyChartInstance = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: data.labels,
+                                datasets: [
+                                    {
+                                        label: "{{ _('Wholesale Cost') }}",
+                                        data: data.cost_data,
+                                        borderColor: '#dc3545',
+                                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                                        fill: true,
+                                        tension: 0.1
+                                    },
+                                    {
+                                        label: "{{ _('Selling Price') }}",
+                                        data: data.price_data,
+                                        borderColor: '#198754',
+                                        backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                                        fill: true,
+                                        tension: 0.1
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        beginAtZero: false,
+                                        ticks: {
+                                            callback: (value) => '{{ currency_symbol }}' + value
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    tooltip: {
+                                        callbacks: {
+                                            label: (context) => context.dataset.label + ': {{ currency_symbol }}' + context.parsed.y
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    if (historyModal) historyModal.show();
+                })
+                .catch(err => {
+                    console.error('Inventory History Error:', err);
+                });
+        });
+    });
 });
 </script>
 {% endif %}

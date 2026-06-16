@@ -1,5 +1,5 @@
 ```
-repair-shop-ticketing
+repair_shop_ticketing
 ├──documentation
 │   ├──ARCHITECTURE.md
 │   ├──DATABASE.md
@@ -15,8 +15,11 @@ repair-shop-ticketing
 │   ├──auth.py
 │   ├──customer.py
 │   ├──device.py
+│   ├──inventory.py
 │   ├──main.py
+│   ├──pos.py
 │   ├──report.py
+│   ├──services.py
 │   ├──setup.py
 │   ├──ticket.py
 │   └──utils.py
@@ -36,14 +39,10 @@ repair-shop-ticketing
 │   │   ├──new_ticket.js
 │   │   ├──ticket_detail.js
 │   │   └──ticket_search.js
-│   └──vendor
-│   │   ├──bootstrap
-│   │   │   ├──css
-│   │   │   └──js
-│   │   ├──bootstrap-icons
-│   │   │   └──fonts
-│   │   └──fontawesome
-│   │   │   └──css
+│   └──uploads
+│   │   └──logos
+│   │   │   ├──logo_loc_1_favicon.png
+│   │   │   └──logo_loc_3_favicon.png
 ├──templates
 │   ├──admin
 │   │   ├──backup.html
@@ -62,6 +61,7 @@ repair-shop-ticketing
 │   ├──customers
 │   │   ├──customer_detail.html
 │   │   ├──customers.html
+│   │   ├──edit_customer.html
 │   │   └──new_customer.html
 │   ├──devices
 │   │   ├──device_detail.html
@@ -86,6 +86,10 @@ repair-shop-ticketing
 │   │   └──setup.html
 │   ├──parts
 │   │   └──manage_parts.html
+│   ├──pos
+│   │   ├──cart.html
+│   │   ├──history.html
+│   │   └──index.html
 │   ├──reports
 │   │   ├──finance_report.html
 │   │   └──reports.html
@@ -99,6 +103,10 @@ repair-shop-ticketing
 │   │   ├──ticket_form.html
 │   │   └──tickets_list.html
 │   └──base.html
+├──translations
+│   └──id
+│   │   └──LC_MESSAGES
+│   │   │   └──messages.po
 ├──.codebase-viz
 │   ├──cache.json
 │   ├──db-screen.md
@@ -112,6 +120,7 @@ repair-shop-ticketing
 ├──generate_keys.py
 ├──LICENSE
 ├──manage_translations.py
+├──messages.pot
 ├──models.py
 ├──README.md
 ├──requirements.in

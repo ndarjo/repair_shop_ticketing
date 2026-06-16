@@ -7,6 +7,17 @@
     <h2 class="mb-0 ">{{ _('Reports & Analytics') }}</h2>
     <div class="d-flex gap-3 align-items-center flex-wrap">
         <form action="{{ url_for('report.reports') }}" method="GET" class="d-flex gap-2 align-items-center">
+            {% if current_user.is_superuser and locations %}
+            <label for="location-select" class="small fw-bold text-muted text-uppercase mb-0">{{ _('Location:') }}</label>
+            <select id="location-select" name="location_id" class="form-select form-select-sm w-auto auto-submit">
+                <option value="">{{ _('All Locations') }}</option>
+                {% for loc in locations %}
+                <option value="{{ loc.id }}" {{ 'selected' if selected_location == loc.id else '' }}>
+                    {{ loc.name }}
+                </option>
+                {% endfor %}
+            </select>
+            {% endif %}
             <label for="month-select" class="small fw-bold text-muted text-uppercase mb-0">{{ _('Period:') }}</label>
             <select id="month-select" name="month" class="form-select form-select-sm w-auto auto-submit">
                 <option value="" {{ 'selected' if not monthly_stats or not monthly_stats.selected_month }}>{{ _('All Time') }}</option>
@@ -16,7 +27,7 @@
             </select>
         </form>
         <div class="vr"></div>
-        <a href="{{ url_for('report.finance_report', month=(monthly_stats.selected_month if (monthly_stats and monthly_stats.selected_month) else None)) }}" class="btn btn-outline-primary fw-bold"><i class="fas fa-file-invoice-dollar me-1"></i> {{ _('Detailed Finance Report') }}</a>
+        <a href="{{ url_for('report.finance_report', month=(monthly_stats.selected_month if (monthly_stats and monthly_stats.selected_month) else None), location_id=selected_location if selected_location else None) }}" class="btn btn-outline-primary fw-bold"><i class="fas fa-file-invoice-dollar me-1"></i> {{ _('Detailed Finance Report') }}</a>
     </div>
 </div>
 
@@ -67,53 +78,54 @@
     <div class="col-md-12">
         <div class="card shadow-sm border-0">
             <div class="card-header">
-                <h5 class="mb-0 "><i class="fas fa-history me-2" aria-hidden="true"></i>{{ _('Recent Tickets') }}</h5>
+                <h5 class="mb-0 "><i class="fas fa-history me-2" aria-hidden="true"></i>{{ _('Recent Sales Activity') }}</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>{{ _('Ticket #') }}</th>
+                                <th>{{ _('Reference') }}</th>
                                 <th>{{ _('Customer') }}</th>
-                                <th>{{ _('Device (Brand/Model)') }}</th>
-                                <th class="text-center">{{ _('Phase') }}</th>
+                                <th>{{ _('Details') }}</th>
+                                <th class="text-center">{{ _('Type / Status') }}</th>
                                 <th>{{ _('Created') }}</th>
-                                <th class="text-end">{{ _('Actions') }}</th>
+                                <th class="text-end">{{ _('Action') }}</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for ticket in (recent_tickets or []) %}
+                            {% for inv in (recent_tickets or []) %}
                             <tr>
-                                <td><strong>{{ ticket.ticket_number or '-' }}</strong></td>
+                                <td><strong>{{ inv.invoice_number[-8:] }}</strong></td>
                                 <td>
-                                    {% if ticket.customer %}
-                                        <div class="fw-bold">{{ ticket.customer.name }}</div>
-                                        <small class="text-muted">{{ ticket.customer.phone or '-' }}</small>
-                                    {% else %}
-                                        -
-                                    {% endif %}
+                                    <div class="fw-bold">{{ inv.customer.name if inv.customer else (inv.ticket.customer.name if inv.ticket else _('Walk-in')) }}</div>
                                 </td>
                                 <td>
-                                    {% if ticket.device %}
-                                        {{ ((ticket.device.brand or '') ~ ' ' ~ (ticket.device.model_number or ''))|trim or '-' }}
+                                    {% if inv.ticket %}
+                                        {{ inv.ticket.device.display }}
                                     {% else %}
-                                        -
+                                        {{ _('Direct Sale') }}
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info text-dark{% elif ticket.current_phase == 'Repairing' %}warning text-dark{% elif ticket.current_phase == 'Waiting for Parts' or not ticket.current_phase %}secondary{% else %}danger{% endif %}">
-                                        {{ _(ticket.current_phase) if ticket.current_phase else '-' }}
-                                    </span>
+                                    {% if inv.ticket %}
+                                        <span class="badge bg-info text-dark">{{ _('Repair') }}: {{ _(inv.ticket.current_phase) }}</span>
+                                    {% else %}
+                                        <span class="badge bg-success">{{ _('POS Sale') }}</span>
+                                    {% endif %}
                                 </td>
-                                <td><small>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if ticket.created_at else '-' }}</small></td>
+                                <td><small>{{ inv.created_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
                                 <td class="text-end">
-                                    <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                                    {% if inv.ticket_id %}
+                                        <a href="{{ url_for('ticket.view_ticket', ticket_id=inv.ticket_id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                                    {% else %}
+                                        <a href="{{ url_for('pos.cart', invoice_id=inv.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">{{ _('No recent tickets found.') }}</td>
+                                <td colspan="6" class="text-center text-muted py-4">{{ _('No recent activity found.') }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
