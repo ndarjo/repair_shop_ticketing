@@ -30,10 +30,16 @@
             <input type="text" name="q" class="form-control flex-grow-1 me-2" 
             placeholder="{{ _('Search services...') }}" 
             value="{{ search_query or '' }}">
-            <button type="submit" class="btn btn-outline-primary" style="width: 110px;"><i class="fas fa-search" aria-hidden="true"></i> {{ _('Search') }}</button>
+            <button type="submit" class="btn btn-outline-primary d-flex flex-column align-items-center justify-content-center" style="width: 110px;">
+                <i class="fas fa-search mb-1" aria-hidden="true"></i>
+                <span>{{ _('Search') }}</span>
+            </button>
             
             {% if search_query %}
-            <a href="{{ url_for('services.manage_services', location_id=selected_location) }}" class="btn btn-outline-primary ms-2" style="width: 110px;"><i class="fas fa-times me-1" aria-hidden="true"></i>{{ _('Clear') }}</a>
+            <a href="{{ url_for('services.manage_services', location_id=selected_location) }}" class="btn btn-outline-primary ms-2 d-flex flex-column align-items-center justify-content-center" style="width: 110px;">
+                <i class="fas fa-times mb-1" aria-hidden="true"></i>
+                <span>{{ _('Clear') }}</span>
+            </a>
             {% endif %}
         </form>
     </div>

@@ -8,7 +8,7 @@
             <a href="{{ url_for('admin.dashboard') }}" class="btn-link p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Admin Panel') }}"><i class="fas fa-arrow-circle-left" aria-hidden="true"></i></a>
         <h2 class="mb-0">{{ _('Manage Locations') }}</h2>
     </div>
-    {% if current_user.is_superuser or current_user.has_role('admin') %}
+    {% if current_user.has_permission('admin_manage_locations') %}
     <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal"><i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('Add New Location') }}</button>
     {% endif %}
 </div>
@@ -37,7 +37,7 @@
                             <td class="text-break">{{ loc.email or _('N/A') }}</td>
                             <td class="text-nowrap">{{ loc.created_at.strftime('%Y-%m-%d') if loc.created_at else '' }}</td>
                             <td class="text-end pe-3">
-                        {% if current_user.is_superuser or current_user.has_role('admin') %}
+                        {% if current_user.has_permission('admin_manage_locations') %}
                         <button class="btn btn-sm btn-outline-warning edit-location-btn" 
                                 data-bs-toggle="modal" data-bs-target="#editLocationModal"
                                 data-id="{{ loc.id }}" 

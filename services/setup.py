@@ -23,10 +23,15 @@ def initialize_roles_and_permissions():
         except: pass
 
     permissions = [
-        'view_customer', 'create_customer', 'edit_customer', 'delete_customer',
+        'view_customer', 'create_customer', 'edit_customer', 'delete_customer', 'export_customer',
         'view_ticket', 'create_ticket', 'edit_ticket', 'delete_ticket', 'archive_ticket',
         'view_reports', 'manage_settings', 'process_payments', 'manage_inventory',
+        'view_inventory', 'view_services',
         'view_device', 'create_device', 'edit_device', 'delete_device', 'create_invoice',
+        # Admin Panel Specific Permissions (ensure comma after each item)
+        'admin_access_dashboard', 'admin_manage_locations', 'admin_manage_users', 
+        'admin_manage_backups', 'admin_view_system_status', 'admin_manage_branding', 'admin_manage_common_problems',
+        # Other ticket-related permissions
         'update_phase', 'mark_as_paid', 'mark_as_taken',
         'add_service', 'remove_service', 'add_part', 'remove_part',
         'process_sales'
@@ -43,13 +48,26 @@ def initialize_roles_and_permissions():
 
     role_permissions = {
         'admin': permissions,
-        'manager': [p for p in permissions if p not in ['delete_ticket', 'delete_device']],
+        'manager': [
+            'view_customer', 'create_customer', 'edit_customer', 'export_customer', 'delete_customer',
+            'view_inventory', 'view_services',
+            'view_device', 'create_device', 'edit_device', 'delete_device',
+            'view_ticket', 'create_ticket', 'edit_ticket', 'archive_ticket', 'update_phase',
+            'manage_inventory', 'add_service', 'remove_service', 'add_part', 'remove_part',
+            'process_payments', 'process_sales', 'create_invoice',
+            'view_reports', 'manage_settings',
+            'admin_access_dashboard', 'admin_manage_users', 
+            'admin_view_system_status', 'admin_manage_backups',
+            'admin_manage_common_problems'
+        ],
         'technician': [
+            'view_inventory', 'view_services',
             'view_customer', 'view_ticket', 'view_device', 'edit_device', 'edit_ticket', 
             'update_phase', 
             'add_service', 'remove_service', 'add_part', 'remove_part'
         ],
         'receptionist': [
+            'view_inventory', 'view_services',
             'view_customer', 'create_customer', 'view_ticket', 'create_ticket',
             'view_device', 'create_device', 'edit_device', 'edit_ticket', 
             'create_invoice',

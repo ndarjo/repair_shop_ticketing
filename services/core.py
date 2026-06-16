@@ -7,7 +7,7 @@ from typing import Tuple, Any, Optional, Dict, List
 from flask import current_app
 from flask_babel import _, get_locale
 from sqlalchemy import func, or_, desc
-from babel.numbers import get_currency_symbol, get_currency_precision, format_currency
+from babel.numbers import get_currency_symbol, get_currency_precision, format_currency, format_decimal
 from sqlalchemy.orm import joinedload, selectinload
 from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
@@ -582,15 +582,17 @@ class DocumentService:
         
         elements = []
         styles = getSampleStyleSheet()
-        title_style = ParagraphStyle('Title', parent=styles['Heading2'], alignment=1, fontSize=14, spaceAfter=5, fontName='Helvetica-Bold')
+        title_style = ParagraphStyle('Title', parent=styles['Heading2'], alignment=1, fontSize=14, spaceAfter=5, fontName='Courier-Bold')
         normal_style = ParagraphStyle('Normal', parent=styles['Normal'], fontSize=9, leading=11, fontName='Courier')
         bold_style = ParagraphStyle('Bold', parent=styles['Normal'], fontSize=9, leading=11, fontName='Courier-Bold')
-        small_style = ParagraphStyle('Small', parent=styles['Normal'], fontSize=7, leading=9, alignment=1)
+        small_style = ParagraphStyle('Small', parent=styles['Normal'], fontSize=7, leading=9, alignment=1, fontName='Courier')
         
         elements.append(Paragraph(html.escape(shop_info.shop_name if shop_info else _("Repair Shop")), title_style))
-        if shop_info:
-            if getattr(shop_info, 'shop_address', None): elements.append(Paragraph(html.escape(shop_info.shop_address), small_style))
-            if getattr(shop_info, 'shop_phone', None): elements.append(Paragraph(f"{_('Tel:')} {html.escape(shop_info.shop_phone)}", small_style))
+        # Use physical branch details from Location instead of global shop settings for contact info
+        loc = ticket.location
+        if loc:
+            if loc.address: elements.append(Paragraph(html.escape(loc.address), small_style))
+            if loc.phone: elements.append(Paragraph(f"{_('Tel:')} {html.escape(loc.phone)}", small_style))
         
         elements.append(Spacer(1, 3*mm))
         elements.append(Paragraph(f"<b>{_('Ticket:')}</b> {ticket.ticket_number}", normal_style))
@@ -599,24 +601,42 @@ class DocumentService:
         elements.append(Paragraph(f"<b>{_('Customer:')}</b> {html.escape(ticket.customer.name if ticket.customer else _('Walk-in'))}", normal_style))
         elements.append(Paragraph(f"<b>{_('Device:')}</b> {html.escape(ticket.device.display if ticket.device else _('N/A'))}", normal_style))
         elements.append(Spacer(1, 2*mm))
-        elements.append(Paragraph("." * 40, normal_style))
+        elements.append(Paragraph("." * 35, normal_style))
         
+        # Custom formatting to strictly follow decimal settings and enable text wrapping in cells
+        precision = shop_info.currency_decimals if shop_info else 2
+        pattern = "#,##0" + (("." + "0" * precision) if precision > 0 else "")
+        symbol = get_currency_symbol(invoice_currency, locale=locale)
+        
+        def local_format(amt):
+            return f"{symbol} {format_decimal(amt, format=pattern, locale=locale)}"
+
+        table_cell_style = ParagraphStyle('TableCell', parent=normal_style, fontSize=8, leading=10)
         data = [[_('Description'), _('Qty'), _('Total')]]
         for ts in ticket.ticket_services:
-            data.append([ts.service.name, str(ts.quantity), format_currency(ts.price_charged * ts.quantity, invoice_currency, locale=locale)])
+            desc = Paragraph(html.escape(ts.service.name), table_cell_style)
+            data.append([desc, str(ts.quantity), local_format(ts.price_charged * ts.quantity)])
         for item in invoice.items:
-            data.append([item.description, str(item.quantity), format_currency(item.total_price, invoice_currency, locale=locale)])
+            desc = Paragraph(html.escape(item.description), table_cell_style)
+            data.append([desc, str(item.quantity), local_format(item.total_price)])
             
         table = Table(data, colWidths=[38*mm, 10*mm, 24*mm])
-        table.setStyle(TableStyle([('FONTNAME', (0,0), (-1,-1), 'Courier'), ('FONTSIZE', (0,0), (-1,-1), 8), ('ALIGN', (1,0), (1,-1), 'CENTER'), ('ALIGN', (2,0), (2,-1), 'RIGHT'), ('LINEBELOW', (0,0), (-1,0), 0.5, colors.black)]))
+        table.setStyle(TableStyle([
+            ('FONTNAME', (0,0), (-1,-1), 'Courier'),
+            ('FONTSIZE', (0,0), (-1,-1), 8),
+            ('ALIGN', (1,0), (1,-1), 'CENTER'),
+            ('ALIGN', (2,0), (2,-1), 'RIGHT'),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LINEBELOW', (0,0), (-1,0), 0.5, colors.black)
+        ]))
         elements.append(table)
-        elements.append(Paragraph("." * 40, normal_style))
+        elements.append(Paragraph("." * 35, normal_style))
         elements.append(Spacer(1, 2*mm))
-        elements.append(Paragraph(f"<b>{_('Grand Total:')}</b> {format_currency(invoice.total_amount, invoice_currency, locale=locale)}", normal_style))
-        elements.append(Paragraph(f"<b>{_('Paid:')}</b> {format_currency(invoice.full_payment_received, invoice_currency, locale=locale)}", normal_style))
-        elements.append(Paragraph(f"<b>{_('Balance Due:')}</b> {format_currency(invoice.remaining_balance, invoice_currency, locale=locale)}", bold_style))
+        elements.append(Paragraph(f"<b>{_('Grand Total:')}</b> {local_format(invoice.total_amount)}", normal_style))
+        elements.append(Paragraph(f"<b>{_('Paid:')}</b> {local_format(invoice.full_payment_received)}", normal_style))
+        elements.append(Paragraph(f"<b>{_('Balance Due:')}</b> {local_format(invoice.remaining_balance)}", bold_style))
         elements.append(Spacer(1, 5*mm))
-        elements.append(Paragraph(_("Thank you for your business!"), small_style))
+        elements.append(Paragraph(_("Thank you!"), small_style))
         
         doc.build(elements)
         buffer.seek(0)

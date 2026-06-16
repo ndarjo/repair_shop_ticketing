@@ -10,7 +10,7 @@ inventory_bp = Blueprint('inventory', __name__)
 
 @inventory_bp.route('/')
 @login_required
-@require_permission('manage_inventory')
+@require_permission('view_inventory')
 def manage_inventory():
     """Dedicated inventory management for spare parts and stock levels"""
     page = request.args.get('page', 1, type=int)

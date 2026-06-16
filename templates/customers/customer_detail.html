@@ -24,9 +24,12 @@
                         
                         <hr>
                         <div class="d-grid gap-2">
+                            {% if current_user.has_permission('export_customer') %}
                             <a href="{{ url_for('customer.export_customer_data', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary w-100">
                                 <i class="fas fa-file-export me-2" aria-hidden="true"></i> {{ _('Export Data (GDPR)') }}
                             </a>
+                            {% endif %}
+
                             {% if current_user.has_permission('edit_customer') %}
                             <a href="{{ url_for('customer.edit_customer', customer_id=customer.id) }}" class="btn btn-sm btn-outline-warning w-100 mt-2">
                                 <i class="fas fa-edit me-2" aria-hidden="true"></i> {{ _('Edit Profile') }}

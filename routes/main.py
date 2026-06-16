@@ -88,7 +88,7 @@ def health_check():
 
 @main_bp.route('/common-problems', methods=['GET', 'POST'])
 @login_required
-@require_permission('manage_settings')
+@require_permission('admin_manage_common_problems')
 def manage_common_problems():
     if request.method == 'POST':
         problem_text = request.form.get('problem_text', '').strip()
@@ -140,7 +140,7 @@ def manage_common_problems():
 
 @main_bp.route('/common-problems/delete/<int:problem_id>', methods=['POST'])
 @login_required
-@require_permission('manage_settings')
+@require_permission('admin_manage_common_problems')
 def delete_problem(problem_id):
     """Dedicated route for removing common problems"""
     location_id = request.args.get('location_id', type=int)

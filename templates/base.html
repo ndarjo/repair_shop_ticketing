@@ -68,15 +68,17 @@
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint and 'device' in request.endpoint }}" href="{{ url_for('device.devices_list') }}" {{ 'aria-current="page"' if request.endpoint and 'device' in request.endpoint }}><i class="fas fa-laptop"></i> <span class="nav-label">{{ _('Devices') }}</span></a>
                     </li>
-                    {% if current_user.has_permission('manage_inventory') %}
+                    {% if current_user.has_permission('view_inventory') %}
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint and 'inventory' in request.endpoint }}" href="{{ url_for('inventory.manage_inventory') }}" {{ 'aria-current="page"' if request.endpoint and 'inventory' in request.endpoint }}><i class="fas fa-boxes"></i> <span class="nav-label">{{ _('Inventory') }}</span></a>
                     </li>
                     {% endif %}
-                    {% if current_user.has_permission('manage_settings') %}
+                    {% if current_user.has_permission('view_services') %}
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint and 'services' in request.endpoint }}" href="{{ url_for('services.manage_services') }}" {{ 'aria-current="page"' if request.endpoint and 'services' in request.endpoint }}><i class="fas fa-hand-holding-usd"></i> <span class="nav-label">{{ _('Services') }}</span></a>
                     </li>
+                    {% endif %}
+                    {% if current_user.has_permission('admin_manage_common_problems') %}
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint and 'common_problems' in request.endpoint }}" href="{{ url_for('main.manage_common_problems') }}" {{ 'aria-current="page"' if request.endpoint and 'common_problems' in request.endpoint }}><i class="fas fa-exclamation-triangle"></i> <span class="nav-label">{{ _('Problems') }}</span></a>
                     </li>
@@ -96,7 +98,7 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
                                 <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="fas fa-cog me-2"></i> {{ _('Profile & Theme') }}</a></li>
-                                {% if current_user.is_superuser or current_user.has_role('admin') %}
+                                {% if current_user.is_superuser or current_user.has_role('admin') or current_user.has_role('manager') %}
                                     <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="fas fa-user-shield me-2"></i> {{ _('Admin Panel') }}</a></li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>

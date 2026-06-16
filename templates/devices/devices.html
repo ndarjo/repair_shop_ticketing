@@ -37,7 +37,10 @@
                            autocomplete="off">
                     <button type="submit" class="btn btn-outline-primary" style="width: 110px;"><i class="fas fa-search" aria-hidden="true"></i> {{ _('Search') }}</button>
                     {% if is_searching %}
-                    <a href="{{ url_for('device.devices_list', location_id=selected_location) }}" class="btn btn-outline-primary ms-2" style="width: 110px;"><i class="fas fa-times me-1" aria-hidden="true"></i>{{ _('Clear') }}</a>
+                    <a href="{{ url_for('device.devices_list', location_id=selected_location) }}" class="btn btn-outline-primary ms-2 d-flex flex-column align-items-center justify-content-center" style="width: 110px;">
+                        <i class="fas fa-times mb-1" aria-hidden="true"></i>
+                        <span>{{ _('Clear') }}</span>
+                    </a>                    
                     {% endif %}
                 </form>
             </div>

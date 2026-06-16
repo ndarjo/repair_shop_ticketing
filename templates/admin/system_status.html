@@ -5,7 +5,7 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-10 offset-md-1">
-        {% if current_user.is_superuser or current_user.has_role('admin') %}
+        {% if current_user.has_permission('admin_view_system_status') %}
         <div class="d-flex align-items-center mb-4">
             <a href="{{ url_for('admin.dashboard') }}" class="btn-link p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Admin Panel') }}"><i class="fas fa-arrow-circle-left" aria-hidden="true"></i></a>
             <h1 class="mb-0">{{ _('System Integrity & Status') }}</h1>

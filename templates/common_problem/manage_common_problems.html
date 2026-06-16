@@ -11,7 +11,7 @@
         </div>
 
         <!-- Add Problem Form -->
-        {% if current_user.is_superuser or current_user.has_role('admin') %}
+        {% if current_user.has_permission('admin_manage_common_problems') %}
         <div class="card mb-4 shadow-sm border-0">
             <div class="card-body">
                 <form method="POST" action="{{ url_for('main.manage_common_problems', location_id=selected_location if selected_location else None) }}">
@@ -63,7 +63,7 @@
                                     <span class="badge bg-{% if problem.is_active %}success{% else %}danger{% endif %}">{{ _('Active') if problem.is_active else _('Inactive') }}</span>
                                 </td>
                                 <td class="text-end text-nowrap">
-                                    {% if current_user.is_superuser or current_user.has_role('admin') %}
+                                    {% if current_user.has_permission('admin_manage_common_problems') %}
                                     <form method="POST" action="{{ url_for('main.delete_problem', problem_id=problem.id, location_id=selected_location, page=problems.page) }}" 
                                           class="d-inline confirm-action" data-confirm="{{ _('Are you sure you want to delete this problem?') }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

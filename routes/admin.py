@@ -14,7 +14,7 @@ from sqlalchemy.orm import joinedload
 from models import (CommonProblem, Customer, Invoice, Location, Note, Payment,
                     PhaseLog, Role, Service, ShopSetting, SparePart, Ticket, User, db)
 from services import BackupService
-from .utils import require_permission, require_superuser
+from .utils import require_permission
 from werkzeug.utils import secure_filename
 
 admin_bp = Blueprint('admin', __name__)
@@ -23,7 +23,7 @@ admin_bp = Blueprint('admin', __name__)
 
 @admin_bp.route('/dashboard')
 @login_required
-@require_superuser()
+@require_permission('admin_access_dashboard')
 def dashboard():
     """Admin dashboard providing high-level system overview"""
     stats = {
@@ -36,7 +36,7 @@ def dashboard():
 
 @admin_bp.route('/users')
 @login_required
-@require_superuser()
+@require_permission('admin_manage_users')
 def manage_users():
     page = request.args.get('page', 1, type=int)
     # Optimization: Eager load roles and locations to prevent N+1 queries in the user list template
@@ -46,7 +46,7 @@ def manage_users():
 
 @admin_bp.route('/users/create', methods=['GET', 'POST'])
 @login_required
-@require_superuser()
+@require_permission('admin_manage_users')
 def create_user():
     # Context lookup for form options
     roles = db.session.scalars(db.select(Role)).all()
@@ -108,12 +108,20 @@ def create_user():
 
 @admin_bp.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
 @login_required
-@require_superuser()
+@require_permission('admin_manage_users')
 def edit_user(user_id):
     # Eager load roles and location to populate the form correctly on GET requests
     user = db.session.scalar(db.select(User).options(joinedload(User.roles), joinedload(User.location)).where(User.id == user_id))
     if not user:
         flash(_('User not found.'), 'danger')
+        return redirect(url_for('admin.manage_users'))
+
+    # SECURITY POLICY: Administrative accounts (Superusers and Admins) can only be modified by themselves.
+    # This prevents admins from demoting or changing credentials of other admins.
+    is_target_admin = user.is_superuser or any(r.name == 'admin' for r in user.roles)
+    if is_target_admin and user.id != current_user.id:
+        flash(_('Security Policy: Administrative accounts can only be modified by their respective owners.'), 'danger')
+        current_app.logger.warning(f"User {current_user.username} attempted to edit administrative account {user.username}")
         return redirect(url_for('admin.manage_users'))
 
     roles = db.session.scalars(db.select(Role)).all()
@@ -185,7 +193,7 @@ def edit_user(user_id):
 
 @admin_bp.route('/users/delete/<int:user_id>', methods=['POST'])
 @login_required
-@require_superuser()
+@require_permission('admin_manage_users')
 def delete_user(user_id):
     """Permanent removal of a staff account with safety checks"""
     if current_user.id == user_id:
@@ -195,6 +203,13 @@ def delete_user(user_id):
     user = db.session.get(User, user_id)
     if not user:
         flash(_('User not found.'), 'danger')
+        return redirect(url_for('admin.manage_users'))
+
+    # SECURITY POLICY: Administrative accounts cannot be deleted through the UI to prevent system lockout.
+    # They must be handled via direct database access or CLI by a systems administrator if removal is necessary.
+    is_target_admin = user.is_superuser or any(r.name == 'admin' for r in user.roles)
+    if is_target_admin:
+        flash(_('Security Policy: Administrative accounts cannot be deleted through the management interface.'), 'danger')
         return redirect(url_for('admin.manage_users'))
 
     # INTEGRITY CHECK: Prevent deletion of users with any linked history to avoid FK violations
@@ -221,7 +236,7 @@ def delete_user(user_id):
 
 @admin_bp.route('/locations', methods=['GET', 'POST'])
 @login_required
-@require_superuser()
+@require_permission('admin_manage_locations')
 def manage_locations():
     locations = db.session.scalars(db.select(Location)).all()
     if request.method == 'POST':
@@ -254,7 +269,7 @@ def manage_locations():
 
 @admin_bp.route('/locations/edit/<int:location_id>', methods=['POST'])
 @login_required
-@require_superuser()
+@require_permission('admin_manage_locations')
 def edit_location(location_id):
     """Update existing location details with optional branding synchronization"""
     loc = db.session.get(Location, location_id)
@@ -292,7 +307,7 @@ def edit_location(location_id):
 
 @admin_bp.route('/locations/delete/<int:location_id>', methods=['POST'])
 @login_required
-@require_superuser()
+@require_permission('admin_manage_locations')
 def delete_location(location_id):
     """Safely remove a location after verifying no entities are linked to it"""
     loc = db.session.get(Location, location_id)
@@ -327,7 +342,7 @@ def delete_location(location_id):
 
 @admin_bp.route('/status')
 @login_required
-@require_superuser()
+@require_permission('admin_view_system_status')
 def system_status():
     """Comprehensive diagnostic view for administrators"""
     # 1. Database Check
@@ -382,7 +397,7 @@ def system_status():
 
 @admin_bp.route('/backup', methods=['GET', 'POST'])
 @login_required
-@require_superuser()
+@require_permission('admin_manage_backups')
 def backup():
     if request.method == 'POST':
         backup_type = request.form.get('backup_type')
@@ -438,7 +453,7 @@ def backup():
 
 @admin_bp.route('/backup/download/<filename>')
 @login_required
-@require_superuser()
+@require_permission('admin_manage_backups')
 def download_backup_file(filename):
     """Download a backup file from the server's repository"""
     filename = secure_filename(filename)
@@ -450,7 +465,7 @@ def download_backup_file(filename):
 
 @admin_bp.route('/backup/restore', methods=['POST'])
 @login_required
-@require_superuser()
+@require_permission('admin_manage_backups')
 def restore():
     if 'backup_file' not in request.files:
         flash(_('No file uploaded.'), 'danger')
@@ -481,7 +496,7 @@ def restore():
 
 @admin_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
-@require_permission('manage_settings')
+@require_permission('admin_manage_branding')
 def settings():
     # INTEGRITY: Robust lookup for multi-tenancy. 
     # Fetch specific branch settings first, then check for global settings, or fallback to any record.
@@ -553,7 +568,7 @@ def settings():
 
 @admin_bp.route('/backup/export')
 @login_required
-@require_superuser()
+@require_permission('admin_manage_backups')
 def export_backup():
     """Manual trigger for system backup data"""
     data = BackupService.get_system_logical_data()

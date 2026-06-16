@@ -36,7 +36,10 @@
                     <button type="submit" class="btn btn-outline-primary" style="width: 110px;"><i class="fas fa-search" aria-hidden="true"></i> {{ _('Search') }}</button>
                     
                     {% if search_query %}
-                    <a href="{{ url_for('inventory.manage_inventory', location_id=selected_location) }}" class="btn btn-outline-primary ms-2" style="width: 110px;"><i class="fas fa-times me-1" aria-hidden="true"></i>{{ _('Clear') }}</a>
+                    <a href="{{ url_for('inventory.manage_inventory', location_id=selected_location) }}" class="btn btn-outline-primary ms-2 d-flex flex-column align-items-center justify-content-center" style="width: 110px;">
+                        <i class="fas fa-times mb-1" aria-hidden="true"></i>
+                        <span>{{ _('Clear') }}</span>
+                    </a>
                     {% endif %}
                 </form>
             </div>
@@ -48,7 +51,9 @@
                         <tr>
                             <th>{{ _('SKU / Barcode') }}</th>
                             <th>{{ _('Part Name') }}</th>
+                            {% if current_user.has_permission('manage_inventory') %}
                             <th class="text-end">{{ _('Cost (Wholesale)') }}</th>
+                            {% endif %}
                             <th class="text-end">{{ _('Selling Price') }}</th>
                             <th class="text-center">{{ _('Stock') }}</th>
                             <th>{{ _('Status') }}</th>
@@ -63,10 +68,12 @@
                                 <strong class="text-break">{{ part.name if (part.name and part.name != 'None') else '' }}</strong><br>
                                 <small class="text-muted text-break">{{ part.description if (part.description and part.description != 'None') else '-' }}</small>
                             </td>
+                            {% if current_user.has_permission('manage_inventory') %}
                             <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, part.cost or 0) }}</td>
+                            {% endif %}
                             <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, part.selling_price or 0) }}</td>
                             <td class="text-center">
-                                <span class="badge bg-{{ 'danger' if (part.stock_quantity or 0) <= 0 else 'info' }}">
+                                <span class="badge bg-{{ 'danger' if (part.stock_quantity or 0) <= 0 else 'secondary' }}">
                                     {{ part.stock_quantity or 0 }}
                                 </span>
                             </td>

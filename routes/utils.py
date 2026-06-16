@@ -51,7 +51,7 @@ def require_superuser():
                 flash(_('Please log in first.'), 'danger')
                 return redirect(url_for('auth.login', next=request.full_path))
             # Integrity: Check both the flag and the role to ensure consistent admin access
-            if not current_user.is_superuser and not current_user.has_role('admin'):
+            if not current_user.is_superuser and not current_user.has_role('admin') and not current_user.has_role('manager'):
                 user_id = str(getattr(current_user, 'username', 'unknown')).replace('\n', ' ').replace('\r', ' ')
                 current_app.logger.warning(f"Access denied for non-superuser {user_id}")
                 if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':

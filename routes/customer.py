@@ -160,7 +160,7 @@ def search_customers():
 
 @customer_bp.route('/export/<int:customer_id>')
 @login_required
-@require_permission('view_customer')
+@require_permission('export_customer')
 def export_customer_data(customer_id):
     customer = db.session.get(Customer, customer_id)
     if not customer or (not current_user.is_superuser and customer.location_id != current_user.location_id):

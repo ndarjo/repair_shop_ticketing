@@ -10,7 +10,7 @@ services_bp = Blueprint('services', __name__)
 
 @services_bp.route('/')
 @login_required
-@require_permission('manage_settings')
+@require_permission('view_services')
 def manage_services():
     """Catalog of labor services offered by the shop"""
     page = request.args.get('page', 1, type=int)
