@@ -85,7 +85,7 @@
                         </div>
                         <div class="col-md-6">
                             <label for="color" class="form-label">{{ _('Color') }}</label>
-                            <input type="text" id="color" name="color" class="form-control" value="{{ color if (color is defined and color and color != 'None') else '' }}" placeholder="{{ _('e.g., Space Gray') }}" maxlength="100">
+                            <input type="text" id="color" name="color" class="form-control" value="{{ device_color if (device_color is defined and device_color and device_color != 'None') else '' }}" placeholder="{{ _('e.g., Space Gray') }}" maxlength="100">
                         </div>
                         <div class="col-12">
                             <label for="notes" class="form-label">{{ _('Notes') }}</label>

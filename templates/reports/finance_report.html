@@ -23,12 +23,14 @@
                 <span class="input-group-text bg-transparent border-start-0 border-end-0 text-muted small">{{ _('To') }}</span>
                 <input type="month" name="end_month" class="form-control border-start-0 ps-0" value="{{ end_month or '' }}">
             </div>
-            <button type="submit" class="btn btn-sm btn-outline-primary">{{ _('Filter') }}</button>
+            <button type="submit" class="btn btn-sm btn-outline-primary" class="btn-link text-decoration-none" title="{{ _('Filter') }}"><i class="fas fa-filter" aria-hidden="true"></i></button>
             {% if start_month or end_month %}
-                <a href="{{ url_for('report.finance_report', location_id=selected_location if selected_location else None) }}" class="btn btn-sm btn-outline-secondary">{{ _('Clear') }}</a>
+                <a href="{{ url_for('report.finance_report', location_id=selected_location if selected_location else None) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-eraser" aria-hidden="true" class="btn-link text-decoration-none" title="{{ _('Clear') }}"></i></a>
             {% endif %}
         </form>
-        <a href="{{ url_for('report.reports') }}" class="btn btn-sm btn-outline-secondary">{{ _('Back to Reports') }}</a>
+        <a href="{{ url_for('report.reports') }}" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-arrow-circle-left" aria-hidden="true" class="btn-link text-decoration-none" title="{{ _('Back to Reports') }}"></i></a>
     </div>
 </div>
 
@@ -133,7 +135,7 @@
                     </td>
                     <td>
                         {% if ticket %}
-                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="badge bg-info text-dark text-decoration-none">
+                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="badge bg-secondary text-dark text-decoration-none">
                             {{ ticket.ticket_number }}
                         </a>
                         {% else %}
@@ -196,7 +198,7 @@
                     </td>
                     <td>
                         {% if ticket %}
-                            <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="badge bg-info text-dark text-decoration-none">
+                            <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="badge bg-secondary">
                                 {{ ticket.ticket_number }}
                             </a>
                         {% else %}

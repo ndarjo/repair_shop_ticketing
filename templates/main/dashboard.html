@@ -4,6 +4,25 @@
 {% block title %}{{ _('Dashboard') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name and shop_info.shop_name != 'None' else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h1 class="h3 mb-0">{{ _('Shop Overview') }}</h1>
+    <div class="d-flex gap-2 align-items-center">
+        {% if (current_user.is_superuser or current_user.has_role('admin')) and locations %}
+        <form action="{{ url_for('main.dashboard') }}" method="GET" class="d-flex gap-2 align-items-center me-2">
+            <label for="location-select" class="small fw-bold text-muted text-uppercase mb-0 d-none d-md-block">{{ _('Branch View:') }}</label>
+            <select id="location-select" name="location_id" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                <option value="">{{ _('All Branches') }}</option>
+                {% for loc in locations %}
+                <option value="{{ loc.id }}" {{ 'selected' if selected_location == loc.id else '' }}>
+                    {{ loc.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
 <div class="row mb-4 g-3">
     <div class="col-md-3">
         <div class="card h-100 shadow-sm text-center bg-danger">
@@ -45,7 +64,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">{{ _('Recent Tickets') }}</h5>
                 {% if current_user.has_permission('create_ticket') %}
-                <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-plus me-2" aria-hidden="true"></i>{{ _('Create Ticket') }}</a>
+                <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('Create Ticket') }}</a>
                 {% endif %}
             </div>
             <div class="table-responsive">
@@ -77,7 +96,8 @@
                             </td>
                             <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if (ticket.created_at and ticket.created_at|string != 'None') else _('Unknown') }}</td>
                             <td class="text-end text-nowrap">
-                                <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                                <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="{{ _('View Ticket') }}">
+                                    <i class="fas fa-search-plus" aria-hidden="true"></i></a>
                             </td>
                         </tr>
                         {% else %}
@@ -86,8 +106,8 @@
                     </tbody>
                 </table>
             </div>
-            <div class="p-3 border-top">
-                {{ render_pagination(tickets, 'main.dashboard') }}
+            <div class="card-footer">
+                {{ render_pagination(tickets, 'main.dashboard', location_id=selected_location) }}
             </div>
         </div>
     </div>

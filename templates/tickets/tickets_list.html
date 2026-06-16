@@ -65,14 +65,15 @@
                     <td class="text-break">{{ ticket.customer.name if ticket.customer else '-' }}</td>
                     <td class="text-break">{{ ticket.device.display if ticket.device else '-' }}</td>
                     <td class="text-center">
-                        <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
+                        <span class="badge d-inline-flex align-items-center justify-content-center bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}secondary{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
                             {{ _(ticket.current_phase) if ticket.current_phase else _('Unknown') }}
                         </span>
                     </td>
                     <td><small>{{ ticket.assigned_to_user.full_name or ticket.assigned_to_user.username if ticket.assigned_to_user else _('Unassigned') }}</small></td>
                     <td class="text-nowrap"><small>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if ticket.created_at else '-' }}</small></td>
                     <td class="text-end">
-                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-search-plus" aria-hidden="true"></i></a>
+                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" class="btn-link text-decoration-none" title="{{ _('View Ticket Details') }}">
+                            <i class="fas fa-search-plus" aria-hidden="true"></i></a>
                     </td>
                 </tr>
                 {% else %}

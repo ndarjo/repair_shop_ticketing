@@ -27,7 +27,7 @@
             </select>
         </form>
         <div class="vr"></div>
-        <a href="{{ url_for('report.finance_report', month=(monthly_stats.selected_month if (monthly_stats and monthly_stats.selected_month) else None), location_id=selected_location if selected_location else None) }}" class="btn btn-outline-primary fw-bold"><i class="fas fa-file-invoice-dollar me-1"></i> {{ _('Detailed Finance Report') }}</a>
+        <a href="{{ url_for('report.finance_report', month=(monthly_stats.selected_month if (monthly_stats and monthly_stats.selected_month) else None), location_id=selected_location if selected_location else None) }}" class="btn btn-outline-primary fw-bold"><i class="fas fa-file-invoice-dollar me-2"></i>{{ _('Detailed Finance Report') }}</a>
     </div>
 </div>
 
@@ -109,17 +109,19 @@
                                 </td>
                                 <td class="text-center">
                                     {% if inv.ticket %}
-                                        <span class="badge bg-info text-dark">{{ _('Repair') }}: {{ _(inv.ticket.current_phase) }}</span>
+                                        <span class="badge bg-secondary">{{ _('Repair') }}: {{ _(inv.ticket.current_phase) }}</span>
                                     {% else %}
-                                        <span class="badge bg-success">{{ _('POS Sale') }}</span>
+                                        <span class="badge bg-secondary">{{ _('POS Sale') }}</span>
                                     {% endif %}
                                 </td>
                                 <td><small>{{ inv.created_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
                                 <td class="text-end">
                                     {% if inv.ticket_id %}
-                                        <a href="{{ url_for('ticket.view_ticket', ticket_id=inv.ticket_id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                                        <a href="{{ url_for('ticket.view_ticket', ticket_id=inv.ticket_id) }}" class="btn btn-sm btn-outline-primary" class="btn-link text-decoration-none" title="{{ _('View Ticket') }}">
+                                            <i class="fas fa-search-plus" aria-hidden="true"></i></a>
                                     {% else %}
-                                        <a href="{{ url_for('pos.cart', invoice_id=inv.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                                        <a href="{{ url_for('pos.cart', invoice_id=inv.id) }}" class="btn btn-sm btn-outline-primary" class="btn-link text-decoration-none" title="{{ _('View Invoice') }}">
+                                            <i class="fas fa-search-plus" aria-hidden="true"></i></a>
                                     {% endif %}
                                 </td>
                             </tr>

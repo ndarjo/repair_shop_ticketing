@@ -85,9 +85,10 @@ def create_user():
                 new_user.is_superuser = (role.name == 'admin')
 
                 # Default regional settings from the branch configuration
-                if loc.settings:
-                    new_user.currency = loc.settings.currency
-                    new_user.currency_decimals = loc.settings.currency_decimals
+                shop_settings = db.session.scalar(db.select(ShopSetting).filter_by(location_id=loc.id))
+                if shop_settings:
+                    new_user.currency = shop_settings.currency
+                    new_user.currency_decimals = shop_settings.currency_decimals
 
                 try:
                     db.session.add(new_user)
@@ -279,13 +280,6 @@ def edit_location(location_id):
         loc.phone = request.form.get('phone', '').strip()
         loc.email = request.form.get('email', '').strip()
         
-        # Sync branding if this location is the primary shop anchor
-        if loc.settings:
-            loc.settings.shop_name = name
-            loc.settings.shop_address = loc.address
-            loc.settings.shop_phone = loc.phone
-            loc.settings.shop_email = loc.email
-
         try:
             db.session.commit()
             flash(_('Location "%(name)s" updated.', name=name), 'success')
@@ -527,14 +521,6 @@ def settings():
             shop_settings.shop_email = shop_email
             if currency: shop_settings.currency = currency
             if decimals is not None: shop_settings.currency_decimals = decimals
-
-            # SYNC: Ensure the physical Location record matches the new branding details
-            loc = db.session.get(Location, shop_settings.location_id) if shop_settings.location_id else None
-            if loc:
-                loc.name = shop_name
-                loc.address = shop_address
-                loc.phone = shop_phone
-                loc.email = shop_email
 
             # Handle Logo Upload
             file = request.files.get('shop_logo')

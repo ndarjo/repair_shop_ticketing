@@ -43,13 +43,13 @@
                                 data-id="{{ loc.id }}" 
                                 data-name="{{ loc.name }}"
                                 data-address="{{ loc.address or '' }}"
-                                data-phone="{{ loc.phone or '' }}"
-                                data-email="{{ loc.email or '' }}">
+                                data-phone="{{ loc.phone or '' }}" 
+                                data-email="{{ loc.email or '' }}" class="btn-link text-decoration-none" title="{{ _('Edit Location') }}">
                             <i class="fas fa-edit" aria-hidden="true"></i>
                         </button>
                         <form action="{{ url_for('admin.delete_location', location_id=loc.id) }}" method="POST" class="d-inline confirm-action" data-confirm="{{ _('Are you sure? This will affect all users and tickets linked to this branch.') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" class="btn-link text-decoration-none" title="{{ _('Delete Location') }}">
                                 <i class="fas fa-trash-alt" aria-hidden="true"></i>
                         </form>
                         {% endif %}

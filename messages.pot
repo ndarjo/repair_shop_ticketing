@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-06-15 06:22+0700\n"
+"POT-Creation-Date: 2026-06-16 23:53+0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,15 +21,17 @@ msgstr ""
 msgid "Please log in to access this page."
 msgstr ""
 
-#: app.py:184 app.py:260 app.py:264
+#: app.py:184 app.py:281 app.py:285
 msgid "Unauthorized: Please log in"
 msgstr ""
 
-#: app.py:235 services/core.py:586 templates/Auth/login.html:3
-#: templates/Auth/profile.html:3 templates/admin/settings.html:40
-#: templates/base.html:14 templates/base.html:44
-#: templates/customers/customer_detail.html:3
-#: templates/customers/customers.html:4 templates/customers/new_customer.html:3
+#: app.py:229 routes/setup.py:112 services/core.py:590 services/setup.py:98
+#: templates/Auth/login.html:3 templates/Auth/profile.html:3
+#: templates/admin/settings.html:43 templates/base.html:14
+#: templates/base.html:44 templates/customers/customer_detail.html:3
+#: templates/customers/customers.html:4
+#: templates/customers/edit_customer.html:3
+#: templates/customers/new_customer.html:3
 #: templates/devices/device_detail.html:3 templates/devices/devices.html:4
 #: templates/devices/edit_device.html:3 templates/devices/new_device.html:3
 #: templates/errors/400.html:2 templates/errors/401.html:2
@@ -38,60 +40,64 @@ msgstr ""
 #: templates/errors/500.html:2 templates/errors/503.html:2
 #: templates/main/dashboard.html:4 templates/onboarding/base.html:13
 #: templates/onboarding/base.html:36 templates/onboarding/setup.html:2
-#: templates/parts/manage_parts.html:4 templates/pos/index.html:3
+#: templates/parts/manage_parts.html:4 templates/pos/index.html:4
 #: templates/tickets/invoice.html:23
 msgid "Repair Shop"
 msgstr ""
 
-#: app.py:273
+#: app.py:238 routes/setup.py:52 services/setup.py:75
+msgid "Main Branch"
+msgstr ""
+
+#: app.py:294
 msgid "Bad Request: The server could not understand your request."
 msgstr ""
 
-#: app.py:275
+#: app.py:296
 msgid ""
 "Bad Request: The server could not understand your request due to invalid "
 "syntax or malformed data."
 msgstr ""
 
-#: app.py:311 app.py:315
+#: app.py:335 app.py:339
 msgid "Forbidden: Access Denied"
 msgstr ""
 
-#: app.py:322 app.py:326
+#: app.py:346 app.py:350
 msgid "Not Found"
 msgstr ""
 
-#: app.py:338 app.py:343
+#: app.py:362 app.py:367
 msgid "Internal Server Error"
 msgstr ""
 
-#: app.py:352 app.py:354
+#: app.py:376 app.py:378
 msgid "Your session has expired or the form is no longer valid. Please try again."
 msgstr ""
 
-#: app.py:371
+#: app.py:395
 msgid "Security Error: Unable to decrypt data. Check system configuration."
 msgstr ""
 
-#: app.py:373
+#: app.py:397
 msgid ""
 "Security Error: Unable to decrypt customer data. Your ENCRYPTION_KEY "
 "might be incorrect or has changed since this data was saved."
 msgstr ""
 
-#: app.py:382 app.py:384
+#: app.py:406 app.py:408
 msgid "The uploaded file is too large. Maximum size is 2MB."
 msgstr ""
 
-#: app.py:405
+#: app.py:429
 msgid "Technical Error: Unsupported request format."
 msgstr ""
 
-#: app.py:407
+#: app.py:431
 msgid "Technical Error: Unsupported request format. Please try again."
 msgstr ""
 
-#: app.py:428 app.py:433
+#: app.py:452 app.py:457
 msgid ""
 "Service Unavailable: The server is temporarily busy. Please try again "
 "later."
@@ -101,7 +107,7 @@ msgstr ""
 msgid "All fields are required."
 msgstr ""
 
-#: routes/admin.py:66 routes/admin.py:124 routes/auth.py:117
+#: routes/admin.py:66 routes/admin.py:132 routes/auth.py:117
 msgid "Password must be at least 8 characters"
 msgstr ""
 
@@ -113,248 +119,254 @@ msgstr ""
 msgid "Email already registered with another account."
 msgstr ""
 
-#: routes/admin.py:77 routes/admin.py:144
+#: routes/admin.py:77 routes/admin.py:152
 msgid "Selected location is invalid."
 msgstr ""
 
-#: routes/admin.py:79 routes/admin.py:146
+#: routes/admin.py:79 routes/admin.py:154
 msgid "Selected role is invalid."
 msgstr ""
 
-#: routes/admin.py:87
+#: routes/admin.py:95
 msgid "User created successfully"
 msgstr ""
 
-#: routes/admin.py:92
+#: routes/admin.py:100
 msgid "A database error occurred while creating the user."
 msgstr ""
 
-#: routes/admin.py:107 routes/admin.py:186
+#: routes/admin.py:115 routes/admin.py:196
 msgid "User not found."
 msgstr ""
 
-#: routes/admin.py:122
+#: routes/admin.py:130
 msgid "Full name and email are required."
 msgstr ""
 
-#: routes/admin.py:128
+#: routes/admin.py:136
 msgid ""
 "Security Warning: You cannot deactivate your own administrative account. "
 "Deactivation ignored."
 msgstr ""
 
-#: routes/admin.py:134
+#: routes/admin.py:142
 msgid "This email address is already associated with another account."
 msgstr ""
 
-#: routes/admin.py:148
+#: routes/admin.py:157
 msgid ""
 "Security Error: You cannot demote your own account from the superuser "
 "role."
 msgstr ""
 
-#: routes/admin.py:161
+#: routes/admin.py:171
 msgid "User updated"
 msgstr ""
 
-#: routes/admin.py:166
+#: routes/admin.py:176
 msgid "A database error occurred while updating the user."
 msgstr ""
 
-#: routes/admin.py:181
+#: routes/admin.py:191
 msgid "Security Error: You cannot delete your own account."
 msgstr ""
 
-#: routes/admin.py:197
+#: routes/admin.py:207
 msgid ""
 "Cannot delete user: This account has linked activity (tickets, notes, or "
 "payments). Deactivate the account instead to preserve history."
 msgstr ""
 
-#: routes/admin.py:203
+#: routes/admin.py:213
 msgid "User account permanently removed."
 msgstr ""
 
-#: routes/admin.py:207
+#: routes/admin.py:217
 msgid "Error removing user from database."
 msgstr ""
 
-#: routes/admin.py:223 routes/admin.py:256
+#: routes/admin.py:233 routes/admin.py:266
 msgid "Location name is required."
 msgstr ""
 
-#: routes/admin.py:225
+#: routes/admin.py:235
 msgid "A location with this name already exists."
 msgstr ""
 
-#: routes/admin.py:231
+#: routes/admin.py:241
 #, python-format
 msgid "New location \"%(name)s\" created successfully."
 msgstr ""
 
-#: routes/admin.py:236
+#: routes/admin.py:246
 msgid "Error saving new location."
 msgstr ""
 
-#: routes/admin.py:251 routes/admin.py:296
+#: routes/admin.py:261 routes/admin.py:307
 msgid "Location not found."
 msgstr ""
 
-#: routes/admin.py:264
+#: routes/admin.py:274
 msgid "Another location with this name already exists."
 msgstr ""
 
-#: routes/admin.py:281
+#: routes/admin.py:292
 #, python-format
 msgid "Location \"%(name)s\" updated."
 msgstr ""
 
-#: routes/admin.py:285
+#: routes/admin.py:296
 msgid "Error updating location."
 msgstr ""
 
-#: routes/admin.py:310
+#: routes/admin.py:321
 msgid ""
 "Cannot delete location: It is currently linked to existing records "
 "(users, tickets, customers, invoices, or shop settings)."
 msgstr ""
 
-#: routes/admin.py:316
+#: routes/admin.py:327
 msgid "Location deleted successfully."
 msgstr ""
 
-#: routes/admin.py:320
+#: routes/admin.py:331
 msgid "Error removing location from database."
 msgstr ""
 
-#: routes/admin.py:330 templates/admin/system_status.html:18
+#: routes/admin.py:341 templates/admin/system_status.html:21
 msgid "Online"
 msgstr ""
 
-#: routes/admin.py:337
+#: routes/admin.py:348
 msgid "Non-PostgreSQL Database"
 msgstr ""
 
-#: routes/admin.py:339 templates/admin/system_status.html:18
+#: routes/admin.py:350 templates/admin/system_status.html:21
 msgid "Offline"
 msgstr ""
 
-#: routes/admin.py:343 routes/admin.py:349
+#: routes/admin.py:354 routes/admin.py:360
 msgid "Logs"
 msgstr ""
 
-#: routes/admin.py:344
+#: routes/admin.py:355
 msgid "Backups"
 msgstr ""
 
-#: routes/admin.py:345
+#: routes/admin.py:356
 msgid "Uploads"
 msgstr ""
 
-#: routes/admin.py:359
+#: routes/admin.py:370
 msgid "Operating System"
 msgstr ""
 
-#: routes/admin.py:360
+#: routes/admin.py:371
 msgid "Python Version"
 msgstr ""
 
-#: routes/admin.py:361
+#: routes/admin.py:372
 msgid "Environment"
 msgstr ""
 
-#: routes/admin.py:362
+#: routes/admin.py:373
 msgid "System Timezone"
 msgstr ""
 
-#: routes/admin.py:367
+#: routes/admin.py:378
 msgid "Log Level"
 msgstr ""
 
-#: routes/admin.py:368
+#: routes/admin.py:379
 msgid "Backup Schedule"
 msgstr ""
 
-#: routes/admin.py:368
+#: routes/admin.py:379
 #, python-format
 msgid "%(time)s UTC"
 msgstr ""
 
-#: routes/admin.py:369
+#: routes/admin.py:380
 msgid "Session Lifetime"
 msgstr ""
 
-#: routes/admin.py:369
+#: routes/admin.py:380
 #, python-format
 msgid "%(hours)d hours"
 msgstr ""
 
-#: routes/admin.py:392
+#: routes/admin.py:403
 #, python-format
 msgid "Logical backup created successfully: %(name)s"
 msgstr ""
 
-#: routes/admin.py:395
+#: routes/admin.py:406
 msgid "Error: Failed to generate logical backup file."
 msgstr ""
 
-#: routes/admin.py:416
+#: routes/admin.py:427
 #, python-format
 msgid "Full database snapshot created successfully: %(name)s"
 msgstr ""
 
-#: routes/admin.py:418
+#: routes/admin.py:429
 msgid "Full snapshots are only supported for PostgreSQL installations."
 msgstr ""
 
-#: routes/admin.py:420
+#: routes/admin.py:431
 msgid "Process returned non-zero exit status."
 msgstr ""
 
-#: routes/admin.py:421
+#: routes/admin.py:432
 #, python-format
 msgid "Error: pg_dump failed. %(msg)s"
 msgstr ""
 
-#: routes/admin.py:423
+#: routes/admin.py:434
 msgid ""
 "Error: pg_dump utility not found. Please ensure PostgreSQL client tools "
 "are installed."
 msgstr ""
 
-#: routes/admin.py:427
+#: routes/admin.py:438
 msgid "An unexpected error occurred during the backup process."
 msgstr ""
 
-#: routes/admin.py:444
+#: routes/admin.py:455
 msgid "File not found."
 msgstr ""
 
-#: routes/admin.py:452
+#: routes/admin.py:463
 msgid "No file uploaded."
 msgstr ""
 
-#: routes/admin.py:457
+#: routes/admin.py:468
 msgid "No file selected."
 msgstr ""
 
-#: routes/admin.py:468
+#: routes/admin.py:479
 msgid "Database restored successfully. System state has been reverted."
 msgstr ""
 
-#: routes/admin.py:474
+#: routes/admin.py:485
 msgid "Only .dump files (PostgreSQL binary) are supported for automated restore."
 msgstr ""
 
-#: routes/admin.py:490 routes/setup.py:29
+#: routes/admin.py:506
+msgid ""
+"System configuration is out of sync. Please run \"flask seed\" to "
+"finalize system updates."
+msgstr ""
+
+#: routes/admin.py:518 routes/setup.py:39
 msgid "Shop name is required."
 msgstr ""
 
-#: routes/admin.py:523
+#: routes/admin.py:555
 msgid "Settings updated successfully!"
 msgstr ""
 
-#: routes/admin.py:528
+#: routes/admin.py:560
 msgid "Failed to save settings."
 msgstr ""
 
@@ -418,515 +430,529 @@ msgstr ""
 msgid "A database error occurred while saving your preferences."
 msgstr ""
 
-#: routes/customer.py:48 services/core.py:461
+#: routes/customer.py:63 routes/customer.py:110 services/core.py:468
 msgid "Customer not found"
 msgstr ""
 
-#: routes/customer.py:62 routes/customer.py:147
+#: routes/customer.py:77 routes/customer.py:119 routes/customer.py:205
 msgid "Name and phone are required."
 msgstr ""
 
-#: routes/customer.py:74
+#: routes/customer.py:89
 msgid "Customer created successfully!"
 msgstr ""
 
-#: routes/customer.py:79 routes/customer.py:162
+#: routes/customer.py:94 routes/customer.py:220
 msgid "A database error occurred while creating the customer."
 msgstr ""
 
-#: routes/customer.py:109 routes/customer.py:123
+#: routes/customer.py:128
+msgid "Customer updated successfully!"
+msgstr ""
+
+#: routes/customer.py:133
+msgid "A database error occurred while updating the customer."
+msgstr ""
+
+#: routes/customer.py:167 routes/customer.py:181
 msgid "Access denied or customer not found."
 msgstr ""
 
-#: routes/customer.py:130
+#: routes/customer.py:188
 msgid "Customer data anonymized."
 msgstr ""
 
-#: routes/customer.py:134
+#: routes/customer.py:192
 msgid "A database error occurred during anonymization."
 msgstr ""
 
-#: routes/device.py:43 routes/device.py:118 routes/device.py:159
+#: routes/device.py:64 routes/device.py:139 routes/device.py:180
 msgid "Device not found"
 msgstr ""
 
-#: routes/device.py:47 routes/device.py:123 routes/device.py:163
-#: routes/pos.py:98 routes/pos.py:120 routes/pos.py:171 routes/pos.py:225
-#: routes/pos.py:264 routes/pos.py:305 routes/pos.py:352
+#: routes/device.py:68 routes/device.py:144 routes/device.py:184
+#: routes/pos.py:134 routes/pos.py:157 routes/pos.py:209 routes/pos.py:264
+#: routes/pos.py:304 routes/pos.py:346 routes/pos.py:394
 msgid "Access denied."
 msgstr ""
 
-#: routes/device.py:69 routes/pos.py:66 routes/ticket.py:45
+#: routes/device.py:90 routes/pos.py:101 routes/ticket.py:40
 msgid "Invalid customer selection."
 msgstr ""
 
-#: routes/device.py:87
+#: routes/device.py:108
 msgid "Device added successfully!"
 msgstr ""
 
-#: routes/device.py:92
+#: routes/device.py:113
 msgid "A database error occurred while saving the device."
 msgstr ""
 
-#: routes/device.py:140
+#: routes/device.py:161
 msgid "Device type and brand are required."
 msgstr ""
 
-#: routes/device.py:145
+#: routes/device.py:166
 msgid "Device updated."
 msgstr ""
 
-#: routes/device.py:150
+#: routes/device.py:171
 msgid "An error occurred while updating the device."
 msgstr ""
 
-#: routes/device.py:169
+#: routes/device.py:190
 #, python-format
 msgid ""
 "Cannot delete device: It is linked to %(count)s tickets. Archive it "
 "instead."
 msgstr ""
 
-#: routes/device.py:176
+#: routes/device.py:197
 msgid "Device deleted successfully."
 msgstr ""
 
-#: routes/device.py:181
+#: routes/device.py:202
 msgid "An error occurred while deleting the device."
 msgstr ""
 
-#: routes/device.py:209
+#: routes/device.py:230
 msgid "Invalid customer."
 msgstr ""
 
-#: routes/device.py:231
+#: routes/device.py:252
 msgid "A database error occurred."
 msgstr ""
 
-#: routes/main.py:71
-msgid "Database unreachable"
-msgstr ""
-
-#: routes/main.py:88
-msgid "This problem description already exists."
-msgstr ""
-
-#: routes/main.py:94
-msgid "Common problem added."
-msgstr ""
-
-#: routes/main.py:98
-msgid "Error adding problem to database."
-msgstr ""
-
-#: routes/main.py:100
-msgid "Problem description cannot be empty."
-msgstr ""
-
-#: routes/main.py:120
-msgid "Problem removed."
-msgstr ""
-
-#: routes/main.py:124
-msgid "Error removing problem."
-msgstr ""
-
-#: routes/main.py:126
-msgid "Problem not found or access denied."
-msgstr ""
-
-#: routes/main.py:161 routes/main.py:239
+#: routes/inventory.py:58 routes/inventory.py:137
 msgid "Part name is required."
 msgstr ""
 
-#: routes/main.py:172
+#: routes/inventory.py:69
 msgid "A part with this name already exists in your inventory."
 msgstr ""
 
-#: routes/main.py:181
+#: routes/inventory.py:78
 msgid "A part with this SKU already exists in your inventory."
 msgstr ""
 
-#: routes/main.py:188 routes/main.py:265
+#: routes/inventory.py:85 routes/inventory.py:163
 msgid "Stock, cost, and price cannot be negative."
 msgstr ""
 
-#: routes/main.py:213
+#: routes/inventory.py:110
 msgid "New part added to inventory."
 msgstr ""
 
-#: routes/main.py:217
+#: routes/inventory.py:114
 msgid "Error adding part to inventory."
 msgstr ""
 
-#: routes/main.py:227
+#: routes/inventory.py:125
 msgid "Part not found."
 msgstr ""
 
-#: routes/main.py:249
+#: routes/inventory.py:147
 msgid "Another part already uses this name."
 msgstr ""
 
-#: routes/main.py:258
+#: routes/inventory.py:156
 msgid "Another part already uses this SKU."
 msgstr ""
 
-#: routes/main.py:289
+#: routes/inventory.py:187
 msgid "Inventory item updated."
 msgstr ""
 
-#: routes/main.py:293
+#: routes/inventory.py:191
 msgid "Error updating inventory item."
 msgstr ""
 
-#: routes/main.py:303
+#: routes/inventory.py:202
 msgid "Part not found"
 msgstr ""
 
-#: routes/main.py:328
+#: routes/inventory.py:228
 msgid "Part deleted."
 msgstr ""
 
-#: routes/main.py:332
+#: routes/inventory.py:232
 msgid "Error deleting part. It may be linked to existing tickets."
 msgstr ""
 
-#: routes/main.py:334
+#: routes/inventory.py:234
 msgid "Part not found or access denied."
 msgstr ""
 
-#: routes/main.py:365 routes/main.py:412
-msgid "Service name is required."
+#: routes/main.py:87
+msgid "Database unreachable"
 msgstr ""
 
-#: routes/main.py:376
-msgid "A service with this name already exists in your catalog."
+#: routes/main.py:107
+msgid "This problem description already exists."
 msgstr ""
 
-#: routes/main.py:381 routes/main.py:427
-msgid "Service price cannot be negative."
+#: routes/main.py:113
+msgid "Common problem added."
 msgstr ""
 
-#: routes/main.py:393
-msgid "Service added to catalog."
+#: routes/main.py:117
+msgid "Error adding problem to database."
 msgstr ""
 
-#: routes/main.py:397
-msgid "Error adding service to catalog."
+#: routes/main.py:119
+msgid "Problem description cannot be empty."
 msgstr ""
 
-#: routes/main.py:407
-msgid "Service not found."
+#: routes/main.py:155
+msgid "Problem removed."
 msgstr ""
 
-#: routes/main.py:422
-msgid "Another service already uses this name."
+#: routes/main.py:159
+msgid "Error removing problem."
 msgstr ""
 
-#: routes/main.py:437
-msgid "Service updated."
+#: routes/main.py:161
+msgid "Problem not found or access denied."
 msgstr ""
 
-#: routes/main.py:441
-msgid "Error updating service."
-msgstr ""
-
-#: routes/main.py:454
-msgid "Service deleted."
-msgstr ""
-
-#: routes/main.py:458
-msgid "Error deleting service. It may be linked to existing tickets."
-msgstr ""
-
-#: routes/main.py:460
-msgid "Service not found or access denied."
-msgstr ""
-
-#: routes/pos.py:79
+#: routes/pos.py:114
 msgid "Failed to create sale."
 msgstr ""
 
-#: routes/pos.py:89 routes/pos.py:114 routes/pos.py:165 routes/pos.py:215
-#: routes/pos.py:254 routes/pos.py:294 routes/pos.py:342
+#: routes/pos.py:124 routes/pos.py:150 routes/pos.py:202 routes/pos.py:253
+#: routes/pos.py:293 routes/pos.py:334 routes/pos.py:383
 msgid "Sale not found."
 msgstr ""
 
-#: routes/pos.py:124 routes/pos.py:346
+#: routes/pos.py:161 routes/pos.py:387
 msgid "Cannot add items to a completed sale."
 msgstr ""
 
-#: routes/pos.py:132
+#: routes/pos.py:169
 msgid "Please select an item."
 msgstr ""
 
-#: routes/pos.py:136 routes/ticket.py:317 routes/ticket.py:362
+#: routes/pos.py:173 routes/ticket.py:340 routes/ticket.py:385
 msgid "Quantity must be at least 1."
 msgstr ""
 
-#: routes/pos.py:145
+#: routes/pos.py:182
 msgid "Invalid item type."
 msgstr ""
 
-#: routes/pos.py:155
+#: routes/pos.py:192
 msgid "An error occurred while adding the item."
 msgstr ""
 
-#: routes/pos.py:175
+#: routes/pos.py:213
 msgid "This sale has already been completed."
 msgstr ""
 
-#: routes/pos.py:183
+#: routes/pos.py:221
 msgid "Invalid payment amount."
 msgstr ""
 
-#: routes/pos.py:197
+#: routes/pos.py:235
 msgid "Sale completed successfully!"
 msgstr ""
 
-#: routes/pos.py:204
+#: routes/pos.py:242
 msgid "An error occurred during checkout."
 msgstr ""
 
-#: routes/pos.py:219
+#: routes/pos.py:257
 msgid "Cannot modify a completed sale."
 msgstr ""
 
-#: routes/pos.py:230
+#: routes/pos.py:269
 msgid "Item not found in this sale."
 msgstr ""
 
-#: routes/pos.py:237
+#: routes/pos.py:276
 msgid "Item removed."
 msgstr ""
 
-#: routes/pos.py:243
+#: routes/pos.py:282
 msgid "An error occurred while removing the item."
 msgstr ""
 
-#: routes/pos.py:258
+#: routes/pos.py:297
 msgid "Invalid request. Only ticket-linked services can be removed here."
 msgstr ""
 
-#: routes/pos.py:270
+#: routes/pos.py:310
 msgid "Invalid service selection for this sale."
 msgstr ""
 
-#: routes/pos.py:277 routes/ticket.py:522
+#: routes/pos.py:317 routes/ticket.py:551
 msgid "Service removed."
 msgstr ""
 
-#: routes/pos.py:283
+#: routes/pos.py:323
 msgid "An error occurred while removing the service."
 msgstr ""
 
-#: routes/pos.py:299
+#: routes/pos.py:339
 msgid "Invalid request. Only standalone POS sales can be erased."
 msgstr ""
 
-#: routes/pos.py:310
+#: routes/pos.py:351
 msgid "Cannot erase a sale with recorded payments. Void payments first."
 msgstr ""
 
-#: routes/pos.py:323
+#: routes/pos.py:364
 msgid "Draft sale erased successfully."
 msgstr ""
 
-#: routes/pos.py:327
+#: routes/pos.py:368
 msgid "Error erasing sale."
 msgstr ""
 
-#: routes/pos.py:359
+#: routes/pos.py:401
 #, python-format
 msgid "No part found with SKU: %(sku)s"
 msgstr ""
 
-#: routes/pos.py:365
+#: routes/pos.py:407
 #, python-format
 msgid "%(name)s added to cart."
 msgstr ""
 
-#: routes/pos.py:371
+#: routes/pos.py:413
 msgid "An error occurred while adding the part."
 msgstr ""
 
-#: routes/report.py:31 routes/report.py:115
+#: routes/report.py:32 routes/report.py:125
 msgid "You are not assigned to a location. Please contact an administrator."
 msgstr ""
 
-#: routes/setup.py:42 services/setup.py:59
-msgid "Main Branch"
+#: routes/services.py:54 routes/services.py:102
+msgid "Service name is required."
 msgstr ""
 
-#: routes/setup.py:77
+#: routes/services.py:65
+msgid "A service with this name already exists in your catalog."
+msgstr ""
+
+#: routes/services.py:70 routes/services.py:117
+msgid "Service price cannot be negative."
+msgstr ""
+
+#: routes/services.py:82
+msgid "Service added to catalog."
+msgstr ""
+
+#: routes/services.py:86
+msgid "Error adding service to catalog."
+msgstr ""
+
+#: routes/services.py:97
+msgid "Service not found."
+msgstr ""
+
+#: routes/services.py:112
+msgid "Another service already uses this name."
+msgstr ""
+
+#: routes/services.py:127
+msgid "Service updated."
+msgstr ""
+
+#: routes/services.py:131
+msgid "Error updating service."
+msgstr ""
+
+#: routes/services.py:145
+msgid "Service deleted."
+msgstr ""
+
+#: routes/services.py:149
+msgid "Error deleting service. It may be linked to existing tickets."
+msgstr ""
+
+#: routes/services.py:151
+msgid "Service not found or access denied."
+msgstr ""
+
+#: routes/setup.py:27
+msgid ""
+"Database schema is outdated. Please run \"flask seed\" to synchronize "
+"system tables."
+msgstr ""
+
+#: routes/setup.py:90
 msgid "Welcome! Shop setup is complete."
 msgstr ""
 
-#: routes/setup.py:82
+#: routes/setup.py:95
 msgid "An error occurred during setup. Please try again."
 msgstr ""
 
-#: routes/ticket.py:47
+#: routes/ticket.py:42
 msgid "Invalid device selection."
 msgstr ""
 
-#: routes/ticket.py:49
+#: routes/ticket.py:44
 msgid "Invalid device selection for this customer."
 msgstr ""
 
-#: routes/ticket.py:51
+#: routes/ticket.py:46
 msgid "Down payment cannot be negative."
 msgstr ""
 
-#: routes/ticket.py:59 routes/ticket.py:196
+#: routes/ticket.py:54 routes/ticket.py:219
 msgid "Invalid technician assignment."
 msgstr ""
 
-#: routes/ticket.py:71
+#: routes/ticket.py:66
 msgid "Invalid date or time format."
 msgstr ""
 
-#: routes/ticket.py:95
+#: routes/ticket.py:90
 #, python-format
 msgid "Ticket %(num)s created successfully!"
 msgstr ""
 
-#: routes/ticket.py:100
+#: routes/ticket.py:95
 msgid "An error occurred while creating the ticket."
 msgstr ""
 
-#: routes/ticket.py:136 routes/ticket.py:177 routes/ticket.py:254
-#: routes/ticket.py:286 routes/ticket.py:615 services/core.py:187
-#: services/core.py:257 services/core.py:544 services/ticket.py:112
+#: routes/ticket.py:131 routes/ticket.py:203 routes/ticket.py:277
+#: routes/ticket.py:309 routes/ticket.py:651 services/core.py:194
+#: services/core.py:264 services/core.py:551 services/ticket.py:131
 msgid "Ticket not found"
 msgstr ""
 
-#: routes/ticket.py:206
+#: routes/ticket.py:229
 msgid "Ticket intake data updated successfully."
 msgstr ""
 
-#: routes/ticket.py:211
+#: routes/ticket.py:234
 msgid "Error updating ticket data."
 msgstr ""
 
-#: routes/ticket.py:230 routes/ticket.py:309 routes/ticket.py:357
-#: routes/ticket.py:420 routes/ticket.py:458 routes/ticket.py:497
-#: routes/ticket.py:537
+#: routes/ticket.py:253 routes/ticket.py:332 routes/ticket.py:380
+#: routes/ticket.py:443 routes/ticket.py:487 routes/ticket.py:526
+#: routes/ticket.py:566
 msgid "Access denied or ticket not found."
 msgstr ""
 
-#: routes/ticket.py:237
+#: routes/ticket.py:260
 #, python-format
 msgid "Ticket status updated to %(phase)s"
 msgstr ""
 
-#: routes/ticket.py:243
+#: routes/ticket.py:266
 msgid "An unexpected error occurred during status update."
 msgstr ""
 
-#: routes/ticket.py:313
+#: routes/ticket.py:336
 msgid "Please select a service."
 msgstr ""
 
-#: routes/ticket.py:322
+#: routes/ticket.py:345
 msgid "Invalid service selection."
 msgstr ""
 
-#: routes/ticket.py:341
+#: routes/ticket.py:364
 msgid "Service added."
 msgstr ""
 
-#: routes/ticket.py:345
+#: routes/ticket.py:368
 msgid "Error saving service addition."
 msgstr ""
 
-#: routes/ticket.py:366
+#: routes/ticket.py:389
 msgid "Please select a part or enter a manual description."
 msgstr ""
 
-#: routes/ticket.py:373
+#: routes/ticket.py:396
 msgid "Invalid part selection."
 msgstr ""
 
-#: routes/ticket.py:400
+#: routes/ticket.py:423
 msgid "Part added."
 msgstr ""
 
-#: routes/ticket.py:404
+#: routes/ticket.py:427
 msgid "Error saving part addition."
 msgstr ""
 
-#: routes/ticket.py:424
+#: routes/ticket.py:447
 msgid "Payment amount must be greater than zero."
 msgstr ""
 
-#: routes/ticket.py:442
+#: routes/ticket.py:471
 msgid "Payment recorded successfully."
 msgstr ""
 
-#: routes/ticket.py:446
+#: routes/ticket.py:475
 msgid "An error occurred while recording the payment."
 msgstr ""
 
-#: routes/ticket.py:463
+#: routes/ticket.py:492
 msgid "Invalid payment record."
 msgstr ""
 
-#: routes/ticket.py:486
+#: routes/ticket.py:515
 msgid "Error voiding payment."
 msgstr ""
 
-#: routes/ticket.py:503
+#: routes/ticket.py:532
 msgid "Invalid service selection for this ticket."
 msgstr ""
 
-#: routes/ticket.py:526
+#: routes/ticket.py:555
 msgid "Error removing service."
 msgstr ""
 
-#: routes/ticket.py:543
+#: routes/ticket.py:572
 msgid "Invalid part selection for this ticket."
 msgstr ""
 
-#: routes/ticket.py:562
+#: routes/ticket.py:591
 msgid "Part removed and stock restored."
 msgstr ""
 
-#: routes/ticket.py:566
+#: routes/ticket.py:595
 msgid "Error removing part."
 msgstr ""
 
-#: routes/ticket.py:580
-msgid "Ticket archived."
-msgstr ""
-
-#: routes/ticket.py:584
-msgid "Error archiving ticket."
-msgstr ""
-
-#: routes/ticket.py:587 routes/ticket.py:606
+#: routes/ticket.py:606 routes/ticket.py:642
 msgid "Ticket not found or access denied."
 msgstr ""
 
-#: routes/ticket.py:599
+#: routes/ticket.py:610
+msgid "Only tickets that have been picked up (Already Taken) can be archived."
+msgstr ""
+
+#: routes/ticket.py:617
+msgid "Ticket archived."
+msgstr ""
+
+#: routes/ticket.py:621
+msgid "Error archiving ticket."
+msgstr ""
+
+#: routes/ticket.py:635
 msgid "Ticket permanently erased."
 msgstr ""
 
-#: routes/ticket.py:603
+#: routes/ticket.py:639
 msgid "Error deleting ticket. It may have linked records."
 msgstr ""
 
-#: routes/ticket.py:629
+#: routes/ticket.py:665
 msgid "Invoice generated successfully."
 msgstr ""
 
-#: routes/ticket.py:633
+#: routes/ticket.py:669
 msgid "Error generating invoice."
 msgstr ""
 
-#: routes/utils.py:29 routes/utils.py:50 services/core.py:212
-#: services/core.py:279 services/core.py:347 services/core.py:376
-#: services/core.py:404 services/core.py:548
+#: routes/utils.py:29 routes/utils.py:50 services/core.py:219
+#: services/core.py:286 services/core.py:354 services/core.py:383
+#: services/core.py:411 services/core.py:555
 msgid "Authentication required"
 msgstr ""
 
@@ -934,11 +960,11 @@ msgstr ""
 msgid "Please log in first."
 msgstr ""
 
-#: routes/utils.py:36 routes/utils.py:57
+#: routes/utils.py:36 routes/utils.py:58
 msgid "Permission denied"
 msgstr ""
 
-#: routes/utils.py:37 routes/utils.py:58
+#: routes/utils.py:37 routes/utils.py:59
 msgid "You do not have permission to access this page."
 msgstr ""
 
@@ -979,17 +1005,17 @@ msgstr ""
 msgid "Payment not found"
 msgstr ""
 
-#: services/core.py:95 services/core.py:118 services/core.py:189
-#: services/core.py:259 services/core.py:433 services/core.py:456
-#: services/ticket.py:19 services/ticket.py:117
+#: services/core.py:95 services/core.py:118 services/core.py:196
+#: services/core.py:266 services/core.py:440 services/core.py:463
+#: services/ticket.py:33 services/ticket.py:136
 msgid "Authorized user required"
 msgstr ""
 
-#: services/core.py:99 services/core.py:121 services/core.py:191
-#: services/core.py:214 services/core.py:261 services/core.py:281
-#: services/core.py:349 services/core.py:378 services/core.py:406
-#: services/core.py:465 services/core.py:550 services/ticket.py:22
-#: services/ticket.py:120
+#: services/core.py:99 services/core.py:121 services/core.py:198
+#: services/core.py:221 services/core.py:268 services/core.py:288
+#: services/core.py:356 services/core.py:385 services/core.py:413
+#: services/core.py:472 services/core.py:557 services/ticket.py:36
+#: services/ticket.py:139
 msgid "Access denied"
 msgstr ""
 
@@ -997,121 +1023,123 @@ msgstr ""
 msgid "Payment voided successfully"
 msgstr ""
 
-#: services/core.py:114 services/core.py:208 services/core.py:275
+#: services/core.py:114 services/core.py:215 services/core.py:282
 msgid "Invoice not found"
 msgstr ""
 
-#: services/core.py:137
+#: services/core.py:144
 msgid "Payment Received"
 msgstr ""
 
-#: services/core.py:137
+#: services/core.py:144
 msgid "Change Given / Refund"
 msgstr ""
 
-#: services/core.py:139
+#: services/core.py:146
 #, python-format
 msgid "%(type)s: %(amount)s. Method: %(method)s. Ref: %(ref)s"
 msgstr ""
 
-#: services/core.py:200 services/core.py:271
+#: services/core.py:207 services/core.py:278
 msgid "Quantity must be greater than zero"
 msgstr ""
 
-#: services/core.py:204
+#: services/core.py:211
 msgid "Service not found or inactive"
 msgstr ""
 
-#: services/core.py:218
+#: services/core.py:225
 msgid "Service does not belong to this location"
 msgstr ""
 
-#: services/core.py:292
+#: services/core.py:299
 msgid "Part not found or inactive"
 msgstr ""
 
-#: services/core.py:296
+#: services/core.py:303
 msgid "Part does not belong to this location"
 msgstr ""
 
-#: services/core.py:305
+#: services/core.py:312
 #, python-format
 msgid "Insufficient stock for \"%(name)s\". Current: %(qty)s"
 msgstr ""
 
-#: services/core.py:314
+#: services/core.py:321
 msgid "Invalid part details"
 msgstr ""
 
-#: services/core.py:364
+#: services/core.py:371
 msgid "Service entry not found"
 msgstr ""
 
-#: services/core.py:368
+#: services/core.py:375
 msgid "This item is a part, not a service."
 msgstr ""
 
-#: services/core.py:373 services/core.py:401
+#: services/core.py:380 services/core.py:408
 msgid "Invoice consistency error"
 msgstr ""
 
-#: services/core.py:396
+#: services/core.py:403
 msgid "Part entry not found"
 msgstr ""
 
-#: services/core.py:430
+#: services/core.py:437
 msgid "Name and phone are required"
 msgstr ""
 
-#: services/core.py:446
+#: services/core.py:453
 msgid "Failed to create customer record"
 msgstr ""
 
-#: services/core.py:453
+#: services/core.py:460
 msgid "Customer, Type, and Brand are required"
 msgstr ""
 
-#: services/core.py:486
+#: services/core.py:493
 msgid "Failed to create device record"
 msgstr ""
 
-#: services/core.py:589
+#: services/core.py:593
 msgid "Tel:"
 msgstr ""
 
-#: services/core.py:592 templates/tickets/invoice.html:38
+#: services/core.py:596 templates/tickets/invoice.html:38
 #: templates/tickets/ticket_detail.html:7
 msgid "Ticket:"
 msgstr ""
 
-#: services/core.py:593
+#: services/core.py:597
 msgid "Invoice:"
 msgstr ""
 
-#: services/core.py:594 templates/tickets/invoice.html:34
+#: services/core.py:598 templates/tickets/invoice.html:34
 msgid "Date:"
 msgstr ""
 
-#: services/core.py:595 templates/tickets/ticket_detail.html:70
+#: services/core.py:599 templates/tickets/archive_ticket.html:22
+#: templates/tickets/ticket_detail.html:74
 msgid "Customer:"
 msgstr ""
 
-#: services/core.py:595 templates/pos/cart.html:182
-#: templates/pos/history.html:39 templates/reports/reports.html:90
+#: services/core.py:599 templates/pos/cart.html:182
+#: templates/pos/history.html:54 templates/reports/reports.html:101
 msgid "Walk-in"
 msgstr ""
 
-#: services/core.py:596 templates/tickets/ticket_detail.html:71
+#: services/core.py:600 templates/tickets/archive_ticket.html:23
+#: templates/tickets/ticket_detail.html:75
 msgid "Device:"
 msgstr ""
 
-#: services/core.py:596 templates/admin/locations.html:32
-#: templates/admin/locations.html:33 templates/admin/locations.html:34
-#: templates/admin/manage_users.html:35 templates/admin/manage_users.html:36
-#: templates/admin/system_status.html:84 templates/admin/system_status.html:111
-#: templates/customers/customer_detail.html:63
-#: templates/customers/customer_detail.html:102
-#: templates/customers/customers.html:50
+#: services/core.py:600 templates/admin/locations.html:35
+#: templates/admin/locations.html:36 templates/admin/locations.html:37
+#: templates/admin/manage_users.html:38 templates/admin/manage_users.html:39
+#: templates/admin/system_status.html:87 templates/admin/system_status.html:114
+#: templates/customers/customer_detail.html:67
+#: templates/customers/customer_detail.html:107
+#: templates/customers/customers.html:82
 #: templates/devices/device_detail.html:24
 #: templates/devices/device_detail.html:25
 #: templates/devices/device_detail.html:26
@@ -1120,217 +1148,217 @@ msgstr ""
 #: templates/devices/device_detail.html:32
 #: templates/devices/device_detail.html:34
 #: templates/devices/device_detail.html:35
-#: templates/devices/device_detail.html:77 templates/devices/devices.html:51
-#: templates/devices/devices.html:57 templates/devices/devices.html:60
-#: templates/devices/edit_device.html:19 templates/main/dashboard.html:69
-#: templates/main/dashboard.html:70 templates/main/dashboard.html:74
-#: templates/pos/history.html:53 templates/tickets/ticket_detail.html:72
-#: templates/tickets/ticket_detail.html:73
+#: templates/devices/device_detail.html:78 templates/devices/devices.html:63
+#: templates/devices/edit_device.html:19 templates/main/dashboard.html:89
+#: templates/main/dashboard.html:90 templates/main/dashboard.html:94
+#: templates/pos/history.html:68 templates/tickets/archive_ticket.html:23
+#: templates/tickets/ticket_detail.html:76
+#: templates/tickets/ticket_detail.html:77
 msgid "N/A"
 msgstr ""
 
-#: services/core.py:600 templates/parts/manage_parts.html:135
-#: templates/parts/manage_parts.html:192 templates/pos/cart.html:96
-#: templates/services/manage_services.html:108
-#: templates/services/manage_services.html:148
-#: templates/tickets/invoice.html:46 templates/tickets/ticket_detail.html:109
+#: services/core.py:604 templates/parts/manage_parts.html:148
+#: templates/parts/manage_parts.html:205 templates/pos/cart.html:96
+#: templates/services/manage_services.html:115
+#: templates/services/manage_services.html:155
+#: templates/tickets/invoice.html:46 templates/tickets/ticket_detail.html:113
 msgid "Description"
 msgstr ""
 
-#: services/core.py:600 templates/pos/cart.html:97
-#: templates/reports/finance_report.html:155 templates/tickets/invoice.html:47
-#: templates/tickets/ticket_detail.html:110
+#: services/core.py:604 templates/pos/cart.html:97
+#: templates/reports/finance_report.html:172 templates/tickets/invoice.html:47
+#: templates/tickets/ticket_detail.html:114
 msgid "Qty"
 msgstr ""
 
-#: services/core.py:600 templates/pos/cart.html:99
-#: templates/pos/history.html:25 templates/reports/finance_report.html:158
-#: templates/tickets/invoice.html:48 templates/tickets/ticket_detail.html:112
+#: services/core.py:604 templates/pos/cart.html:99
+#: templates/pos/history.html:40 templates/reports/finance_report.html:175
+#: templates/tickets/invoice.html:48 templates/tickets/ticket_detail.html:116
 msgid "Total"
 msgstr ""
 
-#: services/core.py:611 templates/tickets/ticket_detail.html:179
+#: services/core.py:615 templates/tickets/ticket_detail.html:185
 msgid "Grand Total:"
 msgstr ""
 
-#: services/core.py:612 templates/tickets/ticket_detail.html:183
+#: services/core.py:616 templates/tickets/ticket_detail.html:189
 msgid "Paid:"
 msgstr ""
 
-#: services/core.py:613 templates/tickets/invoice.html:85
-#: templates/tickets/ticket_detail.html:191
+#: services/core.py:617 templates/tickets/invoice.html:85
+#: templates/tickets/ticket_detail.html:197
 msgid "Balance Due:"
 msgstr ""
 
-#: services/core.py:615
+#: services/core.py:619
 msgid "Thank you for your business!"
 msgstr ""
 
-#: services/setup.py:24
+#: services/setup.py:39
 msgid "General"
 msgstr ""
 
-#: services/setup.py:64
+#: services/setup.py:82
 msgid "Broken Screen"
 msgstr ""
 
-#: services/setup.py:64
+#: services/setup.py:82
 msgid "Battery Replacement"
 msgstr ""
 
-#: services/setup.py:64
+#: services/setup.py:82
 msgid "Water Damage"
 msgstr ""
 
-#: services/setup.py:65
+#: services/setup.py:83
 msgid "Charging Port Issue"
 msgstr ""
 
-#: services/setup.py:65
+#: services/setup.py:83
 msgid "Software Failure"
 msgstr ""
 
-#: services/setup.py:65
+#: services/setup.py:83
 msgid "No Power"
 msgstr ""
 
-#: services/setup.py:66
+#: services/setup.py:84
 msgid "Data Recovery"
 msgstr ""
 
-#: services/setup.py:66
+#: services/setup.py:84
 msgid "Keyboard Replacement"
 msgstr ""
 
-#: services/setup.py:86
+#: services/setup.py:114
 #, python-format
 msgid ""
 "Initial admin username '%(username)s' is already taken by a non-"
 "superuser. System cannot initialize safely."
 msgstr ""
 
-#: services/setup.py:90
+#: services/setup.py:118
 msgid "System Administrator"
 msgstr ""
 
-#: services/setup.py:118
+#: services/setup.py:146
 msgid "Database seeded."
 msgstr ""
 
-#: services/setup.py:121
+#: services/setup.py:149
 #, python-format
 msgid "Error during seeding: %(error)s"
 msgstr ""
 
-#: services/setup.py:124
+#: services/setup.py:152
 msgid "The old ENCRYPTION_KEY to decrypt existing data."
 msgstr ""
 
-#: services/setup.py:150
+#: services/setup.py:178
 #, python-format
 msgid "Successfully re-encrypted PII for %(count)d customers."
 msgstr ""
 
-#: services/setup.py:153
+#: services/setup.py:181
 #, python-format
 msgid "Error during re-encryption: %(error)s"
 msgstr ""
 
-#: services/setup.py:157
+#: services/setup.py:185
 msgid "The password for the new user."
 msgstr ""
 
-#: services/setup.py:158
+#: services/setup.py:186
 msgid "System role to assign (admin, manager, technician, receptionist)."
 msgstr ""
 
-#: services/setup.py:159
+#: services/setup.py:187
 msgid "Display name for the user."
 msgstr ""
 
-#: services/setup.py:164
+#: services/setup.py:192
 msgid "Error: Password must be at least 8 characters."
 msgstr ""
 
-#: services/setup.py:168
+#: services/setup.py:196
 #, python-format
 msgid "Error: User %(username)s already exists."
 msgstr ""
 
-#: services/setup.py:173
+#: services/setup.py:201
 #, python-format
 msgid "Error: Role %(role)s does not exist."
 msgstr ""
 
-#: services/setup.py:190
+#: services/setup.py:218
 #, python-format
 msgid "User %(username)s created successfully."
 msgstr ""
 
-#: services/setup.py:193
+#: services/setup.py:221
 #, python-format
 msgid "Error creating user: %(error)s"
 msgstr ""
 
-#: services/setup.py:199
+#: services/setup.py:227
 msgid ""
 "CRITICAL: This will PERMANENTLY WIPE all database tables and data. "
 "Continue?"
 msgstr ""
 
-#: services/setup.py:202
+#: services/setup.py:230
 msgid "Database reset complete."
 msgstr ""
 
-#: services/ticket.py:27
+#: services/ticket.py:41
 msgid "Invalid customer for this location"
 msgstr ""
 
-#: services/ticket.py:31
+#: services/ticket.py:45
 msgid "Invalid device for this customer"
 msgstr ""
 
-#: services/ticket.py:37
+#: services/ticket.py:51
 msgid "Assigned technician not found or inactive"
 msgstr ""
 
-#: services/ticket.py:39
+#: services/ticket.py:53
 msgid "Technician belongs to a different location"
 msgstr ""
 
-#: services/ticket.py:73
+#: services/ticket.py:87
 msgid "Down payment cannot be negative"
 msgstr ""
 
-#: services/ticket.py:77 templates/pos/cart.html:217
-#: templates/tickets/new_ticket.html:83
-#: templates/tickets/ticket_detail.html:391
+#: services/ticket.py:91 templates/pos/cart.html:217
+#: templates/tickets/new_ticket.html:90
+#: templates/tickets/ticket_detail.html:397
 msgid "Cash"
 msgstr ""
 
-#: services/ticket.py:94 templates/tickets/new_ticket.html:73
+#: services/ticket.py:113 templates/tickets/new_ticket.html:80
 msgid "Down Payment"
 msgstr ""
 
-#: services/ticket.py:96
+#: services/ticket.py:115
 #, python-format
 msgid "Initial down payment of %(amount)s received via %(method)s."
 msgstr ""
 
-#: services/ticket.py:127
+#: services/ticket.py:146
 msgid "This ticket is locked and cannot be modified."
 msgstr ""
 
-#: services/ticket.py:147
+#: services/ticket.py:166
 msgid "Phase Update"
 msgstr ""
 
-#: services/ticket.py:149
+#: services/ticket.py:168
 #, python-format
 msgid "Phase update to %(phase)s: %(comment)s"
 msgstr ""
 
-#: services/ticket.py:151
+#: services/ticket.py:170
 #, python-format
 msgid "Ticket phase moved from %(old)s to %(new)s."
 msgstr ""
@@ -1344,61 +1372,62 @@ msgstr ""
 msgid "Dashboard"
 msgstr ""
 
-#: templates/base.html:57
+#: templates/base.html:58
 msgid "POS / Sales"
 msgstr ""
 
-#: templates/base.html:61 templates/devices/devices.html:42
-#: templates/onboarding/base.html:48
+#: templates/base.html:63 templates/onboarding/base.html:48
 msgid "Tickets"
 msgstr ""
 
-#: templates/base.html:64 templates/customers/customers.html:4
-#: templates/main/dashboard.html:35 templates/onboarding/base.html:51
+#: templates/base.html:66 templates/customers/customers.html:4
+#: templates/main/dashboard.html:54 templates/onboarding/base.html:51
 msgid "Customers"
 msgstr ""
 
-#: templates/base.html:67 templates/customers/customers.html:41
+#: templates/base.html:69 templates/customers/customers.html:66
 #: templates/devices/devices.html:4 templates/onboarding/base.html:54
 msgid "Devices"
 msgstr ""
 
-#: templates/base.html:71 templates/reports/finance_report.html:169
+#: templates/base.html:73 templates/reports/finance_report.html:186
 msgid "Inventory"
 msgstr ""
 
-#: templates/base.html:76 templates/pos/index.html:59
+#: templates/base.html:78 templates/pos/index.html:75
 msgid "Services"
 msgstr ""
 
-#: templates/base.html:79
+#: templates/base.html:81
 msgid "Problems"
 msgstr ""
 
-#: templates/base.html:84 templates/onboarding/base.html:58
+#: templates/base.html:86 templates/onboarding/base.html:58
 msgid "Reports"
 msgstr ""
 
-#: templates/base.html:96 templates/onboarding/base.html:70
+#: templates/base.html:98 templates/onboarding/base.html:70
 msgid "Profile & Theme"
 msgstr ""
 
-#: templates/base.html:98 templates/onboarding/base.html:72
+#: templates/admin/dashboard.html:8 templates/base.html:100
+#: templates/onboarding/base.html:72
 msgid "Admin Panel"
 msgstr ""
 
-#: templates/base.html:101 templates/onboarding/base.html:76
+#: templates/base.html:103 templates/onboarding/base.html:76
 msgid "Logout"
 msgstr ""
 
-#: templates/Auth/login.html:3 templates/base.html:106
-#: templates/onboarding/base.html:81
+#: templates/Auth/login.html:3 templates/Auth/login.html:33
+#: templates/base.html:108 templates/onboarding/base.html:81
 msgid "Login"
 msgstr ""
 
-#: templates/base.html:120 templates/onboarding/base.html:95
-#: templates/parts/manage_parts.html:123 templates/parts/manage_parts.html:180
-#: templates/parts/manage_parts.html:231 templates/parts/manage_parts.html:243
+#: templates/admin/locations.html:76 templates/admin/locations.html:113
+#: templates/base.html:122 templates/onboarding/base.html:95
+#: templates/parts/manage_parts.html:136 templates/parts/manage_parts.html:193
+#: templates/parts/manage_parts.html:244 templates/parts/manage_parts.html:256
 msgid "Close"
 msgstr ""
 
@@ -1411,170 +1440,30 @@ msgstr ""
 msgid "Shop"
 msgstr ""
 
-#: templates/Auth/login.html:16
+#: templates/Auth/login.html:18
 msgid "Staff Login"
 msgstr ""
 
-#: templates/Auth/login.html:17
-msgid "Enter credentials to continue"
+#: templates/Auth/login.html:19
+msgid "Please enter your credentials to continue"
 msgstr ""
 
-#: templates/Auth/login.html:22 templates/Auth/login.html:24
-#: templates/Auth/profile.html:17 templates/admin/create_user.html:31
-#: templates/admin/edit_user.html:31 templates/admin/manage_users.html:21
+#: templates/Auth/login.html:24 templates/Auth/login.html:26
+#: templates/Auth/profile.html:20 templates/admin/create_user.html:34
+#: templates/admin/edit_user.html:34 templates/admin/manage_users.html:24
 msgid "Username"
 msgstr ""
 
-#: templates/Auth/login.html:27 templates/Auth/login.html:28
-#: templates/admin/create_user.html:60
+#: templates/Auth/login.html:29 templates/Auth/login.html:30
+#: templates/admin/create_user.html:63
 msgid "Password"
 msgstr ""
 
-#: templates/Auth/login.html:30 templates/errors/401.html:13
-msgid "Sign In"
-msgstr ""
-
-#: templates/Auth/profile.html:3 templates/Auth/profile.html:8
+#: templates/Auth/profile.html:3 templates/Auth/profile.html:10
 msgid "My Profile"
 msgstr ""
 
-#: templates/Auth/profile.html:14
-msgid "Account Information"
-msgstr ""
-
-#: templates/Auth/profile.html:18 templates/admin/create_user.html:23
-#: templates/admin/edit_user.html:23 templates/admin/manage_users.html:22
-#: templates/customers/new_customer.html:24
-#: templates/tickets/ticket_form.html:13 templates/tickets/ticket_form.html:14
-msgid "Full Name"
-msgstr ""
-
-#: templates/Auth/profile.html:18 templates/Auth/profile.html:19
-msgid "Not set"
-msgstr ""
-
-#: templates/Auth/profile.html:19 templates/admin/create_user.html:27
-#: templates/admin/edit_user.html:27 templates/admin/locations.html:23
-#: templates/admin/locations.html:88 templates/admin/locations.html:125
-#: templates/admin/manage_users.html:23 templates/onboarding/setup.html:49
-msgid "Email"
-msgstr ""
-
-#: templates/Auth/profile.html:20 templates/admin/create_user.html:70
-#: templates/admin/edit_user.html:71 templates/admin/manage_users.html:25
-msgid "Roles"
-msgstr ""
-
-#: templates/Auth/profile.html:22 templates/admin/manage_users.html:40
-msgid "Superuser"
-msgstr ""
-
-#: templates/Auth/profile.html:27
-msgid "No roles assigned"
-msgstr ""
-
-#: templates/Auth/profile.html:38
-msgid "Appearance Settings"
-msgstr ""
-
-#: templates/Auth/profile.html:46
-msgid "Theme"
-msgstr ""
-
-#: templates/Auth/profile.html:48
-msgid "Light"
-msgstr ""
-
-#: templates/Auth/profile.html:49
-msgid "Dark"
-msgstr ""
-
-#: templates/Auth/profile.html:50 templates/tickets/ticket_detail.html:219
-#: templates/tickets/ticket_detail.html:253
-msgid "System"
-msgstr ""
-
-#: templates/Auth/profile.html:55
-msgid "Language"
-msgstr ""
-
-#: templates/Auth/profile.html:65
-msgid "Currency"
-msgstr ""
-
-#: templates/Auth/profile.html:76
-msgid "Currency Decimals"
-msgstr ""
-
-#: templates/Auth/profile.html:78
-msgid "0 (e.g. Rp 1500)"
-msgstr ""
-
-#: templates/Auth/profile.html:79
-msgid "2 (e.g. $15.00)"
-msgstr ""
-
-#: templates/Auth/profile.html:80
-msgid "3"
-msgstr ""
-
-#: templates/Auth/profile.html:86
-msgid "Color Scheme"
-msgstr ""
-
-#: templates/Auth/profile.html:91
-msgid "Blue"
-msgstr ""
-
-#: templates/Auth/profile.html:97
-msgid "Green"
-msgstr ""
-
-#: templates/Auth/profile.html:103
-msgid "Purple"
-msgstr ""
-
-#: templates/Auth/profile.html:109
-msgid "Red"
-msgstr ""
-
-#: templates/Auth/profile.html:115
-msgid "Orange"
-msgstr ""
-
-#: templates/Auth/profile.html:121
-msgid "Save Preferences"
-msgstr ""
-
-#: templates/Auth/profile.html:132 templates/Auth/profile.html:142
-msgid "Change Username"
-msgstr ""
-
-#: templates/Auth/profile.html:139
-msgid "New Username"
-msgstr ""
-
-#: templates/Auth/profile.html:151 templates/Auth/profile.html:170
-msgid "Change Password"
-msgstr ""
-
-#: templates/Auth/profile.html:158
-msgid "Current Password"
-msgstr ""
-
-#: templates/Auth/profile.html:162 templates/admin/edit_user.html:61
-msgid "New Password"
-msgstr ""
-
-#: templates/Auth/profile.html:164 templates/admin/create_user.html:62
-msgid "Minimum 8 characters."
-msgstr ""
-
-#: templates/Auth/profile.html:167
-msgid "Confirm New Password"
-msgstr ""
-
-#: templates/Auth/profile.html:178 templates/admin/system_status.html:125
+#: templates/Auth/profile.html:9 templates/admin/dashboard.html:7
 #: templates/errors/400.html:16 templates/errors/403.html:12
 #: templates/errors/404.html:12 templates/errors/413.html:16
 #: templates/errors/415.html:16 templates/errors/500.html:16
@@ -1582,116 +1471,268 @@ msgstr ""
 msgid "Back to Dashboard"
 msgstr ""
 
+#: templates/Auth/profile.html:17
+msgid "Account Information"
+msgstr ""
+
+#: templates/Auth/profile.html:21 templates/admin/create_user.html:26
+#: templates/admin/edit_user.html:26 templates/admin/manage_users.html:25
+#: templates/customers/edit_customer.html:23
+#: templates/customers/new_customer.html:24
+#: templates/tickets/ticket_form.html:13 templates/tickets/ticket_form.html:14
+msgid "Full Name"
+msgstr ""
+
+#: templates/Auth/profile.html:21 templates/Auth/profile.html:22
+msgid "Not set"
+msgstr ""
+
+#: templates/Auth/profile.html:22 templates/admin/create_user.html:30
+#: templates/admin/edit_user.html:30 templates/admin/locations.html:26
+#: templates/admin/locations.html:92 templates/admin/locations.html:129
+#: templates/admin/manage_users.html:26 templates/onboarding/setup.html:49
+msgid "Email"
+msgstr ""
+
+#: templates/Auth/profile.html:23 templates/admin/create_user.html:73
+#: templates/admin/edit_user.html:74 templates/admin/manage_users.html:28
+msgid "Roles"
+msgstr ""
+
+#: templates/Auth/profile.html:25 templates/admin/manage_users.html:43
+msgid "Superuser"
+msgstr ""
+
+#: templates/Auth/profile.html:30
+msgid "No roles assigned"
+msgstr ""
+
+#: templates/Auth/profile.html:41
+msgid "Appearance Settings"
+msgstr ""
+
+#: templates/Auth/profile.html:49
+msgid "Theme"
+msgstr ""
+
+#: templates/Auth/profile.html:51
+msgid "Light"
+msgstr ""
+
+#: templates/Auth/profile.html:52
+msgid "Dark"
+msgstr ""
+
+#: templates/Auth/profile.html:53 templates/tickets/ticket_detail.html:225
+#: templates/tickets/ticket_detail.html:259
+msgid "System"
+msgstr ""
+
+#: templates/Auth/profile.html:58
+msgid "Language"
+msgstr ""
+
+#: templates/Auth/profile.html:67
+msgid "Color Scheme"
+msgstr ""
+
+#: templates/Auth/profile.html:72
+msgid "Blue"
+msgstr ""
+
+#: templates/Auth/profile.html:78
+msgid "Green"
+msgstr ""
+
+#: templates/Auth/profile.html:84
+msgid "Purple"
+msgstr ""
+
+#: templates/Auth/profile.html:90
+msgid "Red"
+msgstr ""
+
+#: templates/Auth/profile.html:96
+msgid "Orange"
+msgstr ""
+
+#: templates/Auth/profile.html:102
+msgid "Save Preferences"
+msgstr ""
+
+#: templates/Auth/profile.html:113 templates/Auth/profile.html:123
+msgid "Change Username"
+msgstr ""
+
+#: templates/Auth/profile.html:116
+msgid ""
+"Are you sure you want to change your username? You will need to use the "
+"new username for all future logins."
+msgstr ""
+
+#: templates/Auth/profile.html:120
+msgid "New Username"
+msgstr ""
+
+#: templates/Auth/profile.html:132 templates/Auth/profile.html:151
+msgid "Change Password"
+msgstr ""
+
+#: templates/Auth/profile.html:135
+msgid "Are you sure you want to change your password?"
+msgstr ""
+
+#: templates/Auth/profile.html:139
+msgid "Current Password"
+msgstr ""
+
+#: templates/Auth/profile.html:143 templates/admin/edit_user.html:64
+msgid "New Password"
+msgstr ""
+
+#: templates/Auth/profile.html:145 templates/admin/create_user.html:65
+msgid "Minimum 8 characters."
+msgstr ""
+
+#: templates/Auth/profile.html:148
+msgid "Confirm New Password"
+msgstr ""
+
+#: templates/Auth/profile.html:169
+msgid "Please fill in the new username field."
+msgstr ""
+
+#: templates/Auth/profile.html:185
+msgid "All password fields are required."
+msgstr ""
+
+#: templates/Auth/profile.html:192
+msgid "New passwords do not match."
+msgstr ""
+
+#: templates/Auth/profile.html:199
+msgid "Password must be at least 8 characters long."
+msgstr ""
+
 #: templates/admin/backup.html:2
 msgid "System Backups - Admin"
 msgstr ""
 
-#: templates/admin/backup.html:6 templates/admin/dashboard.html:39
+#: templates/admin/backup.html:7 templates/admin/locations.html:8
+#: templates/admin/manage_users.html:9 templates/admin/settings.html:10
+#: templates/admin/system_status.html:10
+msgid "Back to Admin Panel"
+msgstr ""
+
+#: templates/admin/backup.html:8 templates/admin/dashboard.html:42
 msgid "System Backups"
 msgstr ""
 
-#: templates/admin/backup.html:7
+#: templates/admin/backup.html:10
 msgid "Manage your application's data backups."
 msgstr ""
 
-#: templates/admin/backup.html:10
+#: templates/admin/backup.html:13
 msgid "Automated Daily Backups Active"
 msgstr ""
 
-#: templates/admin/backup.html:12
+#: templates/admin/backup.html:15
 #, python-format
 msgid ""
 "The system automatically performs a <strong>full database backup "
 "(PostgreSQL Dump)</strong> every day at "
-"<strong>%(hour)02d:%(min)02d</strong> (UTC) (with logical JSON fallback)."
+"<strong>%(hour)02d:%(min)02d</strong> (local time) (with logical JSON "
+"fallback)."
 msgstr ""
 
-#: templates/admin/backup.html:19
+#: templates/admin/backup.html:22
 msgid "Create New Backup"
 msgstr ""
 
-#: templates/admin/backup.html:25
+#: templates/admin/backup.html:28
 msgid "Select Backup Type:"
 msgstr ""
 
-#: templates/admin/backup.html:29
+#: templates/admin/backup.html:32
 msgid "Logical Data Backup (JSON)"
 msgstr ""
 
-#: templates/admin/backup.html:29
+#: templates/admin/backup.html:32
 msgid ""
 "Exports system data including users, customers, and tickets into a "
 "portable format."
 msgstr ""
 
-#: templates/admin/backup.html:35
+#: templates/admin/backup.html:38
 msgid "Full Database Snapshot"
 msgstr ""
 
-#: templates/admin/backup.html:35
+#: templates/admin/backup.html:38
 msgid ""
 "Exports a compressed dump for PostgreSQL (.dump) using native system "
 "utilities."
 msgstr ""
 
-#: templates/admin/backup.html:40
+#: templates/admin/backup.html:43
 msgid "Generate Backup"
 msgstr ""
 
-#: templates/admin/backup.html:48
+#: templates/admin/backup.html:51
 msgid "Restore from Backup"
 msgstr ""
 
-#: templates/admin/backup.html:51
+#: templates/admin/backup.html:54
 msgid ""
 "Upload a <strong>.dump</strong> file (PostgreSQL binary) for a full "
 "system restore."
 msgstr ""
 
-#: templates/admin/backup.html:52
+#: templates/admin/backup.html:55
 msgid ""
 "WARNING: Restoring from a backup file will overwrite all current data. "
 "Are you sure?"
 msgstr ""
 
-#: templates/admin/backup.html:55
+#: templates/admin/backup.html:58
 msgid "Select Backup File"
 msgstr ""
 
-#: templates/admin/backup.html:59
+#: templates/admin/backup.html:62
 msgid "Upload & Restore"
 msgstr ""
 
-#: templates/admin/backup.html:67
+#: templates/admin/backup.html:70
 msgid "Available Backups"
 msgstr ""
 
-#: templates/admin/backup.html:68
+#: templates/admin/backup.html:71
 #, python-format
 msgid "%(count)d Files"
 msgstr ""
 
-#: templates/admin/backup.html:75
+#: templates/admin/backup.html:78
 msgid "Filename"
 msgstr ""
 
-#: templates/admin/backup.html:76 templates/admin/locations.html:25
-#: templates/admin/manage_users.html:28
-#: templates/common_problem/manage_common_problems.html:44
-#: templates/customers/customer_detail.html:56
-#: templates/customers/customer_detail.html:92
-#: templates/customers/customers.html:43
-#: templates/devices/device_detail.html:68 templates/devices/devices.html:43
-#: templates/main/dashboard.html:60 templates/parts/manage_parts.html:43
-#: templates/pos/history.html:27
+#: templates/admin/backup.html:79 templates/admin/locations.html:28
+#: templates/admin/manage_users.html:31
+#: templates/common_problem/manage_common_problems.html:55
+#: templates/customers/customer_detail.html:60
+#: templates/customers/customer_detail.html:97
+#: templates/customers/customers.html:68
+#: templates/devices/device_detail.html:69 templates/devices/devices.html:55
+#: templates/main/dashboard.html:79 templates/parts/manage_parts.html:55
+#: templates/pos/history.html:42 templates/reports/reports.html:93
+#: templates/services/manage_services.html:50
+#: templates/tickets/tickets_list.html:58
 msgid "Action"
 msgstr ""
 
-#: templates/admin/backup.html:84
-msgid "Download"
+#: templates/admin/backup.html:87
+msgid "Download Backup File"
 msgstr ""
 
-#: templates/admin/backup.html:88
+#: templates/admin/backup.html:92
 msgid "No backup files found in the repository."
 msgstr ""
 
@@ -1699,58 +1740,64 @@ msgstr ""
 msgid "Create User - Admin"
 msgstr ""
 
-#: templates/admin/create_user.html:8
+#: templates/admin/create_user.html:9 templates/admin/edit_user.html:9
+msgid "Back to Manage Users"
+msgstr ""
+
+#: templates/admin/create_user.html:10
 msgid "Create New User"
 msgstr ""
 
-#: templates/admin/create_user.html:18 templates/admin/edit_user.html:18
+#: templates/admin/create_user.html:21 templates/admin/edit_user.html:21
 msgid "Basic Information"
 msgstr ""
 
-#: templates/admin/create_user.html:35 templates/admin/edit_user.html:36
+#: templates/admin/create_user.html:38 templates/admin/edit_user.html:39
 msgid "Assigned Location"
 msgstr ""
 
-#: templates/admin/create_user.html:37 templates/admin/edit_user.html:38
+#: templates/admin/create_user.html:40 templates/admin/edit_user.html:41
 msgid "-- Select Location --"
 msgstr ""
 
-#: templates/admin/create_user.html:47 templates/admin/edit_user.html:48
+#: templates/admin/create_user.html:50 templates/admin/edit_user.html:51
 msgid "Active (user can log in)"
 msgstr ""
 
-#: templates/admin/create_user.html:56 templates/admin/edit_user.html:57
+#: templates/admin/create_user.html:59 templates/admin/edit_user.html:60
 msgid "Security Credentials"
 msgstr ""
 
-#: templates/admin/create_user.html:74 templates/admin/edit_user.html:75
+#: templates/admin/create_user.html:77 templates/admin/edit_user.html:78
 msgid "Primary Role"
 msgstr ""
 
-#: templates/admin/create_user.html:76 templates/admin/edit_user.html:77
+#: templates/admin/create_user.html:79 templates/admin/edit_user.html:80
 msgid "-- Select Role --"
 msgstr ""
 
-#: templates/admin/create_user.html:81 templates/admin/edit_user.html:82
+#: templates/admin/create_user.html:84 templates/admin/edit_user.html:85
 msgid "Permissions are derived from the assigned role."
 msgstr ""
 
-#: templates/admin/create_user.html:88
+#: templates/admin/create_user.html:91 templates/admin/manage_users.html:13
 msgid "Create User"
 msgstr ""
 
-#: templates/admin/create_user.html:89 templates/admin/edit_user.html:90
-#: templates/admin/locations.html:93 templates/admin/locations.html:130
-#: templates/admin/settings.html:74 templates/customers/new_customer.html:42
-#: templates/devices/edit_device.html:84 templates/devices/new_device.html:94
-#: templates/parts/manage_parts.html:164 templates/parts/manage_parts.html:217
-#: templates/services/manage_services.html:124
-#: templates/services/manage_services.html:160
-#: templates/tickets/edit_ticket.html:50 templates/tickets/new_ticket.html:101
-#: templates/tickets/ticket_detail.html:327
-#: templates/tickets/ticket_detail.html:404
-#: templates/tickets/ticket_detail.html:440
-#: templates/tickets/ticket_detail.html:509
+#: templates/admin/create_user.html:92 templates/admin/edit_user.html:93
+#: templates/admin/locations.html:97 templates/admin/locations.html:134
+#: templates/admin/settings.html:106 templates/customers/edit_customer.html:41
+#: templates/customers/new_customer.html:42
+#: templates/devices/edit_device.html:84 templates/devices/new_device.html:96
+#: templates/parts/manage_parts.html:177 templates/parts/manage_parts.html:230
+#: templates/services/manage_services.html:131
+#: templates/services/manage_services.html:167
+#: templates/tickets/archive_ticket.html:31
+#: templates/tickets/edit_ticket.html:50 templates/tickets/new_ticket.html:108
+#: templates/tickets/ticket_detail.html:333
+#: templates/tickets/ticket_detail.html:410
+#: templates/tickets/ticket_detail.html:446
+#: templates/tickets/ticket_detail.html:515
 #: templates/tickets/ticket_form.html:27 templates/tickets/ticket_form.html:100
 msgid "Cancel"
 msgstr ""
@@ -1759,75 +1806,71 @@ msgstr ""
 msgid "Admin Dashboard - Admin"
 msgstr ""
 
-#: templates/admin/dashboard.html:7
-msgid "Admin Dashboard"
-msgstr ""
-
-#: templates/admin/dashboard.html:8
+#: templates/admin/dashboard.html:11
 msgid ""
 "Control panel for shop locations, staff accounts, and system "
 "configuration."
 msgstr ""
 
-#: templates/admin/dashboard.html:16
+#: templates/admin/dashboard.html:19
 msgid "Shop Locations"
 msgstr ""
 
-#: templates/admin/dashboard.html:17
+#: templates/admin/dashboard.html:20
 msgid ""
 "Manage physical branch locations, addresses, and contact details for the "
 "shop."
 msgstr ""
 
-#: templates/admin/dashboard.html:18 templates/admin/locations.html:7
+#: templates/admin/dashboard.html:21 templates/admin/locations.html:9
 msgid "Manage Locations"
 msgstr ""
 
-#: templates/admin/dashboard.html:27
+#: templates/admin/dashboard.html:30
 msgid "User Management"
 msgstr ""
 
-#: templates/admin/dashboard.html:28
+#: templates/admin/dashboard.html:31
 msgid "Create staff accounts, assign roles, and manage granular permissions."
 msgstr ""
 
-#: templates/admin/dashboard.html:29 templates/admin/manage_users.html:8
+#: templates/admin/dashboard.html:32 templates/admin/manage_users.html:10
 msgid "Manage Users"
 msgstr ""
 
-#: templates/admin/dashboard.html:37
+#: templates/admin/dashboard.html:40
 msgid "Backup & Restore"
 msgstr ""
 
-#: templates/admin/dashboard.html:38
+#: templates/admin/dashboard.html:41
 msgid "Generate JSON database exports and restore system state from backups."
 msgstr ""
 
-#: templates/admin/dashboard.html:47 templates/onboarding/base.html:73
+#: templates/admin/dashboard.html:50 templates/onboarding/base.html:73
 msgid "Shop Branding"
 msgstr ""
 
-#: templates/admin/dashboard.html:48
+#: templates/admin/dashboard.html:51
 msgid ""
 "Upload your shop logo and configure contact information used on customer "
 "invoices."
 msgstr ""
 
-#: templates/admin/dashboard.html:49
+#: templates/admin/dashboard.html:52
 msgid "Branding Settings"
 msgstr ""
 
-#: templates/admin/dashboard.html:57
+#: templates/admin/dashboard.html:60
 msgid "System Status"
 msgstr ""
 
-#: templates/admin/dashboard.html:58
+#: templates/admin/dashboard.html:61
 msgid ""
 "Monitor database connectivity, production environment variables, and API "
 "availability."
 msgstr ""
 
-#: templates/admin/dashboard.html:59
+#: templates/admin/dashboard.html:62
 msgid "Check System Status"
 msgstr ""
 
@@ -1835,29 +1878,29 @@ msgstr ""
 msgid "Edit User - Admin"
 msgstr ""
 
-#: templates/admin/edit_user.html:8
+#: templates/admin/edit_user.html:10
 #, python-format
 msgid "Edit User: %(name)s"
 msgstr ""
 
-#: templates/admin/edit_user.html:33
+#: templates/admin/edit_user.html:36
 msgid "Username cannot be changed."
 msgstr ""
 
-#: templates/admin/edit_user.html:62
+#: templates/admin/edit_user.html:65
 msgid "Leave blank to keep current password"
 msgstr ""
 
-#: templates/admin/edit_user.html:63
+#: templates/admin/edit_user.html:66
 msgid ""
 "Minimum 8 characters. Use this field only if you need to override the "
 "user's current password."
 msgstr ""
 
-#: templates/admin/edit_user.html:89 templates/admin/locations.html:131
-#: templates/admin/settings.html:73 templates/devices/edit_device.html:83
-#: templates/parts/manage_parts.html:165
-#: templates/services/manage_services.html:125
+#: templates/admin/edit_user.html:92 templates/admin/locations.html:135
+#: templates/admin/settings.html:105 templates/customers/edit_customer.html:40
+#: templates/devices/edit_device.html:83 templates/parts/manage_parts.html:178
+#: templates/services/manage_services.html:132
 #: templates/tickets/edit_ticket.html:51
 msgid "Save Changes"
 msgstr ""
@@ -1866,137 +1909,129 @@ msgstr ""
 msgid "Manage Locations - Admin"
 msgstr ""
 
-#: templates/admin/locations.html:9
-msgid "+ Add New Location"
+#: templates/admin/locations.html:12 templates/admin/locations.html:75
+msgid "Add New Location"
 msgstr ""
 
-#: templates/admin/locations.html:20 templates/admin/locations.html:76
-#: templates/admin/locations.html:113
+#: templates/admin/locations.html:23 templates/admin/locations.html:80
+#: templates/admin/locations.html:117
 msgid "Location Name"
 msgstr ""
 
-#: templates/admin/locations.html:21 templates/admin/locations.html:80
-#: templates/admin/locations.html:117
-#: templates/customers/customer_detail.html:23
+#: templates/admin/locations.html:24 templates/admin/locations.html:84
+#: templates/admin/locations.html:121
+#: templates/customers/customer_detail.html:22
+#: templates/customers/edit_customer.html:31
 #: templates/customers/new_customer.html:32 templates/onboarding/setup.html:34
 msgid "Address"
 msgstr ""
 
-#: templates/admin/locations.html:22 templates/admin/locations.html:84
-#: templates/admin/locations.html:121 templates/customers/customers.html:40
-#: templates/devices/edit_device.html:32 templates/devices/new_device.html:42
+#: templates/admin/locations.html:25 templates/admin/locations.html:88
+#: templates/admin/locations.html:125 templates/customers/customers.html:65
+#: templates/devices/edit_device.html:32 templates/devices/new_device.html:44
 #: templates/onboarding/setup.html:42 templates/tickets/ticket_form.html:50
 msgid "Phone"
 msgstr ""
 
-#: templates/admin/locations.html:24 templates/admin/manage_users.html:27
-#: templates/customers/customers.html:42 templates/reports/reports.html:81
-#: templates/tickets/tickets_list.html:48
+#: templates/admin/locations.html:27 templates/admin/manage_users.html:30
+#: templates/customers/customers.html:67 templates/devices/devices.html:54
+#: templates/reports/reports.html:92 templates/tickets/tickets_list.html:57
 msgid "Created"
 msgstr ""
 
-#: templates/admin/locations.html:45 templates/admin/manage_users.html:55
-#: templates/devices/devices.html:65 templates/parts/manage_parts.html:90
-#: templates/services/manage_services.html:69
-msgid "Edit"
+#: templates/admin/locations.html:47 templates/admin/locations.html:112
+msgid "Edit Location"
 msgstr ""
 
-#: templates/admin/locations.html:47
+#: templates/admin/locations.html:50
 msgid ""
 "Are you sure? This will affect all users and tickets linked to this "
 "branch."
 msgstr ""
 
-#: templates/admin/locations.html:49 templates/admin/manage_users.html:59
-#: templates/common_problem/manage_common_problems.html:59
-#: templates/devices/device_detail.html:49 templates/parts/manage_parts.html:94
-#: templates/services/manage_services.html:74
-msgid "Delete"
+#: templates/admin/locations.html:52
+msgid "Delete Location"
 msgstr ""
 
-#: templates/admin/locations.html:55
+#: templates/admin/locations.html:59
 msgid "No locations defined yet."
 msgstr ""
 
-#: templates/admin/locations.html:71
-msgid "Add New Location"
-msgstr ""
-
-#: templates/admin/locations.html:77
+#: templates/admin/locations.html:81
 msgid "e.g., Downtown Branch"
 msgstr ""
 
-#: templates/admin/locations.html:81 templates/admin/settings.html:44
+#: templates/admin/locations.html:85 templates/admin/settings.html:47
 #: templates/onboarding/setup.html:37
 msgid "Street, City, State, Zip"
 msgstr ""
 
-#: templates/admin/locations.html:85
+#: templates/admin/locations.html:89
 msgid "+1 (555) 123-4567"
 msgstr ""
 
-#: templates/admin/locations.html:89
+#: templates/admin/locations.html:93
 msgid "branch@example.com"
 msgstr ""
 
-#: templates/admin/locations.html:94
+#: templates/admin/locations.html:98
 msgid "Create Location"
-msgstr ""
-
-#: templates/admin/locations.html:108
-msgid "Edit Location"
 msgstr ""
 
 #: templates/admin/manage_users.html:4
 msgid "Manage Users - Admin"
 msgstr ""
 
-#: templates/admin/manage_users.html:10
-msgid "+ Create User"
-msgstr ""
-
-#: templates/admin/manage_users.html:24
+#: templates/admin/manage_users.html:27
 msgid "Location"
 msgstr ""
 
-#: templates/admin/manage_users.html:26 templates/admin/system_status.html:39
-#: templates/common_problem/manage_common_problems.html:43
-#: templates/customers/customer_detail.html:90
-#: templates/devices/device_detail.html:66 templates/main/dashboard.html:58
-#: templates/parts/manage_parts.html:42 templates/pos/cart.html:189
-#: templates/pos/history.html:26 templates/services/manage_services.html:42
+#: templates/admin/manage_users.html:29 templates/admin/system_status.html:42
+#: templates/common_problem/manage_common_problems.html:54
+#: templates/customers/customer_detail.html:95
+#: templates/devices/device_detail.html:67 templates/main/dashboard.html:77
+#: templates/parts/manage_parts.html:54 templates/pos/cart.html:189
+#: templates/pos/history.html:41 templates/services/manage_services.html:49
 msgid "Status"
 msgstr ""
 
-#: templates/admin/manage_users.html:37
+#: templates/admin/manage_users.html:40
 msgid "Global"
 msgstr ""
 
-#: templates/admin/manage_users.html:45
+#: templates/admin/manage_users.html:48
 msgid "No Roles"
 msgstr ""
 
-#: templates/admin/manage_users.html:50
-#: templates/common_problem/manage_common_problems.html:52
-#: templates/parts/manage_parts.html:63 templates/parts/manage_parts.html:160
-#: templates/services/manage_services.html:56
-#: templates/services/manage_services.html:120
-#: templates/tickets/tickets_list.html:14
+#: templates/admin/manage_users.html:53
+#: templates/common_problem/manage_common_problems.html:63
+#: templates/parts/manage_parts.html:75 templates/parts/manage_parts.html:173
+#: templates/services/manage_services.html:63
+#: templates/services/manage_services.html:127
+#: templates/tickets/tickets_list.html:15
 msgid "Active"
 msgstr ""
 
-#: templates/admin/manage_users.html:50
-#: templates/common_problem/manage_common_problems.html:52
-#: templates/parts/manage_parts.html:63
-#: templates/services/manage_services.html:56
+#: templates/admin/manage_users.html:53
+#: templates/common_problem/manage_common_problems.html:63
+#: templates/parts/manage_parts.html:75
+#: templates/services/manage_services.html:63
 msgid "Inactive"
 msgstr ""
 
-#: templates/admin/manage_users.html:57
+#: templates/admin/manage_users.html:58
+msgid "Edit User"
+msgstr ""
+
+#: templates/admin/manage_users.html:60
 msgid "Are you sure you want to delete this user?"
 msgstr ""
 
-#: templates/admin/manage_users.html:66
+#: templates/admin/manage_users.html:62
+msgid "Delete User"
+msgstr ""
+
+#: templates/admin/manage_users.html:69
 msgid "No system users found."
 msgstr ""
 
@@ -2004,59 +2039,83 @@ msgstr ""
 msgid "Shop Settings - Admin"
 msgstr ""
 
-#: templates/admin/settings.html:9
+#: templates/admin/settings.html:11
 msgid "Shop Branding & Settings"
 msgstr ""
 
-#: templates/admin/settings.html:19 templates/onboarding/setup.html:23
+#: templates/admin/settings.html:22 templates/onboarding/setup.html:23
 msgid "Identity & Branding"
 msgstr ""
 
-#: templates/admin/settings.html:24 templates/admin/settings.html:27
+#: templates/admin/settings.html:27 templates/admin/settings.html:30
 msgid "Shop Logo"
 msgstr ""
 
-#: templates/admin/settings.html:35
+#: templates/admin/settings.html:38
 msgid "Recommended: Square PNG/SVG (Max 2MB)"
 msgstr ""
 
-#: templates/admin/settings.html:39 templates/onboarding/setup.html:27
+#: templates/admin/settings.html:42 templates/onboarding/setup.html:27
 msgid "Shop Name"
 msgstr ""
 
-#: templates/admin/settings.html:40
+#: templates/admin/settings.html:43
 msgid "e.g., My Repair Shop"
 msgstr ""
 
-#: templates/admin/settings.html:43
+#: templates/admin/settings.html:46
 msgid "Shop Address (Location)"
 msgstr ""
 
-#: templates/admin/settings.html:45
+#: templates/admin/settings.html:48
 msgid "This will appear on customer invoices and reports."
 msgstr ""
 
-#: templates/admin/settings.html:55
+#: templates/admin/settings.html:58
+msgid "Regional & Currency"
+msgstr ""
+
+#: templates/admin/settings.html:63
+msgid "Shop Currency"
+msgstr ""
+
+#: templates/admin/settings.html:72
+msgid "Currency Decimals"
+msgstr ""
+
+#: templates/admin/settings.html:75
+msgid "0 (e.g. 1500)"
+msgstr ""
+
+#: templates/admin/settings.html:76
+msgid "2 (e.g. 15.00)"
+msgstr ""
+
+#: templates/admin/settings.html:77
+msgid "3"
+msgstr ""
+
+#: templates/admin/settings.html:87
 msgid "Contact Information"
 msgstr ""
 
-#: templates/admin/settings.html:60
+#: templates/admin/settings.html:92
 msgid "Contact Phone"
 msgstr ""
 
-#: templates/admin/settings.html:61 templates/onboarding/setup.html:45
+#: templates/admin/settings.html:93 templates/onboarding/setup.html:45
 msgid "+1 (555) 000-0000"
 msgstr ""
 
-#: templates/admin/settings.html:64
+#: templates/admin/settings.html:96
 msgid "Contact Email"
 msgstr ""
 
-#: templates/admin/settings.html:65
+#: templates/admin/settings.html:97
 msgid "contact@example.com"
 msgstr ""
 
-#: templates/admin/settings.html:82
+#: templates/admin/settings.html:114
 msgid ""
 "Access Denied: You do not have permission to view or modify branding "
 "settings."
@@ -2066,73 +2125,73 @@ msgstr ""
 msgid "System Status - Admin"
 msgstr ""
 
-#: templates/admin/system_status.html:9
+#: templates/admin/system_status.html:11
 msgid "System Integrity & Status"
 msgstr ""
 
-#: templates/admin/system_status.html:10
+#: templates/admin/system_status.html:13
 msgid ""
 "Monitor database health, directory permissions, and active system "
 "configurations."
 msgstr ""
 
-#: templates/admin/system_status.html:17
+#: templates/admin/system_status.html:20
 msgid "Database Engine"
 msgstr ""
 
-#: templates/admin/system_status.html:21
+#: templates/admin/system_status.html:24
 msgid "Database Engine Version:"
 msgstr ""
 
-#: templates/admin/system_status.html:22
-#: templates/customers/customer_detail.html:24
-#: templates/customers/customer_detail.html:105
-#: templates/customers/customers.html:52
+#: templates/admin/system_status.html:25
+#: templates/customers/customer_detail.html:23
+#: templates/customers/customer_detail.html:110
+#: templates/customers/customers.html:84
 #: templates/devices/device_detail.html:21
-#: templates/devices/device_detail.html:80 templates/devices/new_device.html:33
-#: templates/main/dashboard.html:77 templates/pos/history.html:34
-#: templates/tickets/ticket_detail.html:285
-#: templates/tickets/tickets_list.html:60
+#: templates/devices/device_detail.html:81 templates/devices/new_device.html:34
+#: templates/main/dashboard.html:97 templates/pos/history.html:49
+#: templates/pos/index.html:46 templates/tickets/ticket_detail.html:291
+#: templates/tickets/tickets_list.html:69
 msgid "Unknown"
 msgstr ""
 
-#: templates/admin/system_status.html:31
+#: templates/admin/system_status.html:34
 msgid "Storage & Permissions"
 msgstr ""
 
-#: templates/admin/system_status.html:38
+#: templates/admin/system_status.html:41
 msgid "Volume"
 msgstr ""
 
-#: templates/admin/system_status.html:51
+#: templates/admin/system_status.html:54
 msgid "Path Missing"
 msgstr ""
 
-#: templates/admin/system_status.html:53
+#: templates/admin/system_status.html:56
 msgid "Writable"
 msgstr ""
 
-#: templates/admin/system_status.html:55
+#: templates/admin/system_status.html:58
 msgid "Read Only"
 msgstr ""
 
-#: templates/admin/system_status.html:60
+#: templates/admin/system_status.html:63
 msgid "No storage volumes monitored."
 msgstr ""
 
-#: templates/admin/system_status.html:73
+#: templates/admin/system_status.html:76
 msgid "Environment Summary"
 msgstr ""
 
-#: templates/admin/system_status.html:89
+#: templates/admin/system_status.html:92
 msgid "No environment data available."
 msgstr ""
 
-#: templates/admin/system_status.html:100
+#: templates/admin/system_status.html:103
 msgid "Active Configuration"
 msgstr ""
 
-#: templates/admin/system_status.html:116
+#: templates/admin/system_status.html:119
 msgid "No configuration data available."
 msgstr ""
 
@@ -2148,41 +2207,51 @@ msgstr ""
 msgid "Manage Common Problems"
 msgstr ""
 
-#: templates/common_problem/manage_common_problems.html:17
-msgid "Add New Problem"
+#: templates/common_problem/manage_common_problems.html:23
+#: templates/customers/customers.html:37 templates/devices/devices.html:24
+#: templates/parts/manage_parts.html:24
+#: templates/reports/finance_report.html:12 templates/reports/reports.html:13
+#: templates/services/manage_services.html:22
+#: templates/tickets/tickets_list.html:29
+msgid "All Locations"
 msgstr ""
 
-#: templates/common_problem/manage_common_problems.html:23
-#: templates/common_problem/manage_common_problems.html:42
-#: templates/tickets/edit_ticket.html:34 templates/tickets/new_ticket.html:53
-#: templates/tickets/ticket_detail.html:81
+#: templates/common_problem/manage_common_problems.html:33
+#: templates/common_problem/manage_common_problems.html:53
+#: templates/tickets/edit_ticket.html:34 templates/tickets/new_ticket.html:60
+#: templates/tickets/ticket_detail.html:85
 msgid "Problem Description"
 msgstr ""
 
-#: templates/common_problem/manage_common_problems.html:26
+#: templates/common_problem/manage_common_problems.html:36
 msgid "e.g., Broken Screen, Water Damage"
 msgstr ""
 
-#: templates/common_problem/manage_common_problems.html:28
+#: templates/common_problem/manage_common_problems.html:39
 msgid "Add Problem"
 msgstr ""
 
-#: templates/common_problem/manage_common_problems.html:57
+#: templates/common_problem/manage_common_problems.html:68
 msgid "Are you sure you want to delete this problem?"
 msgstr ""
 
-#: templates/common_problem/manage_common_problems.html:65
+#: templates/common_problem/manage_common_problems.html:70
+msgid "Delete Problem"
+msgstr ""
+
+#: templates/common_problem/manage_common_problems.html:77
 msgid "No system problems found."
 msgstr ""
 
 #: templates/customers/customer_detail.html:3
-#: templates/customers/customer_detail.html:20
-#: templates/customers/customers.html:49 templates/devices/edit_device.html:15
-#: templates/main/dashboard.html:56 templates/main/dashboard.html:67
-#: templates/main/dashboard.html:110 templates/pos/cart.html:181
-#: templates/pos/history.html:23 templates/reports/finance_report.html:98
-#: templates/reports/finance_report.html:153 templates/reports/reports.html:78
-#: templates/tickets/edit_ticket.html:20 templates/tickets/tickets_list.html:44
+#: templates/customers/customer_detail.html:19
+#: templates/customers/customers.html:75 templates/devices/devices.html:52
+#: templates/devices/edit_device.html:15 templates/main/dashboard.html:75
+#: templates/main/dashboard.html:87 templates/main/dashboard.html:132
+#: templates/pos/cart.html:181 templates/pos/history.html:38
+#: templates/reports/finance_report.html:115
+#: templates/reports/finance_report.html:170 templates/reports/reports.html:89
+#: templates/tickets/edit_ticket.html:20 templates/tickets/tickets_list.html:53
 msgid "Customer"
 msgstr ""
 
@@ -2195,156 +2264,190 @@ msgid "Customer Details"
 msgstr ""
 
 #: templates/customers/customer_detail.html:10
-msgid "Back to List"
+msgid "Back to Customer List"
 msgstr ""
 
-#: templates/customers/customer_detail.html:17
+#: templates/customers/customer_detail.html:16
 msgid "Customer Info"
 msgstr ""
 
-#: templates/customers/customer_detail.html:21
+#: templates/customers/customer_detail.html:20
 msgid "No phone provided"
 msgstr ""
 
-#: templates/customers/customer_detail.html:23
+#: templates/customers/customer_detail.html:22
 msgid "No address provided"
 msgstr ""
 
-#: templates/customers/customer_detail.html:24
+#: templates/customers/customer_detail.html:23
 msgid "Registered"
 msgstr ""
 
-#: templates/customers/customer_detail.html:29
+#: templates/customers/customer_detail.html:28
 msgid "Export Data (GDPR)"
 msgstr ""
 
-#: templates/customers/customer_detail.html:34
+#: templates/customers/customer_detail.html:32
+msgid "Edit Profile"
+msgstr ""
+
+#: templates/customers/customer_detail.html:38
 #: templates/devices/edit_device.html:95
 msgid "Danger Zone"
 msgstr ""
 
-#: templates/customers/customer_detail.html:35
+#: templates/customers/customer_detail.html:39
 msgid ""
 "Anonymize this customer? This will scrub all PII (name, phone, address) "
 "but keep ticket history for financial reports. This cannot be undone."
 msgstr ""
 
-#: templates/customers/customer_detail.html:37
+#: templates/customers/customer_detail.html:41
 msgid "Anonymize Profile"
 msgstr ""
 
-#: templates/customers/customer_detail.html:48
+#: templates/customers/customer_detail.html:52
 msgid "Registered Devices"
 msgstr ""
 
-#: templates/customers/customer_detail.html:54
-#: templates/customers/customer_detail.html:89
-#: templates/devices/devices.html:39 templates/main/dashboard.html:57
-#: templates/tickets/edit_ticket.html:24 templates/tickets/tickets_list.html:45
+#: templates/customers/customer_detail.html:58
+#: templates/customers/customer_detail.html:94
+#: templates/devices/devices.html:51 templates/main/dashboard.html:76
+#: templates/tickets/edit_ticket.html:24 templates/tickets/tickets_list.html:54
 msgid "Device"
 msgstr ""
 
-#: templates/customers/customer_detail.html:55
+#: templates/customers/customer_detail.html:59
 #: templates/devices/device_detail.html:35
 msgid "Serial"
 msgstr ""
 
-#: templates/customers/customer_detail.html:62
-#: templates/customers/customer_detail.html:99
+#: templates/customers/customer_detail.html:66
+#: templates/customers/customer_detail.html:104
 #: templates/devices/device_detail.html:3
-#: templates/devices/device_detail.html:20 templates/devices/devices.html:50
-#: templates/devices/edit_device.html:3 templates/devices/edit_device.html:10
+#: templates/devices/device_detail.html:20 templates/devices/edit_device.html:3
+#: templates/devices/edit_device.html:10
 msgid "Unknown Device"
 msgstr ""
 
-#: templates/customers/customer_detail.html:65
-msgid "View History"
+#: templates/customers/customer_detail.html:69
+#: templates/devices/devices.html:66
+msgid "View Device Details"
 msgstr ""
 
-#: templates/customers/customer_detail.html:69
+#: templates/customers/customer_detail.html:74
 msgid "No devices registered."
 msgstr ""
 
-#: templates/customers/customer_detail.html:82
+#: templates/customers/customer_detail.html:87
 msgid "Recent Repair Tickets"
 msgstr ""
 
-#: templates/customers/customer_detail.html:88
-#: templates/devices/device_detail.html:65 templates/main/dashboard.html:55
-#: templates/reports/finance_report.html:99
-#: templates/reports/finance_report.html:154
-#: templates/tickets/tickets_list.html:43
+#: templates/customers/customer_detail.html:93
+#: templates/devices/device_detail.html:66 templates/main/dashboard.html:74
+#: templates/reports/finance_report.html:116
+#: templates/reports/finance_report.html:171
+#: templates/tickets/tickets_list.html:52
 msgid "Ticket #"
 msgstr ""
 
-#: templates/customers/customer_detail.html:91
-#: templates/devices/device_detail.html:67 templates/main/dashboard.html:59
-#: templates/pos/history.html:21 templates/tickets/ticket_detail.html:211
-#: templates/tickets/ticket_detail.html:244
+#: templates/customers/customer_detail.html:96
+#: templates/devices/device_detail.html:68 templates/main/dashboard.html:78
+#: templates/pos/history.html:36 templates/tickets/ticket_detail.html:217
+#: templates/tickets/ticket_detail.html:250
 msgid "Date"
 msgstr ""
 
-#: templates/customers/customer_detail.html:107
-#: templates/devices/device_detail.html:82 templates/devices/devices.html:63
-#: templates/main/dashboard.html:79 templates/reports/reports.html:109
-#: templates/reports/reports.html:111 templates/tickets/ticket_detail.html:38
-#: templates/tickets/tickets_list.html:66
-msgid "View"
+#: templates/customers/customer_detail.html:112
+#: templates/tickets/tickets_list.html:75
+msgid "View Ticket Details"
 msgstr ""
 
-#: templates/customers/customer_detail.html:111
+#: templates/customers/customer_detail.html:117
 msgid "No tickets found for this customer."
 msgstr ""
 
-#: templates/customers/customers.html:10
+#: templates/customers/customers.html:12
 msgid "Customer Directory"
 msgstr ""
 
-#: templates/customers/customers.html:12
-msgid "+ New Customer"
+#: templates/customers/customers.html:16
+msgid "Hide Anonymized"
 msgstr ""
 
-#: templates/customers/customers.html:21
+#: templates/customers/customers.html:20
+msgid "Show Anonymized"
+msgstr ""
+
+#: templates/customers/customers.html:26
+#: templates/customers/new_customer.html:3
+msgid "New Customer"
+msgstr ""
+
+#: templates/customers/customers.html:46
 msgid "Search Customers"
 msgstr ""
 
-#: templates/customers/customers.html:23
+#: templates/customers/customers.html:48
 msgid "Search by name or phone..."
 msgstr ""
 
-#: templates/customers/customers.html:26 templates/devices/devices.html:26
-#: templates/parts/manage_parts.html:24
-#: templates/services/manage_services.html:24
-#: templates/tickets/tickets_list.html:30
+#: templates/customers/customers.html:51 templates/devices/devices.html:38
+#: templates/parts/manage_parts.html:36
+#: templates/services/manage_services.html:33
+#: templates/tickets/tickets_list.html:39
 msgid "Search"
 msgstr ""
 
-#: templates/customers/customers.html:28 templates/devices/devices.html:28
-#: templates/parts/manage_parts.html:26
-#: templates/reports/finance_report.html:13
-#: templates/services/manage_services.html:26
-#: templates/tickets/tickets_list.html:32
+#: templates/customers/customers.html:53 templates/devices/devices.html:40
+#: templates/parts/manage_parts.html:39
+#: templates/reports/finance_report.html:29
+#: templates/services/manage_services.html:36
+#: templates/tickets/tickets_list.html:42
 msgid "Clear"
 msgstr ""
 
-#: templates/customers/customers.html:39
+#: templates/customers/customers.html:64
 msgid "Name"
 msgstr ""
 
-#: templates/customers/customers.html:54
-msgid "View Profile"
+#: templates/customers/customers.html:77
+msgid "This record has been anonymized for GDPR compliance."
 msgstr ""
 
-#: templates/customers/customers.html:58
+#: templates/customers/customers.html:78
+msgid "Anonymized"
+msgstr ""
+
+#: templates/customers/customers.html:86
+msgid "View Customer Details"
+msgstr ""
+
+#: templates/customers/customers.html:91
 msgid "No customers found matching your search."
 msgstr ""
 
-#: templates/customers/customers.html:58
+#: templates/customers/customers.html:91
 msgid "No customers found."
 msgstr ""
 
-#: templates/customers/new_customer.html:3
-msgid "New Customer"
+#: templates/customers/edit_customer.html:3
+msgid "Edit Customer"
+msgstr ""
+
+#: templates/customers/edit_customer.html:8
+msgid "Edit Customer Profile"
+msgstr ""
+
+#: templates/customers/edit_customer.html:18
+#: templates/customers/new_customer.html:19
+msgid "Customer Information"
+msgstr ""
+
+#: templates/customers/edit_customer.html:27
+#: templates/customers/new_customer.html:28
+#: templates/tickets/ticket_form.html:17 templates/tickets/ticket_form.html:18
+msgid "Phone Number"
 msgstr ""
 
 #: templates/customers/new_customer.html:9 templates/devices/new_device.html:26
@@ -2352,17 +2455,8 @@ msgstr ""
 msgid "Add New Customer"
 msgstr ""
 
-#: templates/customers/new_customer.html:19
-msgid "Customer Information"
-msgstr ""
-
 #: templates/customers/new_customer.html:25
 msgid "e.g., John Doe"
-msgstr ""
-
-#: templates/customers/new_customer.html:28
-#: templates/tickets/ticket_form.html:17 templates/tickets/ticket_form.html:18
-msgid "Phone Number"
 msgstr ""
 
 #: templates/customers/new_customer.html:29
@@ -2391,24 +2485,24 @@ msgid "Device Details"
 msgstr ""
 
 #: templates/devices/device_detail.html:10 templates/devices/new_device.html:11
-msgid "Back to Inventory"
+msgid "Back to Devices"
 msgstr ""
 
 #: templates/devices/device_detail.html:17
 msgid "Device Information"
 msgstr ""
 
-#: templates/devices/device_detail.html:21 templates/devices/devices.html:40
+#: templates/devices/device_detail.html:21
 msgid "Owner"
 msgstr ""
 
-#: templates/devices/device_detail.html:24 templates/pos/history.html:24
-#: templates/reports/finance_report.html:152
+#: templates/devices/device_detail.html:24 templates/pos/history.html:39
+#: templates/reports/finance_report.html:169
 msgid "Type"
 msgstr ""
 
 #: templates/devices/device_detail.html:25
-#: templates/devices/edit_device.html:42 templates/devices/new_device.html:52
+#: templates/devices/edit_device.html:42 templates/devices/new_device.html:54
 #: templates/tickets/ticket_form.html:60
 msgid "Brand"
 msgstr ""
@@ -2422,7 +2516,7 @@ msgid "CPU"
 msgstr ""
 
 #: templates/devices/device_detail.html:28
-#: templates/devices/edit_device.html:54 templates/devices/new_device.html:64
+#: templates/devices/edit_device.html:54 templates/devices/new_device.html:66
 #: templates/tickets/ticket_form.html:72
 msgid "RAM"
 msgstr ""
@@ -2432,7 +2526,7 @@ msgid "Storage"
 msgstr ""
 
 #: templates/devices/device_detail.html:34
-#: templates/devices/edit_device.html:75 templates/devices/new_device.html:85
+#: templates/devices/edit_device.html:75 templates/devices/new_device.html:87
 #: templates/tickets/ticket_form.html:93
 msgid "Color"
 msgstr ""
@@ -2449,41 +2543,50 @@ msgstr ""
 msgid "Delete this device and its history?"
 msgstr ""
 
-#: templates/devices/device_detail.html:59
+#: templates/devices/device_detail.html:50
+msgid "Delete"
+msgstr ""
+
+#: templates/devices/device_detail.html:60
 msgid "Repair History"
 msgstr ""
 
-#: templates/devices/device_detail.html:87
+#: templates/devices/device_detail.html:83 templates/main/dashboard.html:99
+#: templates/reports/reports.html:120
+msgid "View Ticket"
+msgstr ""
+
+#: templates/devices/device_detail.html:89
 msgid "No repair history found for this device."
 msgstr ""
 
 #: templates/devices/devices.html:12
-msgid "Device Inventory"
+msgid "Device List"
 msgstr ""
 
-#: templates/devices/devices.html:14
-msgid "+ New Device"
+#: templates/devices/devices.html:15
+msgid "New Device"
 msgstr ""
 
-#: templates/devices/devices.html:21
+#: templates/devices/devices.html:33
 msgid "Search Devices"
 msgstr ""
 
-#: templates/devices/devices.html:23
-msgid "Search by model or serial..."
+#: templates/devices/devices.html:35
+msgid "Search by brand, model, serial or customer name..."
 msgstr ""
 
-#: templates/devices/devices.html:41 templates/devices/edit_device.html:71
-#: templates/devices/new_device.html:81 templates/tickets/ticket_form.html:89
+#: templates/devices/devices.html:53 templates/devices/edit_device.html:71
+#: templates/devices/new_device.html:83 templates/tickets/ticket_form.html:89
 msgid "Serial Number"
 msgstr ""
 
-#: templates/devices/devices.html:70
-msgid "No devices found matching your search."
+#: templates/devices/devices.html:71
+msgid "No devices found matching your criteria."
 msgstr ""
 
-#: templates/devices/devices.html:70
-msgid "No devices found in inventory."
+#: templates/devices/devices.html:71 templates/tickets/new_ticket.html:36
+msgid "No devices found."
 msgstr ""
 
 #: templates/devices/edit_device.html:3 templates/devices/edit_device.html:10
@@ -2495,117 +2598,117 @@ msgstr ""
 msgid "Back to Device Details"
 msgstr ""
 
-#: templates/devices/edit_device.html:29 templates/devices/new_device.html:39
+#: templates/devices/edit_device.html:29 templates/devices/new_device.html:41
 #: templates/tickets/ticket_form.html:47
 msgid "Device Type"
 msgstr ""
 
 #: templates/devices/edit_device.html:31 templates/devices/edit_device.html:60
-#: templates/devices/new_device.html:41 templates/devices/new_device.html:70
+#: templates/devices/new_device.html:43 templates/devices/new_device.html:72
 #: templates/tickets/ticket_form.html:49 templates/tickets/ticket_form.html:78
 msgid "-- Select --"
 msgstr ""
 
-#: templates/devices/edit_device.html:33 templates/devices/new_device.html:43
+#: templates/devices/edit_device.html:33 templates/devices/new_device.html:45
 #: templates/tickets/ticket_form.html:51
 msgid "Laptop"
 msgstr ""
 
-#: templates/devices/edit_device.html:34 templates/devices/new_device.html:44
+#: templates/devices/edit_device.html:34 templates/devices/new_device.html:46
 #: templates/tickets/ticket_form.html:52
 msgid "Tablet"
 msgstr ""
 
-#: templates/devices/edit_device.html:35 templates/devices/new_device.html:45
+#: templates/devices/edit_device.html:35 templates/devices/new_device.html:47
 #: templates/tickets/ticket_form.html:53
 msgid "Desktop"
 msgstr ""
 
-#: templates/devices/edit_device.html:36 templates/devices/new_device.html:46
+#: templates/devices/edit_device.html:36 templates/devices/new_device.html:48
 #: templates/tickets/ticket_form.html:54
 msgid "Monitor"
 msgstr ""
 
-#: templates/devices/edit_device.html:37 templates/devices/new_device.html:47
+#: templates/devices/edit_device.html:37 templates/devices/new_device.html:49
 #: templates/tickets/ticket_form.html:55
 msgid "Printer"
 msgstr ""
 
-#: templates/devices/edit_device.html:38 templates/devices/new_device.html:48
-#: templates/pos/cart.html:220 templates/tickets/new_ticket.html:87
-#: templates/tickets/ticket_detail.html:395
+#: templates/devices/edit_device.html:38 templates/devices/new_device.html:50
+#: templates/pos/cart.html:220 templates/tickets/new_ticket.html:94
+#: templates/tickets/ticket_detail.html:401
 #: templates/tickets/ticket_form.html:56
 msgid "Other"
 msgstr ""
 
-#: templates/devices/edit_device.html:43 templates/devices/new_device.html:53
+#: templates/devices/edit_device.html:43 templates/devices/new_device.html:55
 msgid "e.g., Apple, Dell"
 msgstr ""
 
-#: templates/devices/edit_device.html:46 templates/devices/new_device.html:56
+#: templates/devices/edit_device.html:46 templates/devices/new_device.html:58
 #: templates/tickets/ticket_form.html:64
 msgid "Model Number"
 msgstr ""
 
-#: templates/devices/edit_device.html:47 templates/devices/new_device.html:57
+#: templates/devices/edit_device.html:47 templates/devices/new_device.html:59
 msgid "e.g., A2633"
 msgstr ""
 
-#: templates/devices/edit_device.html:50 templates/devices/new_device.html:60
+#: templates/devices/edit_device.html:50 templates/devices/new_device.html:62
 #: templates/tickets/ticket_form.html:68
 msgid "CPU/Processor"
 msgstr ""
 
-#: templates/devices/edit_device.html:51 templates/devices/new_device.html:61
+#: templates/devices/edit_device.html:51 templates/devices/new_device.html:63
 msgid "e.g., Core i7"
 msgstr ""
 
-#: templates/devices/edit_device.html:55 templates/devices/new_device.html:65
+#: templates/devices/edit_device.html:55 templates/devices/new_device.html:67
 msgid "e.g., 16GB"
 msgstr ""
 
-#: templates/devices/edit_device.html:58 templates/devices/new_device.html:68
+#: templates/devices/edit_device.html:58 templates/devices/new_device.html:70
 #: templates/tickets/ticket_form.html:76
 msgid "Storage Type"
 msgstr ""
 
-#: templates/devices/edit_device.html:61 templates/devices/new_device.html:71
+#: templates/devices/edit_device.html:61 templates/devices/new_device.html:73
 #: templates/tickets/ticket_form.html:79
 msgid "HDD"
 msgstr ""
 
-#: templates/devices/edit_device.html:62 templates/devices/new_device.html:72
+#: templates/devices/edit_device.html:62 templates/devices/new_device.html:74
 #: templates/tickets/ticket_form.html:80
 msgid "SSD"
 msgstr ""
 
-#: templates/devices/edit_device.html:63 templates/devices/new_device.html:73
+#: templates/devices/edit_device.html:63 templates/devices/new_device.html:75
 #: templates/tickets/ticket_form.html:81
 msgid "Mixed"
 msgstr ""
 
-#: templates/devices/edit_device.html:67 templates/devices/new_device.html:77
+#: templates/devices/edit_device.html:67 templates/devices/new_device.html:79
 #: templates/tickets/ticket_form.html:85
 msgid "Storage Capacity"
 msgstr ""
 
-#: templates/devices/edit_device.html:68 templates/devices/new_device.html:78
+#: templates/devices/edit_device.html:68 templates/devices/new_device.html:80
 msgid "e.g., 512GB"
 msgstr ""
 
-#: templates/devices/edit_device.html:72 templates/devices/new_device.html:82
+#: templates/devices/edit_device.html:72 templates/devices/new_device.html:84
 msgid "e.g., C02ABCDEFGH"
 msgstr ""
 
-#: templates/devices/edit_device.html:76 templates/devices/new_device.html:86
+#: templates/devices/edit_device.html:76 templates/devices/new_device.html:88
 msgid "e.g., Space Gray"
 msgstr ""
 
-#: templates/devices/edit_device.html:79 templates/devices/new_device.html:89
+#: templates/devices/edit_device.html:79 templates/devices/new_device.html:91
 msgid "Notes"
 msgstr ""
 
-#: templates/devices/edit_device.html:80 templates/devices/new_device.html:90
+#: templates/devices/edit_device.html:80 templates/devices/new_device.html:92
 msgid "Any additional notes about the device..."
 msgstr ""
 
@@ -2617,6 +2720,7 @@ msgstr ""
 msgid "Are you sure you want to delete this device? This action cannot be undone."
 msgstr ""
 
+#: templates/devices/edit_device.html:100
 #: templates/devices/edit_device.html:101
 msgid "Delete Device"
 msgstr ""
@@ -2641,11 +2745,11 @@ msgstr ""
 msgid "-- Select Customer --"
 msgstr ""
 
-#: templates/devices/new_device.html:93
+#: templates/devices/new_device.html:95
 msgid "Add Device"
 msgstr ""
 
-#: templates/devices/new_device.html:103
+#: templates/devices/new_device.html:105
 msgid "Access Denied: You do not have permission to add new devices."
 msgstr ""
 
@@ -2674,6 +2778,10 @@ msgstr ""
 
 #: templates/errors/401.html:9
 msgid "You must be logged in to access this page. Your session may have expired."
+msgstr ""
+
+#: templates/errors/401.html:13
+msgid "Sign In"
 msgstr ""
 
 #: templates/errors/403.html:2 templates/errors/403.html:7
@@ -2758,51 +2866,65 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
-#: templates/main/dashboard.html:11 templates/reports/reports.html:28
+#: templates/main/dashboard.html:8
+msgid "Shop Overview"
+msgstr ""
+
+#: templates/main/dashboard.html:12 templates/pos/history.html:13
+#: templates/pos/index.html:13
+msgid "Branch View:"
+msgstr ""
+
+#: templates/main/dashboard.html:14 templates/pos/history.html:15
+msgid "All Branches"
+msgstr ""
+
+#: templates/main/dashboard.html:30 templates/reports/reports.html:39
 msgid "Total Tickets"
 msgstr ""
 
-#: templates/main/dashboard.html:19
+#: templates/main/dashboard.html:38
 msgid "In Repair"
 msgstr ""
 
-#: templates/main/dashboard.html:27 templates/tickets/ticket_detail.html:315
+#: templates/main/dashboard.html:46 templates/tickets/ticket_detail.html:321
 msgid "Finished"
 msgstr ""
 
-#: templates/main/dashboard.html:46
+#: templates/main/dashboard.html:65
 msgid "Recent Tickets"
 msgstr ""
 
-#: templates/main/dashboard.html:48 templates/tickets/new_ticket.html:102
+#: templates/main/dashboard.html:67 templates/tickets/new_ticket.html:109
+#: templates/tickets/tickets_list.html:19
 msgid "Create Ticket"
 msgstr ""
 
-#: templates/main/dashboard.html:70
+#: templates/main/dashboard.html:90
 msgid "S/N"
 msgstr ""
 
-#: templates/main/dashboard.html:83
+#: templates/main/dashboard.html:104
 msgid "No recent tickets found."
 msgstr ""
 
-#: templates/main/dashboard.html:98 templates/pos/index.html:19
+#: templates/main/dashboard.html:119 templates/pos/index.html:34
 msgid "Start New Sale"
 msgstr ""
 
-#: templates/main/dashboard.html:105 templates/pos/index.html:26
+#: templates/main/dashboard.html:126 templates/pos/index.html:42
 msgid "Select Customer"
 msgstr ""
 
-#: templates/main/dashboard.html:107 templates/pos/index.html:28
+#: templates/main/dashboard.html:128 templates/pos/index.html:44
 msgid "Walk-in Customer"
 msgstr ""
 
-#: templates/main/dashboard.html:110
+#: templates/main/dashboard.html:132
 msgid "No phone"
 msgstr ""
 
-#: templates/main/dashboard.html:118 templates/pos/index.html:40
+#: templates/main/dashboard.html:140 templates/pos/index.html:56
 msgid "Open Cart"
 msgstr ""
 
@@ -2866,112 +2988,116 @@ msgstr ""
 msgid "Manage Parts"
 msgstr ""
 
-#: templates/parts/manage_parts.html:10
+#: templates/parts/manage_parts.html:11
 msgid "Spare Parts & Hardware"
 msgstr ""
 
-#: templates/parts/manage_parts.html:12
-msgid "+ New Item"
+#: templates/parts/manage_parts.html:15
+msgid "New Item"
 msgstr ""
 
-#: templates/parts/manage_parts.html:22
+#: templates/parts/manage_parts.html:33
 msgid "Search by name or SKU..."
 msgstr ""
 
-#: templates/parts/manage_parts.html:37
+#: templates/parts/manage_parts.html:49
 msgid "SKU / Barcode"
 msgstr ""
 
-#: templates/parts/manage_parts.html:38 templates/parts/manage_parts.html:131
-#: templates/parts/manage_parts.html:188 templates/pos/index.html:89
+#: templates/parts/manage_parts.html:50 templates/parts/manage_parts.html:144
+#: templates/parts/manage_parts.html:201 templates/pos/index.html:113
 msgid "Part Name"
 msgstr ""
 
-#: templates/parts/manage_parts.html:39
+#: templates/parts/manage_parts.html:51
 msgid "Cost (Wholesale)"
 msgstr ""
 
-#: templates/parts/manage_parts.html:40 templates/parts/manage_parts.html:147
-#: templates/parts/manage_parts.html:204 templates/parts/manage_parts.html:331
-#: templates/tickets/ticket_detail.html:492
+#: templates/parts/manage_parts.html:52 templates/parts/manage_parts.html:160
+#: templates/parts/manage_parts.html:217 templates/parts/manage_parts.html:345
+#: templates/tickets/ticket_detail.html:498
 msgid "Selling Price"
 msgstr ""
 
-#: templates/parts/manage_parts.html:41 templates/pos/cart.html:75
+#: templates/parts/manage_parts.html:53 templates/pos/cart.html:75
 msgid "Stock"
 msgstr ""
 
-#: templates/parts/manage_parts.html:66
+#: templates/parts/manage_parts.html:78
 msgid "Last movement"
 msgstr ""
 
-#: templates/parts/manage_parts.html:76
+#: templates/parts/manage_parts.html:88
 msgid "View Price History"
 msgstr ""
 
-#: templates/parts/manage_parts.html:92
-msgid "Are you sure you want to permanently delete this part?"
-msgstr ""
-
-#: templates/parts/manage_parts.html:102
-msgid "No spare parts found matching your search."
-msgstr ""
-
-#: templates/parts/manage_parts.html:102
-msgid "No spare parts found in inventory."
-msgstr ""
-
-#: templates/parts/manage_parts.html:122
+#: templates/parts/manage_parts.html:102 templates/parts/manage_parts.html:135
 msgid "Edit Part Details"
 msgstr ""
 
-#: templates/parts/manage_parts.html:127 templates/parts/manage_parts.html:184
-msgid "SKU / Barcode ID"
+#: templates/parts/manage_parts.html:104
+msgid "Are you sure you want to permanently delete this part?"
 msgstr ""
 
-#: templates/parts/manage_parts.html:128 templates/parts/manage_parts.html:185
-msgid "Optional barcode or SKU"
+#: templates/parts/manage_parts.html:106
+msgid "Delete Part"
+msgstr ""
+
+#: templates/parts/manage_parts.html:115
+msgid "No spare parts found matching your search."
+msgstr ""
+
+#: templates/parts/manage_parts.html:115
+msgid "No spare parts found in inventory."
 msgstr ""
 
 #: templates/parts/manage_parts.html:140 templates/parts/manage_parts.html:197
-#: templates/parts/manage_parts.html:323
-#: templates/tickets/ticket_detail.html:482
+msgid "SKU / Barcode ID"
+msgstr ""
+
+#: templates/parts/manage_parts.html:141 templates/parts/manage_parts.html:198
+msgid "Optional barcode or SKU"
+msgstr ""
+
+#: templates/parts/manage_parts.html:153 templates/parts/manage_parts.html:210
+#: templates/parts/manage_parts.html:337
+#: templates/tickets/ticket_detail.html:488
 msgid "Wholesale Cost"
 msgstr ""
 
-#: templates/parts/manage_parts.html:155
+#: templates/parts/manage_parts.html:168
 msgid "Stock Quantity"
 msgstr ""
 
-#: templates/parts/manage_parts.html:179
+#: templates/parts/manage_parts.html:192
 msgid "Add New Item"
 msgstr ""
 
-#: templates/parts/manage_parts.html:189
+#: templates/parts/manage_parts.html:202
 msgid "e.g. iPhone 13 Screen"
 msgstr ""
 
-#: templates/parts/manage_parts.html:200
+#: templates/parts/manage_parts.html:213
 msgid "Your cost"
 msgstr ""
 
-#: templates/parts/manage_parts.html:207
+#: templates/parts/manage_parts.html:220
 msgid "Customer price"
 msgstr ""
 
-#: templates/parts/manage_parts.html:212
+#: templates/parts/manage_parts.html:225
 msgid "Initial Stock"
 msgstr ""
 
-#: templates/parts/manage_parts.html:218
+#: templates/parts/manage_parts.html:231
 msgid "Add to Inventory"
 msgstr ""
 
-#: templates/parts/manage_parts.html:230
+#: templates/parts/manage_parts.html:243
 msgid "Price & Cost Trends"
 msgstr ""
 
-#: templates/parts/manage_parts.html:239
+#: templates/parts/manage_parts.html:252
 msgid "No historical data points found for this part."
 msgstr ""
 
@@ -3011,7 +3137,7 @@ msgstr ""
 
 #: templates/pos/cart.html:53 templates/pos/cart.html:111
 #: templates/pos/cart.html:138 templates/tickets/invoice.html:54
-#: templates/tickets/ticket_detail.html:120
+#: templates/tickets/ticket_detail.html:124
 msgid "Service"
 msgstr ""
 
@@ -3019,7 +3145,8 @@ msgstr ""
 msgid "Select Service"
 msgstr ""
 
-#: templates/pos/cart.html:62 templates/tickets/ticket_detail.html:441
+#: templates/pos/cart.html:62 templates/tickets/ticket_detail.html:101
+#: templates/tickets/ticket_detail.html:447
 msgid "Add Service"
 msgstr ""
 
@@ -3031,14 +3158,15 @@ msgstr ""
 msgid "Select Part"
 msgstr ""
 
-#: templates/pos/cart.html:80 templates/tickets/ticket_detail.html:510
+#: templates/pos/cart.html:80 templates/tickets/ticket_detail.html:104
+#: templates/tickets/ticket_detail.html:516
 msgid "Add Part"
 msgstr ""
 
-#: templates/pos/cart.html:98 templates/services/manage_services.html:41
-#: templates/services/manage_services.html:112
-#: templates/services/manage_services.html:152
-#: templates/tickets/ticket_detail.html:111
+#: templates/pos/cart.html:98 templates/services/manage_services.html:48
+#: templates/services/manage_services.html:119
+#: templates/services/manage_services.html:159
+#: templates/tickets/ticket_detail.html:115
 msgid "Price"
 msgstr ""
 
@@ -3054,7 +3182,7 @@ msgstr ""
 msgid "Remove"
 msgstr ""
 
-#: templates/pos/cart.html:136 templates/tickets/ticket_detail.html:138
+#: templates/pos/cart.html:136 templates/tickets/ticket_detail.html:143
 msgid "Part"
 msgstr ""
 
@@ -3090,18 +3218,18 @@ msgstr ""
 msgid "Amount to Pay"
 msgstr ""
 
-#: templates/pos/cart.html:215 templates/tickets/new_ticket.html:81
-#: templates/tickets/ticket_detail.html:389
+#: templates/pos/cart.html:215 templates/tickets/new_ticket.html:88
+#: templates/tickets/ticket_detail.html:395
 msgid "Payment Method"
 msgstr ""
 
-#: templates/pos/cart.html:218 templates/tickets/new_ticket.html:84
-#: templates/tickets/ticket_detail.html:392
+#: templates/pos/cart.html:218 templates/tickets/new_ticket.html:91
+#: templates/tickets/ticket_detail.html:398
 msgid "Card"
 msgstr ""
 
-#: templates/pos/cart.html:219 templates/tickets/new_ticket.html:85
-#: templates/tickets/ticket_detail.html:393
+#: templates/pos/cart.html:219 templates/tickets/new_ticket.html:92
+#: templates/tickets/ticket_detail.html:399
 msgid "Bank Transfer"
 msgstr ""
 
@@ -3126,86 +3254,94 @@ msgid "Processing..."
 msgstr ""
 
 #: templates/pos/history.html:4 templates/pos/history.html:9
-#: templates/pos/index.html:10
+#: templates/pos/index.html:24
 msgid "Sales History"
 msgstr ""
 
-#: templates/pos/history.html:11
-msgid "New Sale"
+#: templates/pos/history.html:25
+msgid "Back to Sales"
 msgstr ""
 
-#: templates/pos/history.html:22
+#: templates/pos/history.html:37
 msgid "Invoice #"
 msgstr ""
 
-#: templates/pos/history.html:43 templates/reports/reports.html:101
+#: templates/pos/history.html:58 templates/reports/reports.html:112
 msgid "Repair"
 msgstr ""
 
-#: templates/pos/history.html:45 templates/reports/finance_report.html:188
-#: templates/reports/reports.html:96
+#: templates/pos/history.html:60 templates/reports/finance_report.html:205
+#: templates/reports/reports.html:107
 msgid "Direct Sale"
 msgstr ""
 
-#: templates/pos/history.html:59
+#: templates/pos/history.html:74 templates/reports/reports.html:123
 msgid "View Invoice"
 msgstr ""
 
-#: templates/pos/history.html:63
+#: templates/pos/history.html:78
 msgid "View Details"
 msgstr ""
 
-#: templates/pos/history.html:63
+#: templates/pos/history.html:78
 msgid "View/Edit Cart"
 msgstr ""
 
-#: templates/pos/history.html:69
+#: templates/pos/history.html:84
 msgid "Permanently erase this draft sale and restore stock?"
 msgstr ""
 
-#: templates/pos/history.html:71
+#: templates/pos/history.html:86
 msgid "Erase Draft"
 msgstr ""
 
-#: templates/pos/history.html:80
+#: templates/pos/history.html:96
 msgid "No sales records found."
 msgstr ""
 
-#: templates/pos/index.html:3
+#: templates/pos/index.html:4
 msgid "POS Dashboard"
 msgstr ""
 
-#: templates/pos/index.html:8
+#: templates/pos/index.html:9
 msgid "POS Terminal"
 msgstr ""
 
-#: templates/pos/index.html:34
+#: templates/pos/index.html:50
 msgid "Choose a customer or leave empty for a \"Walk-in\" sale."
 msgstr ""
 
-#: templates/pos/index.html:43
+#: templates/pos/index.html:59
 msgid "Quick Add Customer"
 msgstr ""
 
-#: templates/pos/index.html:55
+#: templates/pos/index.html:71
 msgid "Available Inventory & Services"
 msgstr ""
 
-#: templates/pos/index.html:65
+#: templates/pos/index.html:81
 msgid "Service Description"
 msgstr ""
 
-#: templates/pos/index.html:66 templates/pos/index.html:91
-#: templates/reports/finance_report.html:157
+#: templates/pos/index.html:82 templates/pos/index.html:115
+#: templates/reports/finance_report.html:174
 msgid "Unit Price"
 msgstr ""
 
-#: templates/pos/index.html:83
+#: templates/pos/index.html:96
+msgid "No services available at this location."
+msgstr ""
+
+#: templates/pos/index.html:107
 msgid "Spare Parts"
 msgstr ""
 
-#: templates/pos/index.html:90
+#: templates/pos/index.html:114
 msgid "In Stock"
+msgstr ""
+
+#: templates/pos/index.html:133
+msgid "No spare parts available at this location."
 msgstr ""
 
 #: templates/reports/finance_report.html:3
@@ -3216,95 +3352,105 @@ msgstr ""
 msgid "Financial Analytics"
 msgstr ""
 
-#: templates/reports/finance_report.html:11
+#: templates/reports/finance_report.html:21
+#: templates/tickets/ticket_detail.html:214
+msgid "From"
+msgstr ""
+
+#: templates/reports/finance_report.html:23
+#: templates/tickets/ticket_detail.html:215
+msgid "To"
+msgstr ""
+
+#: templates/reports/finance_report.html:26
 msgid "Filter"
 msgstr ""
 
-#: templates/reports/finance_report.html:16
+#: templates/reports/finance_report.html:33
 msgid "Back to Reports"
 msgstr ""
 
-#: templates/reports/finance_report.html:25
+#: templates/reports/finance_report.html:42
 msgid "Gross Revenue"
 msgstr ""
 
-#: templates/reports/finance_report.html:33
+#: templates/reports/finance_report.html:50
 msgid "Hardware Costs"
 msgstr ""
 
-#: templates/reports/finance_report.html:41
-#: templates/reports/finance_report.html:81 templates/reports/reports.html:58
+#: templates/reports/finance_report.html:58
+#: templates/reports/finance_report.html:98 templates/reports/reports.html:69
 msgid "Net Profit"
 msgstr ""
 
-#: templates/reports/finance_report.html:55 templates/reports/reports.html:12
+#: templates/reports/finance_report.html:72 templates/reports/reports.html:23
 msgid "All Time"
 msgstr ""
 
-#: templates/reports/finance_report.html:70
+#: templates/reports/finance_report.html:87
 msgid "Net Income Trends"
 msgstr ""
 
-#: templates/reports/finance_report.html:79
+#: templates/reports/finance_report.html:96
 msgid "Revenue"
 msgstr ""
 
-#: templates/reports/finance_report.html:80
+#: templates/reports/finance_report.html:97
 msgid "Costs"
 msgstr ""
 
-#: templates/reports/finance_report.html:91
+#: templates/reports/finance_report.html:108
 msgid "Customer Payment History"
 msgstr ""
 
-#: templates/reports/finance_report.html:97
+#: templates/reports/finance_report.html:114
 msgid "Date & Time"
 msgstr ""
 
-#: templates/reports/finance_report.html:100
-#: templates/tickets/ticket_detail.html:241
+#: templates/reports/finance_report.html:117
+#: templates/tickets/ticket_detail.html:247
 msgid "Method"
 msgstr ""
 
-#: templates/reports/finance_report.html:101 templates/reports/reports.html:77
-#: templates/tickets/ticket_detail.html:242
+#: templates/reports/finance_report.html:118 templates/reports/reports.html:88
+#: templates/tickets/ticket_detail.html:248
 msgid "Reference"
 msgstr ""
 
-#: templates/reports/finance_report.html:102
-#: templates/tickets/ticket_detail.html:240
+#: templates/reports/finance_report.html:119
+#: templates/tickets/ticket_detail.html:246
 msgid "Amount"
 msgstr ""
 
-#: templates/reports/finance_report.html:125 templates/reports/reports.html:103
+#: templates/reports/finance_report.html:142 templates/reports/reports.html:114
 msgid "POS Sale"
 msgstr ""
 
-#: templates/reports/finance_report.html:134
+#: templates/reports/finance_report.html:151
 msgid "No payment records found."
 msgstr ""
 
-#: templates/reports/finance_report.html:144
+#: templates/reports/finance_report.html:161
 msgid "Material Usage & Hardware Tracking"
 msgstr ""
 
-#: templates/reports/finance_report.html:145
+#: templates/reports/finance_report.html:162
 msgid "Includes Inventory & Manual Items"
 msgstr ""
 
-#: templates/reports/finance_report.html:151
+#: templates/reports/finance_report.html:168
 msgid "Item Description"
 msgstr ""
 
-#: templates/reports/finance_report.html:156
+#: templates/reports/finance_report.html:173
 msgid "Unit Cost"
 msgstr ""
 
-#: templates/reports/finance_report.html:171
+#: templates/reports/finance_report.html:188
 msgid "Manual Entry"
 msgstr ""
 
-#: templates/reports/finance_report.html:197
+#: templates/reports/finance_report.html:214
 msgid "No materials recorded yet."
 msgstr ""
 
@@ -3316,40 +3462,39 @@ msgstr ""
 msgid "Reports & Analytics"
 msgstr ""
 
-#: templates/reports/reports.html:10
+#: templates/reports/reports.html:11
+msgid "Location:"
+msgstr ""
+
+#: templates/reports/reports.html:21
 msgid "Period:"
 msgstr ""
 
-#: templates/reports/reports.html:19
+#: templates/reports/reports.html:30
 msgid "Detailed Finance Report"
 msgstr ""
 
-#: templates/reports/reports.html:36
+#: templates/reports/reports.html:47
 msgid "Completed Tickets"
 msgstr ""
 
-#: templates/reports/reports.html:44
+#: templates/reports/reports.html:55
 msgid "Completion Rate"
 msgstr ""
 
-#: templates/reports/reports.html:70
+#: templates/reports/reports.html:81
 msgid "Recent Sales Activity"
 msgstr ""
 
-#: templates/reports/reports.html:79
+#: templates/reports/reports.html:90
 msgid "Details"
 msgstr ""
 
-#: templates/reports/reports.html:80
+#: templates/reports/reports.html:91
 msgid "Type / Status"
 msgstr ""
 
-#: templates/reports/reports.html:82 templates/services/manage_services.html:43
-#: templates/tickets/tickets_list.html:49
-msgid "Actions"
-msgstr ""
-
-#: templates/reports/reports.html:117
+#: templates/reports/reports.html:130
 msgid "No recent activity found."
 msgstr ""
 
@@ -3365,53 +3510,83 @@ msgstr ""
 msgid "New Service"
 msgstr ""
 
-#: templates/services/manage_services.html:22
+#: templates/services/manage_services.html:31
 msgid "Search services..."
 msgstr ""
 
-#: templates/services/manage_services.html:34
-msgid "Service Catalog"
-msgstr ""
-
-#: templates/services/manage_services.html:40
-#: templates/services/manage_services.html:104
-#: templates/services/manage_services.html:144
+#: templates/services/manage_services.html:47
+#: templates/services/manage_services.html:111
+#: templates/services/manage_services.html:151
 msgid "Service Name"
 msgstr ""
 
-#: templates/services/manage_services.html:71
-msgid "Are you sure you want to permanently delete this service?"
-msgstr ""
-
-#: templates/services/manage_services.html:81
-msgid "No services found matching your criteria."
-msgstr ""
-
-#: templates/services/manage_services.html:81
-msgid "No services defined."
-msgstr ""
-
-#: templates/services/manage_services.html:99
+#: templates/services/manage_services.html:76
+#: templates/services/manage_services.html:106
 msgid "Edit Service"
 msgstr ""
 
-#: templates/services/manage_services.html:139
+#: templates/services/manage_services.html:78
+msgid "Are you sure you want to permanently delete this service?"
+msgstr ""
+
+#: templates/services/manage_services.html:80
+msgid "Delete Service"
+msgstr ""
+
+#: templates/services/manage_services.html:88
+msgid "No services found matching your criteria."
+msgstr ""
+
+#: templates/services/manage_services.html:88
+msgid "No services defined."
+msgstr ""
+
+#: templates/services/manage_services.html:146
 msgid "Add New Service Type"
 msgstr ""
 
-#: templates/services/manage_services.html:145
+#: templates/services/manage_services.html:152
 msgid "e.g. Screen Replacement"
 msgstr ""
 
-#: templates/services/manage_services.html:155
+#: templates/services/manage_services.html:162
 msgid "Service price"
 msgstr ""
 
-#: templates/services/manage_services.html:161
+#: templates/services/manage_services.html:168
 msgid "Create Service"
 msgstr ""
 
-#: templates/tickets/edit_ticket.html:3 templates/tickets/ticket_detail.html:18
+#: templates/tickets/archive_ticket.html:3
+#: templates/tickets/archive_ticket.html:32
+#: templates/tickets/ticket_detail.html:54
+msgid "Archive Ticket"
+msgstr ""
+
+#: templates/tickets/archive_ticket.html:10
+msgid "Confirm Archiving Ticket"
+msgstr ""
+
+#: templates/tickets/archive_ticket.html:14
+#, python-format
+msgid "Are you sure you want to archive ticket %(num)s?"
+msgstr ""
+
+#: templates/tickets/archive_ticket.html:18
+msgid ""
+"Archiving this ticket will remove it from active lists. It will still be "
+"accessible in history/reporting."
+msgstr ""
+
+#: templates/tickets/archive_ticket.html:24
+msgid "Current Phase:"
+msgstr ""
+
+#: templates/tickets/archive_ticket.html:25
+msgid "Outstanding Balance:"
+msgstr ""
+
+#: templates/tickets/edit_ticket.html:3
 msgid "Edit Ticket"
 msgstr ""
 
@@ -3430,23 +3605,23 @@ msgid ""
 msgstr ""
 
 #: templates/tickets/edit_ticket.html:29
-#: templates/tickets/ticket_detail.html:85
+#: templates/tickets/ticket_detail.html:89
 msgid "Items Included"
 msgstr ""
 
-#: templates/tickets/edit_ticket.html:30 templates/tickets/new_ticket.html:59
+#: templates/tickets/edit_ticket.html:30 templates/tickets/new_ticket.html:66
 msgid "e.g., Original Charger, Leather Case"
 msgstr ""
 
-#: templates/tickets/edit_ticket.html:35 templates/tickets/new_ticket.html:54
+#: templates/tickets/edit_ticket.html:35 templates/tickets/new_ticket.html:61
 msgid "Describe the issue in detail..."
 msgstr ""
 
-#: templates/tickets/edit_ticket.html:39 templates/tickets/new_ticket.html:63
+#: templates/tickets/edit_ticket.html:39 templates/tickets/new_ticket.html:70
 msgid "Technician Assignment"
 msgstr ""
 
-#: templates/tickets/edit_ticket.html:41 templates/tickets/new_ticket.html:65
+#: templates/tickets/edit_ticket.html:41 templates/tickets/new_ticket.html:72
 msgid "-- Unassigned --"
 msgstr ""
 
@@ -3482,7 +3657,7 @@ msgstr ""
 msgid "Subtotal:"
 msgstr ""
 
-#: templates/tickets/invoice.html:80 templates/tickets/ticket_detail.html:234
+#: templates/tickets/invoice.html:80 templates/tickets/ticket_detail.html:240
 msgid "Total Paid:"
 msgstr ""
 
@@ -3490,7 +3665,7 @@ msgstr ""
 msgid "Back to Ticket"
 msgstr ""
 
-#: templates/tickets/invoice.html:97 templates/tickets/ticket_detail.html:40
+#: templates/tickets/invoice.html:97 templates/tickets/ticket_detail.html:42
 msgid "Download PDF"
 msgstr ""
 
@@ -3520,44 +3695,52 @@ msgstr ""
 msgid "Type name or phone..."
 msgstr ""
 
-#: templates/tickets/new_ticket.html:21 templates/tickets/new_ticket.html:33
+#: templates/tickets/new_ticket.html:22 templates/tickets/new_ticket.html:40
 msgid "New"
 msgstr ""
 
-#: templates/tickets/new_ticket.html:29
+#: templates/tickets/new_ticket.html:30
 msgid "2. Select Device"
 msgstr ""
 
-#: templates/tickets/new_ticket.html:32
+#: templates/tickets/new_ticket.html:34
 msgid "Search customer's devices..."
 msgstr ""
 
-#: templates/tickets/new_ticket.html:40
+#: templates/tickets/new_ticket.html:35
+msgid "Searching..."
+msgstr ""
+
+#: templates/tickets/new_ticket.html:37
+msgid "No devices registered for this customer."
+msgstr ""
+
+#: templates/tickets/new_ticket.html:47
 msgid "Problem & Intake Details"
 msgstr ""
 
-#: templates/tickets/new_ticket.html:46
+#: templates/tickets/new_ticket.html:53
 msgid "Common Problems (Quick Select)"
 msgstr ""
 
-#: templates/tickets/new_ticket.html:58
+#: templates/tickets/new_ticket.html:65
 msgid "Items Included (Charger, Case, etc.)"
 msgstr ""
 
-#: templates/tickets/new_ticket.html:86
-#: templates/tickets/ticket_detail.html:394
+#: templates/tickets/new_ticket.html:93
+#: templates/tickets/ticket_detail.html:400
 msgid "Check"
 msgstr ""
 
-#: templates/tickets/new_ticket.html:92
+#: templates/tickets/new_ticket.html:99
 msgid "Intake Date/Time"
 msgstr ""
 
-#: templates/tickets/new_ticket.html:94
+#: templates/tickets/new_ticket.html:101
 msgid "Intake Date"
 msgstr ""
 
-#: templates/tickets/new_ticket.html:95
+#: templates/tickets/new_ticket.html:102
 msgid "Intake Time"
 msgstr ""
 
@@ -3570,339 +3753,335 @@ msgid "Ticket Locked"
 msgstr ""
 
 #: templates/tickets/ticket_detail.html:13
-#: templates/tickets/ticket_detail.html:328
+#: templates/tickets/ticket_detail.html:334
 msgid "Update Phase"
 msgstr ""
 
 #: templates/tickets/ticket_detail.html:16
-#: templates/tickets/ticket_detail.html:342
-#: templates/tickets/ticket_detail.html:406
+#: templates/tickets/ticket_detail.html:348
+#: templates/tickets/ticket_detail.html:412
 msgid "Record Payment"
+msgstr ""
+
+#: templates/tickets/ticket_detail.html:18
+msgid "Edit Ticket Details"
 msgstr ""
 
 #: templates/tickets/ticket_detail.html:28
 msgid "Create Invoice"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:33
+#: templates/tickets/ticket_detail.html:34
 msgid "Finalize Invoice"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:40
-msgid "Download Invoice PDF"
+#: templates/tickets/ticket_detail.html:39
+msgid "View Invoices"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:50
+#: templates/tickets/ticket_detail.html:52
 msgid ""
 "Archive this ticket? It will be removed from history lists but kept for "
 "financial reports."
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:52
-msgid "Archive Ticket"
-msgstr ""
-
-#: templates/tickets/ticket_detail.html:57
+#: templates/tickets/ticket_detail.html:60
 msgid ""
 "ERASE TICKET: Are you sure? This will remove all history and records for "
 "this job."
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:59
-msgid "Erase Ticket"
-msgstr ""
-
-#: templates/tickets/ticket_detail.html:72
-msgid "S/N:"
-msgstr ""
-
-#: templates/tickets/ticket_detail.html:73
-msgid "Color:"
+#: templates/tickets/ticket_detail.html:62
+msgid "Delete Ticket"
 msgstr ""
 
 #: templates/tickets/ticket_detail.html:76
+msgid "S/N:"
+msgstr ""
+
+#: templates/tickets/ticket_detail.html:77
+msgid "Color:"
+msgstr ""
+
+#: templates/tickets/ticket_detail.html:80
 msgid "Created:"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:77
+#: templates/tickets/ticket_detail.html:81
 msgid "Technician:"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:77
-#: templates/tickets/tickets_list.html:63
+#: templates/tickets/ticket_detail.html:81
+#: templates/tickets/tickets_list.html:72
 msgid "Unassigned"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:93
+#: templates/tickets/ticket_detail.html:97
 msgid "Services & Materials"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:97
-msgid "+ Add Service"
-msgstr ""
-
-#: templates/tickets/ticket_detail.html:100
-msgid "+ Add Part"
-msgstr ""
-
-#: templates/tickets/ticket_detail.html:120
+#: templates/tickets/ticket_detail.html:124
 msgid "Svc"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:128
+#: templates/tickets/ticket_detail.html:132
+msgid "Remove Services"
+msgstr ""
+
+#: templates/tickets/ticket_detail.html:132
 msgid "Remove service?"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:128
+#: templates/tickets/ticket_detail.html:132
 msgid "Remove service"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:146
+#: templates/tickets/ticket_detail.html:151
+msgid "Remove Part"
+msgstr ""
+
+#: templates/tickets/ticket_detail.html:151
 msgid "Remove this part from costs?"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:146
+#: templates/tickets/ticket_detail.html:151
 msgid "Remove part"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:155
+#: templates/tickets/ticket_detail.html:161
 msgid "No services or parts added yet."
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:164
+#: templates/tickets/ticket_detail.html:170
 msgid "Financial Summary"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:166
+#: templates/tickets/ticket_detail.html:172
 msgid "Initial Estimate:"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:171
+#: templates/tickets/ticket_detail.html:177
 msgid "Services:"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:175
+#: templates/tickets/ticket_detail.html:181
 msgid "Materials:"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:188
+#: templates/tickets/ticket_detail.html:194
 msgid "Change Due:"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:203
+#: templates/tickets/ticket_detail.html:209
 msgid "Phase History"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:208
-msgid "From"
-msgstr ""
-
-#: templates/tickets/ticket_detail.html:209
-msgid "To"
-msgstr ""
-
-#: templates/tickets/ticket_detail.html:210
-#: templates/tickets/tickets_list.html:47
+#: templates/tickets/ticket_detail.html:216
+#: templates/tickets/tickets_list.html:56
 msgid "Technician"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:217
+#: templates/tickets/ticket_detail.html:223
 msgid "Intake"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:233
+#: templates/tickets/ticket_detail.html:239
 msgid "Payment History"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:243
+#: templates/tickets/ticket_detail.html:249
 msgid "Recorded By"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:259
-msgid "Void this payment? This will update the invoice balance."
+#: templates/tickets/ticket_detail.html:265
+msgid "Void Payment"
 msgstr ""
 
 #: templates/tickets/ticket_detail.html:265
+msgid "Void this payment? This will update the invoice balance."
+msgstr ""
+
+#: templates/tickets/ticket_detail.html:271
 msgid "No payments recorded yet."
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:276
+#: templates/tickets/ticket_detail.html:282
 msgid "Notes & Timeline"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:281
+#: templates/tickets/ticket_detail.html:287
 msgid "Internal"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:285
+#: templates/tickets/ticket_detail.html:291
 msgid "by"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:288
+#: templates/tickets/ticket_detail.html:294
 msgid "No notes or timeline entries for this ticket."
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:303
+#: templates/tickets/ticket_detail.html:309
 msgid "Update Ticket Phase"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:308
+#: templates/tickets/ticket_detail.html:314
 msgid "New Phase"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:310
+#: templates/tickets/ticket_detail.html:316
 msgid "-- Select Phase --"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:311
+#: templates/tickets/ticket_detail.html:317
 msgid "Open"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:312
+#: templates/tickets/ticket_detail.html:318
 msgid "Diagnostic"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:313
+#: templates/tickets/ticket_detail.html:319
 msgid "Waiting for Parts"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:314
+#: templates/tickets/ticket_detail.html:320
 msgid "Repairing"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:316
+#: templates/tickets/ticket_detail.html:322
 msgid "Fully Paid"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:317
+#: templates/tickets/ticket_detail.html:323
 msgid "Already Taken"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:318
+#: templates/tickets/ticket_detail.html:324
 msgid "Cancelled"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:322
+#: templates/tickets/ticket_detail.html:328
 msgid "Technician Commentary (Optional)"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:323
+#: templates/tickets/ticket_detail.html:329
 msgid "Describe the work done or reason for phase change..."
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:342
+#: templates/tickets/ticket_detail.html:348
 msgid "Return Change / Refund"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:348
+#: templates/tickets/ticket_detail.html:354
 msgid "Overpayment / Change Due"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:348
+#: templates/tickets/ticket_detail.html:354
 msgid "Outstanding Balance"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:354
+#: templates/tickets/ticket_detail.html:360
 msgid "Amount to Record"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:364
+#: templates/tickets/ticket_detail.html:370
 msgid "Return All"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:364
+#: templates/tickets/ticket_detail.html:370
 msgid "Pay Full"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:368
+#: templates/tickets/ticket_detail.html:374
 #, python-format
 msgid ""
 "Enter <strong>%(amount)s</strong> to record that the change was handed "
 "back to the customer."
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:374
+#: templates/tickets/ticket_detail.html:380
 msgid "Change Calculator"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:377
+#: templates/tickets/ticket_detail.html:383
 msgid "Cash Received"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:381
+#: templates/tickets/ticket_detail.html:387
 msgid "Change to Give"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:399
+#: templates/tickets/ticket_detail.html:405
 msgid "Transaction Reference (Optional)"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:400
+#: templates/tickets/ticket_detail.html:406
 msgid "E.g., Receipt #, Auth ID"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:406
+#: templates/tickets/ticket_detail.html:412
 msgid "Record Return"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:421
+#: templates/tickets/ticket_detail.html:427
 msgid "Add Repair Service"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:426
+#: templates/tickets/ticket_detail.html:432
 msgid "Service Type"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:428
+#: templates/tickets/ticket_detail.html:434
 msgid "-- Select Service --"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:435
-#: templates/tickets/ticket_detail.html:502
+#: templates/tickets/ticket_detail.html:441
+#: templates/tickets/ticket_detail.html:508
 msgid "Quantity"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:455
+#: templates/tickets/ticket_detail.html:461
 msgid "Add Replaced Part"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:460
+#: templates/tickets/ticket_detail.html:466
 msgid "Quick Search SKU / Barcode"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:463
+#: templates/tickets/ticket_detail.html:469
 msgid "Scan or type SKU..."
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:466
+#: templates/tickets/ticket_detail.html:472
 msgid "Inventory Item"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:468
+#: templates/tickets/ticket_detail.html:474
 msgid "-- Or type manually below --"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:470
+#: templates/tickets/ticket_detail.html:476
 msgid "Stock:"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:475
+#: templates/tickets/ticket_detail.html:481
 msgid "Manual Description"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:476
+#: templates/tickets/ticket_detail.html:482
 msgid "E.g. Custom Screw, Generic Cable"
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:477
+#: templates/tickets/ticket_detail.html:483
 msgid "Required if not selecting from inventory."
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:487
+#: templates/tickets/ticket_detail.html:493
 msgid "Optional for manual items."
 msgstr ""
 
-#: templates/tickets/ticket_detail.html:497
+#: templates/tickets/ticket_detail.html:503
 msgid "Required for manual items."
 msgstr ""
 
@@ -3954,39 +4133,27 @@ msgstr ""
 msgid "All Tickets - Repair Shop"
 msgstr ""
 
-#: templates/tickets/tickets_list.html:9
+#: templates/tickets/tickets_list.html:11
 msgid "Pickup History"
 msgstr ""
 
-#: templates/tickets/tickets_list.html:9
+#: templates/tickets/tickets_list.html:11
 msgid "Repair Tickets"
 msgstr ""
 
-#: templates/tickets/tickets_list.html:10
-msgid "Archive of completed and collected devices"
-msgstr ""
-
-#: templates/tickets/tickets_list.html:10
-msgid "Active units currently in the shop"
-msgstr ""
-
-#: templates/tickets/tickets_list.html:15
+#: templates/tickets/tickets_list.html:16
 msgid "Picked Up"
 msgstr ""
 
-#: templates/tickets/tickets_list.html:17
-msgid "+ Create Ticket"
-msgstr ""
-
-#: templates/tickets/tickets_list.html:28
+#: templates/tickets/tickets_list.html:38
 msgid "Search by #, customer, device..."
 msgstr ""
 
-#: templates/tickets/tickets_list.html:46
+#: templates/tickets/tickets_list.html:55
 msgid "Phase"
 msgstr ""
 
-#: templates/tickets/tickets_list.html:71
+#: templates/tickets/tickets_list.html:81
 msgid "No repair tickets found."
 msgstr ""
 

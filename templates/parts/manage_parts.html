@@ -99,11 +99,11 @@
                                         data-price="{{ '%.*f'|format(currency_decimals, part.selling_price or 0) }}"
                                         data-stock="{{ part.stock_quantity or 0 }}"
                                         data-active="{{ 'true' if part.is_active else 'false' }}">
-                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                    <i class="fas fa-edit" aria-hidden="true" class="btn-link text-decoration-none" title="{{ _('Edit Part Details') }}"></i>
                                 </button>
                                 <form action="{{ url_for('inventory.delete_part', part_id=part.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this part?') }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" class="btn-link text-decoration-none" title="{{ _('Delete Part') }}">
                                         <i class="fas fa-trash-alt" aria-hidden="true"></i></button>
                                 </form>
                                 {% endif %}

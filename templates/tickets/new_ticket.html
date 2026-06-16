@@ -18,7 +18,8 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-user" aria-hidden="true"></i></span>
                         <input type="text" id="customer_search" class="form-control" placeholder="{{ _('Type name or phone...') }}" autocomplete="off">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#newCustomerModal"><i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('New') }}</button>
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#newCustomerModal">
+                            <i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('New') }}</button>
                     </div>
                     <input type="hidden" name="customer_id" id="customer_id">
                     <div id="customer_results" class="list-group position-absolute w-100 z-3 shadow mt-1 bg-body" style="display: none; max-height: 250px; overflow-y: auto;"></div>
@@ -35,7 +36,8 @@
                                data-no-results-text="{{ _('No devices found.') }}"
                                data-no-devices-registered-text="{{ _('No devices registered for this customer.') }}"
                                disabled autocomplete="off">
-                        <button type="button" id="new_device_btn" class="btn btn-outline-secondary" disabled data-bs-toggle="modal" data-bs-target="#newDeviceModal"><i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('New') }}</button>
+                        <button type="button" id="new_device_btn" class="btn btn-outline-primary" disabled data-bs-toggle="modal" data-bs-target="#newDeviceModal">
+                            <i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('New') }}</button>
                     </div>
                     <input type="hidden" name="device_id" id="device_id">
                     <div id="device_results" class="list-group position-absolute w-100 z-3 shadow mt-1 bg-body" style="display: none; max-height: 250px; overflow-y: auto;"></div>
@@ -104,7 +106,7 @@
                 <div class="col-12 text-end mt-4">
                     <hr>
                     <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary px-4 me-2">{{ _('Cancel') }}</a>
-                    <button type="submit" class="btn btn-outline-primary btn-lg px-5">{{ _('Create Ticket') }}</button>
+                    <button type="submit" class="btn btn-outline-primary btn-lg px-5"><i class="fas fa-edit me-1" aria-hidden="true"></i>{{ _('Create Ticket') }}</button>
                 </div>
             </div>
         </form>

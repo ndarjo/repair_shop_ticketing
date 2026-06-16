@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from models import (CommonProblem, Customer, Device, Invoice, InvoiceItem,
                     Location, Note, Payment, PhaseLog, Role, Service,
-                    SparePart, Ticket, User, db)
+                    SparePart, Ticket, TicketService, User, db)
 from services import (DocumentService, FinancialService, InventoryService,
                       RepairTicketService)
 from .utils import require_permission, safe_decimal
@@ -159,7 +159,13 @@ def tickets_list():
     else:
         filters.append(Ticket.location_id == current_user.location_id)
     
-    filters.append(Ticket.is_archived == (True if view == 'history' else False))
+    # Global filter: Never show archived tickets in active or history lists
+    filters.append(Ticket.is_archived == False)
+
+    if view == 'history':
+        filters.append(Ticket.current_phase == 'Already Taken')
+    else:
+        filters.append(Ticket.current_phase != 'Already Taken')
 
     stmt = db.select(Ticket).options(
         joinedload(Ticket.customer), 
@@ -252,6 +258,10 @@ def update_phase(ticket_id):
     try:
         success, result = RepairTicketService.update_phase(ticket_id, new_phase, current_user.id, commentary)
         if success:
+            # SAFETY: Ensure that changing phase to 'Already Taken' does not automatically archive the ticket.
+            # Archiving must remain a separate, manual step to preserve the distinction between 
+            # "work finished/picked up" and "moved to long-term storage".
+            ticket.is_archived = False
             db.session.commit()
             flash(_('Ticket status updated to %(phase)s', phase=new_phase), 'success')
         else:
@@ -443,12 +453,18 @@ def record_payment(ticket_id):
         flash(_('Payment amount must be greater than zero.'), 'error')
         return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
     
-    success, result = FinancialService.record_payment(ticket_id, amount, method, reference, current_user.id)
+    # If the ticket has a negative balance due, we are returning/refunding money.
+    # Therefore, the amount recorded should be negated.
+    if ticket.balance_due < 0:
+        amount = -amount
+
+    # INTEGRITY: Ensure an invoice exists before recording a payment against it
+    invoice = FinancialService.get_or_create_invoice(ticket_id)
+    success, result = FinancialService.record_payment(invoice.id, amount, method, reference, current_user.id)
+
     if success:
         try:
             db.session.flush() # Ensure payment is reflected in @property calculations
-            # Update invoice status immediately following payment recording
-            invoice = FinancialService.get_or_create_invoice(ticket_id)
             invoice.calculate_total()
             db.session.flush() # Ensure the total change is visible to ticket.balance_due
             if ticket.balance_due <= 0:
@@ -517,8 +533,8 @@ def remove_service(ticket_id, ts_id):
         return redirect(url_for('main.dashboard'))
     
     # SECURITY/INTEGRITY: Verify the service belongs to this specific ticket
-    item = db.session.get(InvoiceItem, ts_id)
-    if not item or not item.invoice or item.invoice.ticket_id != ticket_id:
+    ts = db.session.get(TicketService, ts_id)
+    if not ts or ts.ticket_id != ticket_id:
         flash(_('Invalid service selection for this ticket.'), 'error')
         return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
 
@@ -587,12 +603,20 @@ def remove_part(ticket_id, item_id):
         flash(result, 'error')
     return redirect(url_for('ticket.view_ticket', ticket_id=ticket_id))
 
-@ticket_bp.route('/archive/<int:ticket_id>', methods=['POST'])
+@ticket_bp.route('/archive/<int:ticket_id>', methods=['GET', 'POST'])
 @login_required
 @require_permission('archive_ticket')
 def archive_ticket(ticket_id):
     ticket = db.session.get(Ticket, ticket_id)
-    if ticket and (current_user.is_superuser or ticket.location_id == current_user.location_id):
+    if not ticket or (not current_user.is_superuser and ticket.location_id != current_user.location_id):
+        flash(_('Ticket not found or access denied.'), 'error')
+        return redirect(url_for('main.dashboard'))
+
+    if ticket.current_phase != 'Already Taken':
+        flash(_('Only tickets that have been picked up (Already Taken) can be archived.'), 'error')
+        return redirect(url_for('ticket.view_ticket', ticket_id=ticket.id))
+
+    if request.method == 'POST':
         ticket.is_archived = True
         try:
             db.session.commit()
@@ -603,8 +627,7 @@ def archive_ticket(ticket_id):
             flash(_('Error archiving ticket.'), 'error')
         return redirect(url_for('ticket.tickets_list', view='history'))
 
-    flash(_('Ticket not found or access denied.'), 'error')
-    return redirect(url_for('main.dashboard'))
+    return render_template('tickets/archive_ticket.html', ticket=ticket)
 
 @ticket_bp.route('/delete/<int:ticket_id>', methods=['POST'])
 @login_required

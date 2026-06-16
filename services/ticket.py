@@ -152,7 +152,6 @@ class RepairTicketService:
         if new_phase == 'Already Taken':
             ticket.device_picked_up = True
             ticket.picked_up_date = now
-            ticket.is_archived = True
 
         log = PhaseLog(
             ticket_id=ticket.id,

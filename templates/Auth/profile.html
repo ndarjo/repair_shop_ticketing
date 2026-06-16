@@ -113,7 +113,7 @@
                         <h5 class="mb-0">{{ _('Change Username') }}</h5>
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="{{ url_for('auth.profile') }}">
+                        <form id="changeUsernameForm" method="POST" action="{{ url_for('auth.profile') }}" class="confirm-action" novalidate data-confirm="{{ _('Are you sure you want to change your username? You will need to use the new username for all future logins.') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="action" value="change_username">
                             <div class="mb-3">
@@ -132,7 +132,7 @@
                         <h5 class="mb-0">{{ _('Change Password') }}</h5>
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="{{ url_for('auth.profile') }}">
+                        <form id="changePasswordForm" method="POST" action="{{ url_for('auth.profile') }}" class="confirm-action" novalidate data-confirm="{{ _('Are you sure you want to change your password?') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="action" value="change_password">
                             <div class="mb-3">
@@ -156,5 +156,52 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const usernameForm = document.getElementById('changeUsernameForm');
+    if (usernameForm) {
+        usernameForm.addEventListener('submit', function(e) {
+            const usernameInput = document.getElementById('new_username');
+            if (!usernameInput.value.trim()) {
+                alert("{{ _('Please fill in the new username field.') }}");
+                usernameInput.focus();
+                e.preventDefault();
+                e.stopPropagation(); // Prevents the global confirmation dialog from appearing
+            }
+        });
+    }
+
+    const passwordForm = document.getElementById('changePasswordForm');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', function(e) {
+            const oldPass = document.getElementById('old_password');
+            const newPass = document.getElementById('new_password');
+            const confirmPass = document.getElementById('confirm_password');
+            
+            if (!oldPass.value || !newPass.value || !confirmPass.value) {
+                alert("{{ _('All password fields are required.') }}");
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            
+            if (newPass.value !== confirmPass.value) {
+                alert("{{ _('New passwords do not match.') }}");
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            
+            if (newPass.value.length < 8) {
+                alert("{{ _('Password must be at least 8 characters long.') }}");
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

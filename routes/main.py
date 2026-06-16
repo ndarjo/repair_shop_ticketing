@@ -18,10 +18,20 @@ main_bp = Blueprint('main', __name__)
 @login_required
 def dashboard():
     page = request.args.get('page', 1, type=int)
+    selected_location = request.args.get('location_id', type=int)
     
     # SCALABILITY: Scoped query for multi-location support
     is_admin = current_user.is_superuser or current_user.has_role('admin')
-    location_filter = (Ticket.location_id == current_user.location_id) if not is_admin else True
+
+    if is_admin and selected_location:
+        location_filter = (Ticket.location_id == selected_location)
+        customer_filter = (Customer.location_id == selected_location)
+    elif not is_admin:
+        location_filter = (Ticket.location_id == current_user.location_id)
+        customer_filter = (Customer.location_id == current_user.location_id)
+    else:
+        location_filter = True
+        customer_filter = True
     
     # INTEGRITY: Filter out tickets that have already been picked up or cancelled
     stmt = db.select(Ticket).options(
@@ -39,11 +49,12 @@ def dashboard():
     phase_counts = db.session.execute(phase_counts_stmt).all()
     phase_map = dict(phase_counts)
 
-    customer_filter = Customer.location_id == current_user.location_id if not is_admin else True
-    customer_count_stmt = db.select(func.count(Customer.id)).where(customer_filter)
+    # Integrity: Filter out anonymized and deleted users from counts and selection
+    active_cust_filter = (Customer.is_anonymized.is_(False)) & (~Customer.name.ilike('DELETED_USER_%'))
+    customer_count_stmt = db.select(func.count(Customer.id)).where(customer_filter, active_cust_filter)
 
     # Fetch customers for the dashboard quick sale widget
-    customers = db.session.scalars(db.select(Customer).where(customer_filter).limit(50)).all()
+    customers = db.session.scalars(db.select(Customer).where(customer_filter, active_cust_filter).limit(50)).all()
 
     stats = {
         'total_tickets': active_total,
@@ -54,7 +65,11 @@ def dashboard():
         'total_customers': db.session.scalar(customer_count_stmt) or 0
     }
     
-    return render_template('main/dashboard.html', tickets=tickets, stats=stats, customers=customers)
+    locations = []
+    if is_admin:
+        locations = db.session.scalars(db.select(Location).order_by(Location.name)).all()
+    
+    return render_template('main/dashboard.html', tickets=tickets, stats=stats, customers=customers, locations=locations, selected_location=selected_location)
 
 @main_bp.route('/health')
 def health_check():

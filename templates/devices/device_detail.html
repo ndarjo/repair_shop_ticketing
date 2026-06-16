@@ -46,7 +46,8 @@
                             {% if current_user.has_permission('delete_device') %}
                             <form method="POST" action="{{ url_for('device.delete_device', device_id=device.id) }}" class="confirm-action" data-confirm="{{ _('Delete this device and its history?') }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt me-1" aria-hidden="true"></i> {{ _('Delete') }}</button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash-alt me-1" aria-hidden="true"></i> {{ _('Delete') }}</button>
                             </form>
                             {% endif %}
                         </div>
@@ -73,13 +74,14 @@
                                 <tr>
                                     <td><strong class="text-break">{{ ticket.ticket_number }}</strong></td>
                                     <td class="text-center">
-                                        <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
+                                        <span class="badge d-inline-flex align-items-center justify-content-center bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
                                             {{ _(ticket.current_phase) if ticket.current_phase and ticket.current_phase != 'None' else _('N/A') }}
                                         </span>
                                     </td>
                                     <td>{{ ticket.created_at.strftime('%Y-%m-%d') if ticket.created_at and ticket.created_at|string != 'None' else _('Unknown') }}</td>
                                     <td class="text-end text-nowrap">
-                                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View') }}</a>
+                                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="{{ _('View Ticket') }}">
+                                            <i class="fas fa-search-plus" aria-hidden="true"></i></a>
                                     </td>
                                 </tr>
                                 {% else %}

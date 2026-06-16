@@ -316,6 +316,16 @@ function initGlobalConfirmations() {
     });
 }
 
+/**
+ * Initialize Bootstrap tooltips globally
+ */
+function initTooltips() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+
 // Integrity: Support live system theme updates when 'System' mode is active
 try {
     const systemThemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
@@ -344,4 +354,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initPrintHandler();
     initFormAutoSubmit();
     initGlobalConfirmations();
+    initTooltips();
 });

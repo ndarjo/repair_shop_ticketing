@@ -122,7 +122,7 @@ def new_device():
                                brand=request.form.get('brand'),
                                model_number=request.form.get('model_number'),
                                serial_number=raw_serial,
-                               color=request.form.get('color'),
+                               device_color=request.form.get('color'),
                                cpu=request.form.get('cpu'),
                                ram=request.form.get('ram'),
                                storage_type=request.form.get('storage_type'),

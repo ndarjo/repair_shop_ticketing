@@ -1,6 +1,6 @@
 from babel.numbers import list_currencies, get_currency_name
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
-from flask_babel import _
+from flask_babel import _, get_locale
 from flask_login import current_user, login_required
 
 from models import Location, ShopSetting, db
@@ -52,12 +52,6 @@ def setup():
                 loc = Location(name=_('Main Branch'))
                 db.session.add(loc)
                 db.session.flush()
-            
-            # Sync Location record with Shop branding for consistency
-            loc.name = shop_name
-            loc.address = shop_address
-            loc.phone = shop_phone
-            loc.email = shop_email
 
             if not shop_settings:
                 shop_settings = ShopSetting(location_id=loc.id)

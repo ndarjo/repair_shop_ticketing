@@ -4,7 +4,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import desc
 from sqlalchemy.orm import joinedload
 
-from models import Customer, Invoice, InvoiceItem, Location, Service, SparePart, Ticket, db
+from models import Customer, Invoice, InvoiceItem, Location, Service, SparePart, Ticket, TicketService, db
 from services.core import FinancialService, InventoryService
 from .utils import require_permission, safe_decimal
 
@@ -305,8 +305,8 @@ def remove_service(invoice_id, ts_id):
         return redirect(url_for('pos.index'))
 
     # SECURITY/INTEGRITY: Verify the service belongs to this specific sale context
-    item = db.session.get(InvoiceItem, ts_id)
-    if not item or item.invoice_id != invoice_id:
+    ts = db.session.get(TicketService, ts_id)
+    if not ts or ts.ticket_id != invoice.ticket_id:
         flash(_('Invalid service selection for this sale.'), 'danger')
         return redirect(url_for('pos.cart', invoice_id=invoice_id))
 

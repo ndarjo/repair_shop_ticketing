@@ -63,7 +63,7 @@
                             <td class="text-break"><code>{{ device.serial_number or _('N/A') }}</code></td>
                             <td>{{ device.created_at.strftime('%Y-%m-%d') }}</td>
                             <td class="text-end text-nowrap">
-                                <a href="{{ url_for('device.view_device', device_id=device.id) }}" class="btn btn-sm btn-outline-primary">
+                                <a href="{{ url_for('device.view_device', device_id=device.id) }}" class="btn btn-sm btn-outline-primary" class="btn-link text-decoration-none" title="{{ _('View Device Details') }}">
                                     <i class="fas fa-search-plus" aria-hidden="true"></i></a>
                             </td>
                         </tr>

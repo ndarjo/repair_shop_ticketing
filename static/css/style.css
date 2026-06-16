@@ -514,16 +514,16 @@ body.theme-dark .btn-outline-light {
 }
 
 .btn-link {
-    color: var(--primary) !important;
+    color: var(--primary);
 }
 
 .btn-link:hover, .btn-link:focus {
-    color: var(--primary-dark) !important;
+    color: var(--primary-dark);
 }
 
 body.theme-dark .btn-link:hover, 
 body.theme-dark .btn-link:focus {
-    color: var(--primary-light) !important;
+    color: var(--primary-light);
 }
 
 .text-primary { color: var(--primary) !important; }
@@ -668,6 +668,34 @@ body.theme-dark .card:hover {
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.5);
 }
 
+/* General Icon Scaling */
+.navbar-nav .nav-link i {
+    font-size: 1.2rem;
+}
+
+.btn i {
+    font-size: 1.1rem;
+}
+
+/* Compact UI: Hide labels and show only icons on large screens until hover */
+@media (min-width: 992px) {
+    .navbar-nav .nav-label {
+        max-width: 0;
+        overflow: hidden;
+        display: inline-block;
+        vertical-align: middle;
+        white-space: nowrap;
+        transition: max-width 0.3s ease, opacity 0.2s ease, margin 0.3s ease;
+        opacity: 0;
+    }
+
+    .navbar-nav .nav-link:hover .nav-label {
+        max-width: 250px; /* Expands to fit text */
+        opacity: 1;
+        margin-left: 8px;
+    }
+}
+
 .btn {
     transition: all 0.2s ease;
     font-weight: 500;
@@ -726,6 +754,47 @@ body.theme-dark .color-swatch {
     padding: 0.35em 0.65em;
     font-weight: 600;
 }
+
+/* Tooltip Overrides */
+.tooltip {
+    opacity: 1 !important; /* Ensure the container is not transparent */
+}
+
+.tooltip-inner {
+    opacity: 1 !important;
+    /* Default for light theme */
+    background-color: var(--bs-body-bg); /* Light background */
+    color: var(--bs-body-color); /* Dark text */
+    border: 1px solid var(--bs-border-color); /* Add a subtle border */
+}
+
+/* Tooltip arrow for light theme (matches tooltip border) */
+.tooltip.bs-tooltip-top .tooltip-arrow::before {
+    border-top-color: var(--bs-border-color);
+}
+.tooltip.bs-tooltip-end .tooltip-arrow::before {
+    border-end-color: var(--bs-border-color);
+}
+.tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+    border-bottom-color: var(--bs-border-color);
+}
+.tooltip.bs-tooltip-start .tooltip-arrow::before {
+    border-start-color: var(--bs-border-color);
+}
+
+/* Dark theme specific overrides for tooltips */
+body.theme-dark .tooltip-inner {
+    background-color: var(--bs-card-bg); /* Dark background */
+    color: var(--bs-body-color); /* Light text */
+    border-color: var(--bs-border-color);
+}
+
+/* Tooltip arrow for dark theme (matches tooltip border) */
+body.theme-dark .tooltip.bs-tooltip-top .tooltip-arrow::before { border-top-color: var(--bs-border-color); }
+body.theme-dark .tooltip.bs-tooltip-end .tooltip-arrow::before { border-end-color: var(--bs-border-color); }
+body.theme-dark .tooltip.bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: var(--bs-border-color); }
+body.theme-dark .tooltip.bs-tooltip-start .tooltip-arrow::before { border-start-color: var(--bs-border-color); }
+
 
 /* Modal adjustments */
 body.theme-dark .modal-content {

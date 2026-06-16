@@ -22,7 +22,7 @@
             </form>
             {% endif %}
             <a href="{{ url_for('pos.index') }}" class="btn btn-outline-primary">
-                <i class="fas fa-plus me-2" aria-hidden="true"></i>{{ _('New Sale') }}
+                <i class="fas fa-arrow-circle-left me-2" aria-hidden="true"></i>{{ _('Back to Sales') }}
             </a>
         </div>
     </div>
@@ -55,7 +55,7 @@
                             </td>
                             <td>
                                 {% if invoice.ticket_id %}
-                                <span class="badge bg-info text-dark">{{ _('Repair') }} #{{ invoice.ticket.ticket_number if (invoice.ticket and invoice.ticket.ticket_number) else '' }}</span>
+                                <span class="badge bg-secondary text-dark">{{ _('Repair') }} #{{ invoice.ticket.ticket_number if (invoice.ticket and invoice.ticket.ticket_number) else '' }}</span>
                                 {% else %}
                                 <span class="badge bg-secondary">{{ _('Direct Sale') }}</span>
                                 {% endif %}
@@ -72,18 +72,19 @@
                                 <div class="btn-group btn-group-sm">
                                     {% if invoice.ticket_id %}
                                     <a href="{{ url_for('ticket.view_invoice', ticket_id=invoice.ticket_id) }}" class="btn btn-outline-primary" title="{{ _('View Invoice') }}" aria-label="{{ _('View Invoice') }}">
-                                        <i class="fas fa-file-invoice" aria-hidden="true"></i>
+                                        <i class="fas fa-search-plus" aria-hidden="true"></i>
                                     </a>
                                     {% else %}
                                     <a href="{{ url_for('pos.cart', invoice_id=invoice.id) }}" class="btn btn-outline-primary" title="{{ _('View Details') if invoice.status == 'Paid' else _('View/Edit Cart') }}" aria-label="{{ _('View Details') if invoice.status == 'Paid' else _('View/Edit Cart') }}">
-                                        <i class="fas {{ 'fa-eye' if invoice.status == 'Paid' else 'fa-shopping-cart' }}" aria-hidden="true"></i>
+                                        <i class="fas {{ 'fa-search-plus' if invoice.status == 'Paid' else 'fa-shopping-cart' }}" aria-hidden="true"></i>
                                     </a>
                                     {% endif %}
 
                                     {% if not invoice.ticket_id and invoice.status != 'Paid' and (invoice.full_payment_received or 0) == 0 %}
                                     <form action="{{ url_for('pos.delete_sale', invoice_id=invoice.id) }}" method="POST" class="confirm-action" data-confirm="{{ _('Permanently erase this draft sale and restore stock?')|forceescape }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-outline-danger" title="{{ _('Erase Draft') }}" aria-label="{{ _('Erase Draft') }}"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger ms-2" data-bs-toggle="tooltip" title="{{ _('Erase Draft') }}" aria-label="{{ _('Erase Draft') }}">
+                                            <i class="fas fa-trash-alt" aria-hidden="true"></i></button>
                                     </form>
                                     {% endif %}
                                 </div>
@@ -98,7 +99,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="p-3 border-top">
+            <div class="modal-footer">
                 {{ render_pagination(invoices, 'pos.history', location_id=selected_location) }}
             </div>
         </div>

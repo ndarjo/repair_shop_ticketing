@@ -15,30 +15,32 @@
                 {% if current_user.has_permission('process_payments') %}
                 <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">{{ _('Record Payment') }}</button>
                 {% endif %}
-                <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-warning"><i class="fas fa-edit" aria-hidden="true"></i></a>
+                <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-warning" class="btn-link text-decoration-none" title="{{ _('Edit Ticket Details') }}"><i class="fas fa-edit" aria-hidden="true"></i></a>
             {% endif %}
 
             {% if current_user.has_permission('create_invoice') %}
                 {% set active_invoice = ticket.invoices[0] if ticket.invoices else None %}
                 {% if active_invoice or ticket.current_phase != 'Already Taken' %}
-                <div class="btn-group ms-1">
+                <div class="btn-group">
                     {% if not active_invoice %}
                         <form action="{{ url_for('ticket.create_invoice', ticket_id=ticket.id) }}" method="POST" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-outline-info text-white">{{ _('Create Invoice') }}</button>
+                            <button type="submit" class="btn btn-sm btn-outline-info text-white"> class="btn-link text-decoration-none" title="{{ _('Create Invoice') }}">
+                                <i class="fas fa-pencil-square" aria-hidden="true"></i></button>
                         </form>
                     {% elif active_invoice.status == 'Draft' %}
                         <form action="{{ url_for('ticket.create_invoice', ticket_id=ticket.id) }}" method="POST" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-outline-info text-white">{{ _('Finalize Invoice') }}</button>
+                            <button type="submit" class="btn btn-sm btn-outline-info text-white" class="btn-link text-decoration-none" title="{{ _('Finalize Invoice') }}">
+                                <i class="fas fa-check" aria-hidden="true"></i></button>
                         </form>
                     {% else %}
                         <div class="btn-group">
-                            <a href="{{ url_for('ticket.view_invoice', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-info">
-                                <i class="fas fa-eye me-1"></i> {{ _('View') }}
+                            <a href="{{ url_for('ticket.view_invoice', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" class="btn-link text-decoration-none" title="{{ _('View Invoices') }}">
+                                <i class="fas fa-eye" aria-hidden="true"></i>
                             </a>
-                            <a href="{{ url_for('ticket.download_invoice_pdf', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('Download PDF') }}" aria-label="{{ _('Download Invoice PDF') }}">
-                                <i class="fas fa-file-pdf"></i>
+                            <a href="{{ url_for('ticket.download_invoice_pdf', ticket_id=ticket.id) }}"  class="btn btn-sm btn-outline-primary" class="btn-link text-decoration-none" title="{{ _('Download PDF') }}">
+                                <i class="fas fa-file-pdf" aria-hidden="true"></i>
                             </a>
                         </div>
                     {% endif %}
@@ -46,22 +48,24 @@
                 {% endif %}
             {% endif %}
 
-            {% if ticket.current_phase == 'Already Taken' and not ticket.is_archived and current_user.has_permission('archive_ticket') %}
+            {% if not ticket.is_archived and ticket.current_phase == 'Already Taken' and current_user.has_permission('archive_ticket') %}
             <form action="{{ url_for('ticket.archive_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Archive this ticket? It will be removed from history lists but kept for financial reports.')|forceescape }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="fas fa-archive me-1"></i> {{ _('Archive Ticket') }}</button>
+                <button type="submit" class="btn btn-sm btn-outline-secondary" title="{{ _('Archive Ticket') }}">
+                    <i class="fas fa-archive" aria-hidden="true"></i></button>
             </form>
             {% endif %}
 
-            {% if current_user.has_permission('delete_ticket') %}
+            {% if not ticket.is_archived and current_user.has_permission('delete_ticket') %}
             <form action="{{ url_for('ticket.delete_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('ERASE TICKET: Are you sure? This will remove all history and records for this job.')|forceescape }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Delete Ticket') }}">
+                    <i class="fas fa-trash-alt" aria-hidden="true"></i></button>
             </form>
             {% endif %}
-            <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
+            <div class="badge d-inline-flex align-items-center justify-content-center bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}secondary{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
                 {{ _(ticket.current_phase) }}
-            </span>
+            </div>
         </div>
     </div>
     <div class="card-body">
@@ -125,7 +129,8 @@
                                     {% if current_user.has_permission('remove_service') and ticket.current_phase != 'Already Taken' %}
                                     <form action="{{ url_for('ticket.remove_service', ticket_id=ticket.id, ts_id=ts.id) }}" method="POST" style="display:inline;">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" data-confirm="{{ _('Remove service?')|forceescape }}" aria-label="{{ _('Remove service') }}"><i class="fas fa-trash-alt"></i></button>
+                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action"  class="btn-link text-decoration-none" title="{{ _('Remove Services') }}" data-confirm="{{ _('Remove service?')|forceescape }}" aria-label="{{ _('Remove service') }}">
+                                            <i class="fas fa-trash-alt"></i></button>
                                     </form>
                                     {% endif %}
                                 </td>
@@ -134,7 +139,7 @@
                             
                             {% for inv in ticket.invoices %}
                                 {% for item in inv.items %}
-                                <tr class="table-info">
+                                <tr class="table-sm">
                                     <td><span class="badge bg-light text-dark me-1">{{ _('Part') }}</span> {{ item.description }}</td>
                                     <td class="text-center">{{ item.quantity or 0 }}</td>
                                     <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price or 0) }}</td>
@@ -143,7 +148,8 @@
                                         {% if current_user.has_permission('remove_part') and ticket.current_phase != 'Already Taken' %}
                                         <form action="{{ url_for('ticket.remove_part', ticket_id=ticket.id, item_id=item.id) }}" method="POST" style="display:inline;">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-link text-danger p-0 confirm-action" data-confirm="{{ _('Remove this part from costs?')|forceescape }}" aria-label="{{ _('Remove part') }}"><i class="fas fa-times"></i></button>
+                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" class="btn-link text-decoration-none" title="{{ _('Remove Part') }}" data-confirm="{{ _('Remove this part from costs?')|forceescape }}" aria-label="{{ _('Remove part') }}">
+                                                <i class="fas fa-trash-alt"></i></button>
                                         </form>
                                         {% endif %}
                                     </td>
@@ -215,7 +221,7 @@
                             {% for log in ticket.phase_logs|sort(attribute='changed_at', reverse=True) %}
                             <tr>
                                 <td>{{ _(log.old_phase) or _('Intake') }}</td>
-                                <td><span class="badge bg-info text-dark">{{ _(log.new_phase) }}</span></td>
+                                <td><span class="badge bg-secondary text-dark">{{ _(log.new_phase) }}</span></td>
                                 <td>{{ log.technician_user.full_name if log.technician_user else _('System') }}</td>
                                 <td>{{ log.changed_at.strftime('%Y-%m-%d %H:%M') }}</td>
                             </tr>
@@ -256,7 +262,7 @@
                                     {% if current_user.has_permission('process_payments') and ticket.current_phase != 'Already Taken' %}
                                     <form action="{{ url_for('ticket.void_payment', ticket_id=ticket.id, payment_id=payment.id) }}" method="POST" class="d-inline ms-2">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" data-confirm="{{ _('Void this payment? This will update the invoice balance.')|forceescape }}"><i class="fas fa-trash-alt"></i></button>
+                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" class="btn-link text-decoration-none" title="{{ _('Void Payment') }}" data-confirm="{{ _('Void this payment? This will update the invoice balance.')|forceescape }}"><i class="fas fa-trash-alt"></i></button>
                                     </form>
                                     {% endif %}
                                 </td>

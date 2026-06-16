@@ -84,7 +84,8 @@
                             <tr>
                                 <td><strong class="text-break">{{ b }}</strong></td>
                                 <td class="text-end">
-                                    <a href="{{ url_for('admin.download_backup_file', filename=b) }}" class="btn btn-sm btn-outline-primary me-2" title="{{ _('Download') }}" aria-label="{{ _('Download') }}"><i class="fas fa-download" aria-hidden="true"></i></a>
+                                    <a href="{{ url_for('admin.download_backup_file', filename=b) }}" class="btn-link text-decoration-none" title="{{ _('Download Backup File') }}">
+                                        <i class="fas fa-download" aria-hidden="true"></i></a>
                                 </td>
                             </tr>
                             {% else %}

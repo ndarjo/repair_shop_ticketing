@@ -122,7 +122,7 @@ class BasicTests(unittest.TestCase):
     def test_login_logic(self):
         """Verify authentication flow"""
         # Admin is created by default in app initialization context
-        response = self.client.post('/Auth/login', data=dict(
+        response = self.client.post('/auth/login', data=dict(
             username=self.admin_username,
             password=self.admin_password
         ), follow_redirects=True)
@@ -161,11 +161,11 @@ class BasicTests(unittest.TestCase):
         self.assertFalse(admin.has_role('admin'))
 
         # Check Auth UX
-        response = self.client.post('/Auth/login', data=dict(
+        response = self.client.post('/auth/login', data=dict(
             username=self.admin_username,
             password=self.admin_password
         ), follow_redirects=True)
-        self.assertIn(b'Your account is inactive', response.data or b'')
+        self.assertIn(b'Your account is deactivated', response.data or b'')
 
     def test_ticket_timeline_aggregation(self):
         """Verify the Ticket.timeline property merges phase logs and notes correctly"""
@@ -195,7 +195,7 @@ class BasicTests(unittest.TestCase):
 
     def test_inventory_and_services_views(self):
         """Verify that the inventory and services templates render correctly for admin"""
-        self.client.post('/Auth/login', data=dict(
+        self.client.post('/auth/login', data=dict(
             username=self.admin_username,
             password=self.admin_password
         ), follow_redirects=True)
@@ -255,7 +255,7 @@ class BasicTests(unittest.TestCase):
     def test_ajax_error_responses_integrity(self):
         """UX Consistency: Verify that error handlers return JSON for AJAX/API requests"""
         # 1. Unauthorized AJAX (401)
-        response = self.client.get('/customer/list', headers={'X-Requested-With': 'XMLHttpRequest'})
+        response = self.client.get('/customer/', headers={'X-Requested-With': 'XMLHttpRequest'})
         self.assertEqual(response.status_code, 401)
         self.assertTrue(response.is_json)
         self.assertIn('Unauthorized', response.json['error'])
@@ -280,6 +280,49 @@ class BasicTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Security Error', response.data)
         self.assertIn(b'Unable to decrypt', response.data)
+
+    def test_record_refund_on_overpayment(self):
+        """Verify that recording a payment when balance_due is negative (refund/return) negates the amount and subtracts it from total_paid"""
+        loc = db.session.scalar(db.select(Location))
+        admin = db.session.scalar(db.select(User).filter_by(is_superuser=True))
+        
+        cust = Customer(name="Refund Client", phone="888", location_id=loc.id)
+        dev = Device(customer=cust, device_type="Laptop", brand="HP")
+        db.session.add_all([cust, dev])
+        db.session.flush()
+
+        # Create ticket with down payment of 100.00
+        ticket = RepairTicketService.create_ticket(
+            customer_id=cust.id, device_id=dev.id, location_id=loc.id,
+            creator_id=admin.id, items_included="None", problem_description="Repair",
+            down_payment=Decimal('100.00'), payment_method='Cash'
+        )
+        db.session.commit()
+
+        # Grand total is 0.00 since no parts/services added.
+        # total_paid = 100.00
+        # balance_due = 0 - 100 = -100.00 (overpayment)
+        self.assertEqual(ticket.balance_due, Decimal('-100.00'))
+
+        # Log in admin to record a return payment
+        self.client.post('/auth/login', data=dict(
+            username=self.admin_username,
+            password=self.admin_password
+        ), follow_redirects=True)
+
+        # Record a return of 100.00 (handed back to customer)
+        # We POST a positive value from UI (representing return value)
+        response = self.client.post(f'/ticket/payment/{ticket.id}', data=dict(
+            amount='100.00',
+            method='Cash',
+            reference='Returned Change'
+        ), follow_redirects=True)
+
+        self.assertEqual(response.status_code, 200)
+        db.session.refresh(ticket)
+        # The return should negate the payment, reducing total_paid to 0.00
+        self.assertEqual(ticket.total_paid, Decimal('0.00'))
+        self.assertEqual(ticket.balance_due, Decimal('0.00'))
 
 if __name__ == "__main__":
     unittest.main()

@@ -50,40 +50,40 @@
                 <ul class="navbar-nav me-auto fw-bold">
                     {% if current_user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}" {{ 'aria-current="page"' if request.endpoint == 'main.dashboard' }}><i class="fas fa-tachometer-alt me-1"></i> {{ _('Dashboard') }}</a>
+                        <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}" {{ 'aria-current="page"' if request.endpoint == 'main.dashboard' }}><i class="fas fa-tachometer-alt"></i> <span class="nav-label">{{ _('Dashboard') }}</span></a>
                     </li>
                     {% if current_user.has_permission('process_sales') %}
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint and 'pos.' in request.endpoint }}" href="{{ url_for('pos.index') }}">
-                            <i class="fas fa-cash-register me-2"></i> {{ _('POS / Sales') }}
+                            <i class="fas fa-cash-register"></i> <span class="nav-label">{{ _('POS / Sales') }}</span>
                         </a>
                     </li>
                     {% endif %}
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint and 'ticket' in request.endpoint }}" href="{{ url_for('ticket.tickets_list') }}" {{ 'aria-current="page"' if request.endpoint and 'ticket' in request.endpoint }}><i class="fas fa-ticket-alt me-1"></i> {{ _('Tickets') }}</a>
+                        <a class="nav-link {{ 'active' if request.endpoint and 'ticket' in request.endpoint }}" href="{{ url_for('ticket.tickets_list') }}" {{ 'aria-current="page"' if request.endpoint and 'ticket' in request.endpoint }}><i class="fas fa-ticket-alt"></i> <span class="nav-label">{{ _('Tickets') }}</span></a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint and 'customer' in request.endpoint }}" href="{{ url_for('customer.customers_list') }}" {{ 'aria-current="page"' if request.endpoint and 'customer' in request.endpoint }}><i class="fas fa-users me-1"></i> {{ _('Customers') }}</a>
+                        <a class="nav-link {{ 'active' if request.endpoint and 'customer' in request.endpoint }}" href="{{ url_for('customer.customers_list') }}" {{ 'aria-current="page"' if request.endpoint and 'customer' in request.endpoint }}><i class="fas fa-users"></i> <span class="nav-label">{{ _('Customers') }}</span></a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint and 'device' in request.endpoint }}" href="{{ url_for('device.devices_list') }}" {{ 'aria-current="page"' if request.endpoint and 'device' in request.endpoint }}><i class="fas fa-laptop me-1"></i> {{ _('Devices') }}</a>
+                        <a class="nav-link {{ 'active' if request.endpoint and 'device' in request.endpoint }}" href="{{ url_for('device.devices_list') }}" {{ 'aria-current="page"' if request.endpoint and 'device' in request.endpoint }}><i class="fas fa-laptop"></i> <span class="nav-label">{{ _('Devices') }}</span></a>
                     </li>
                     {% if current_user.has_permission('manage_inventory') %}
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint and 'inventory' in request.endpoint }}" href="{{ url_for('inventory.manage_inventory') }}" {{ 'aria-current="page"' if request.endpoint and 'inventory' in request.endpoint }}><i class="fas fa-boxes me-1"></i> {{ _('Inventory') }}</a>
+                        <a class="nav-link {{ 'active' if request.endpoint and 'inventory' in request.endpoint }}" href="{{ url_for('inventory.manage_inventory') }}" {{ 'aria-current="page"' if request.endpoint and 'inventory' in request.endpoint }}><i class="fas fa-boxes"></i> <span class="nav-label">{{ _('Inventory') }}</span></a>
                     </li>
                     {% endif %}
                     {% if current_user.has_permission('manage_settings') %}
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint and 'services' in request.endpoint }}" href="{{ url_for('services.manage_services') }}" {{ 'aria-current="page"' if request.endpoint and 'services' in request.endpoint }}><i class="fas fa-hand-holding-usd me-1"></i> {{ _('Services') }}</a>
+                        <a class="nav-link {{ 'active' if request.endpoint and 'services' in request.endpoint }}" href="{{ url_for('services.manage_services') }}" {{ 'aria-current="page"' if request.endpoint and 'services' in request.endpoint }}><i class="fas fa-hand-holding-usd"></i> <span class="nav-label">{{ _('Services') }}</span></a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint and 'common_problems' in request.endpoint }}" href="{{ url_for('main.manage_common_problems') }}" {{ 'aria-current="page"' if request.endpoint and 'common_problems' in request.endpoint }}><i class="fas fa-exclamation-triangle me-1"></i> {{ _('Problems') }}</a>
+                        <a class="nav-link {{ 'active' if request.endpoint and 'common_problems' in request.endpoint }}" href="{{ url_for('main.manage_common_problems') }}" {{ 'aria-current="page"' if request.endpoint and 'common_problems' in request.endpoint }}><i class="fas fa-exclamation-triangle"></i> <span class="nav-label">{{ _('Problems') }}</span></a>
                     </li>
                     {% endif %}
                     {% if current_user.has_permission('view_reports') %}
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint and 'report' in request.endpoint }}" href="{{ url_for('report.reports') }}" {{ 'aria-current="page"' if request.endpoint and 'report' in request.endpoint }}><i class="fas fa-chart-line me-1"></i> {{ _('Reports') }}</a>
+                        <a class="nav-link {{ 'active' if request.endpoint and 'report' in request.endpoint }}" href="{{ url_for('report.reports') }}" {{ 'aria-current="page"' if request.endpoint and 'report' in request.endpoint }}><i class="fas fa-chart-line"></i> <span class="nav-label">{{ _('Reports') }}</span></a>
                     </li>
                     {% endif %}
                     {% endif %}
@@ -92,7 +92,7 @@
                     {% if current_user.is_authenticated %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-circle me-1"></i> {{ current_user.full_name or current_user.username }}
+                                <i class="fas fa-user-circle"></i> <span class="nav-label">{{ current_user.full_name or current_user.username }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
                                 <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="fas fa-cog me-2"></i> {{ _('Profile & Theme') }}</a></li>

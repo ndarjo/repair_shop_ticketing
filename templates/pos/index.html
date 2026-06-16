@@ -20,7 +20,7 @@
                 </select>
             </form>
             {% endif %}
-            <a href="{{ url_for('pos.history') }}" class="btn btn-outline-secondary shadow-sm">
+            <a href="{{ url_for('pos.history') }}" class="btn btn-outline-primary shadow-sm">
                 <i class="fas fa-history me-1"></i> {{ _('Sales History') }}
             </a>
         </div>
@@ -55,7 +55,7 @@
                             <button type="submit" class="btn btn-outline-primary btn-lg">
                                 <i class="fas fa-shopping-basket me-2"></i>{{ _('Open Cart') }}
                             </button>
-                            <a href="{{ url_for('customer.new_customer') }}" class="btn btn-outline-secondary btn-sm">
+                            <a href="{{ url_for('customer.new_customer') }}" class="btn btn-outline-primary btn-sm">
                                 <i class="fas fa-user-plus me-2"></i>{{ _('Quick Add Customer') }}
                             </a>
                         </div>
@@ -99,7 +99,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="p-2 border-top">
+                    <div class="modal-footer">
                         {{ render_pagination(services, 'pos.index', location_id=selected_location, page_p=parts.page, _anchor='catalog-services', page_arg_name='page_s') }}
                     </div>
 
@@ -136,7 +136,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="p-2 border-top">
+                    <div class="modal-footer">
                         {{ render_pagination(parts, 'pos.index', location_id=selected_location, page_s=services.page, _anchor='catalog-parts', page_arg_name='page_p') }}
                     </div>
                 </div>
