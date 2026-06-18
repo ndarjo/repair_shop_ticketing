@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 import logging
 import time
 from logging.handlers import RotatingFileHandler
+from decimal import Decimal
 from flask import Flask, redirect, url_for, request, render_template, current_app, Request, jsonify, flash, session, has_request_context
 from flask_login import LoginManager, current_user
 from flask_wtf.csrf import CSRFProtect
@@ -18,7 +19,7 @@ from babel import Locale
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
-from flask_migrate import Migrate
+from flask_migrate import Migrate, upgrade
 from whitenoise import WhiteNoise
 from flask_wtf.csrf import CSRFError
 from cryptography.fernet import InvalidToken
@@ -33,6 +34,15 @@ from setup import (
 
 # Global limiter instance for blueprint access
 limiter = Limiter(key_func=get_remote_address, default_limits=["5000 per day", "1000 per hour"])
+
+def _get_setting_value(obj, key, default=None):
+    """Robust access helper for both ShopSetting objects and fallback dictionaries."""
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
 
 from config import DevelopmentConfig, ProductionConfig, TestingConfig
 from datetime import datetime
@@ -180,10 +190,10 @@ def create_app(config_name=None):
     @login_manager.unauthorized_handler
     def unauthorized():
         """Handle unauthorized access with AJAX support for UX integrity"""
-        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path:
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path or request.path.startswith('/customer/search'):
             return jsonify({"error": _("Unauthorized: Please log in")}), 401
         
-        flash(_('Please log in to access this page.'), 'info')
+        flash(_('Please log in to access this page.'), 'danger')
         return redirect(url_for('auth.login', next=request.full_path))
 
     @login_manager.user_loader
@@ -204,24 +214,31 @@ def create_app(config_name=None):
         # Defensive lookup for ShopSetting to prevent recursive 500 errors during DB failure
         shop_info = None
         location_info = None
+        loc_id = None
         try:
-            # 1. Fetch Global Branding (Brand Identity)
-            shop_info = db.session.scalar(db.select(ShopSetting).limit(1))
-
-            # 2. Determine and fetch the active Location context (Branch Details)
+            # 1. Determine the active Location context (Branch Details)
             if current_user.is_authenticated:
-                loc_id = None
                 if current_user.is_superuser or current_user.has_role('admin'):
                     loc_id = request.args.get('location_id', type=int)
                 if not loc_id:
                     loc_id = getattr(current_user, 'location_id', None)
-                if loc_id:
-                    location_info = db.session.get(Location, loc_id)
+            
+            # 2. Fetch specific branch settings or fallback to global
+            if loc_id:
+                shop_info = db.session.scalar(db.select(ShopSetting).filter_by(location_id=loc_id))
+                location_info = db.session.get(Location, loc_id)
+            
+            if not shop_info:
+                shop_info = db.session.scalar(db.select(ShopSetting).filter_by(location_id=None))
+            if not shop_info:
+                shop_info = db.session.scalar(db.select(ShopSetting).limit(1))
         except Exception:
+            current_app.logger.exception("Error fetching shop or location info in context processor.")
+            # Ensure rollback itself doesn't raise an exception
             try:
                 db.session.rollback()
-            except:
-                pass
+            except Exception as rollback_e:
+                current_app.logger.exception(f"Error during database rollback in inject_now handler: {rollback_e}")
             
         # UX Integrity: Provide a fallback dictionary so templates don't crash on null shop_info
         if not shop_info:
@@ -230,10 +247,43 @@ def create_app(config_name=None):
                 'shop_address': '',
                 'shop_phone': '',
                 'shop_email': '',
-                'logo_path': None
+                'logo_path': '', # Default to empty string for consistency
+                'tax_label': _('Tax'),
+                'tax_rate': Decimal('0.00'), # Use Decimal for consistency
+                'tax_id': '',
+                'currency': 'USD',
+                'currency_decimals': 2,
+                'brand_color': '#0d6efd',
+                'currency_symbol': None, # Allow get_currency_symbol to be primary source
+                'signature_label': _('Customer Signature'),
+                'invoice_label': _('INVOICE'),
+                'receipt_label': _('RECEIPT'),
+                'loyalty_label': _('Loyalty Points'),
+                'loyalty_points_per_currency': Decimal('1.00'),
+                'loyalty_point_value': Decimal('0.01'),
+                'enable_loyalty_points': False,
+                'enable_discounts': True,
+                'show_wholesale_cost': False,
+                'show_technician': True,
+                'show_device_sn': True,
+                'show_unit_prices': True,
+                'show_customer_phone': True,
+                'show_customer_address': True,
+                'show_sku': False,
+                'pdf_page_format': 'thermal',
+                'show_logo_on_docs': True,
+                'show_payment_history': True,
+                'show_notes_on_docs': False,
+                'show_company_address': True,
+                'bank_details': '',
+                'invoice_terms': '',
+                'receipt_notes': '',
+                'invoice_closing_text': _('Thank you for your business!'),
+                'receipt_closing_text': _('Thank you for your business!')
             }
         
-        if not location_info and current_user.is_authenticated:
+        # UX Integrity: Provide a fallback dictionary for location_info if not found
+        if not location_info:
             location_info = {
                 'name': _('Main Branch'),
                 'address': '',
@@ -245,19 +295,20 @@ def create_app(config_name=None):
         # Prioritize branch settings with fallback to authenticated user's individual preference.
         user_currency = 'USD'
         decimals = None
-
-        if shop_info and hasattr(shop_info, 'currency') and shop_info.currency:
-            user_currency = shop_info.currency
-            decimals = shop_info.currency_decimals
+        
+        shop_currency = _get_setting_value(shop_info, 'currency')
+        if shop_currency:
+            user_currency = shop_currency
+            decimals = _get_setting_value(shop_info, 'currency_decimals')
         elif current_user.is_authenticated:
             user_currency = getattr(current_user, 'currency', 'USD') or 'USD'
             decimals = current_user.currency_decimals
 
         if decimals is None:
             decimals = get_currency_precision(user_currency or 'USD')
-
         locale = get_locale()
-        symbol = get_currency_symbol(user_currency, locale=locale)
+        # UI CONSISTENCY: Ensure custom currency symbol is always used if defined
+        symbol = _get_setting_value(shop_info, 'currency_symbol') or get_currency_symbol(user_currency, locale=locale)
 
         return {
             'now': datetime.now(), 
@@ -277,11 +328,11 @@ def create_app(config_name=None):
     def unauthorized_error(error):
         try:
             # AJAX Integrity: Return JSON if requested or is an API path
-            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path:
+            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path or request.path.startswith('/customer/search'): # Consistent with other error handlers
                 return jsonify({"error": _("Unauthorized: Please log in")}), 401
                 
             return render_template('errors/401.html'), 401
-        except:
+        except Exception:
             return jsonify({"error": _("Unauthorized: Please log in")}), 401
 
     @app.errorhandler(400)
@@ -290,10 +341,10 @@ def create_app(config_name=None):
         app.logger.warning(f"Bad Request (400): {str(error)} at {request.path}")
 
         # AJAX Integrity: Return JSON if requested or is an API path
-        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path:
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path or request.path.startswith('/customer/search'):
             return jsonify({"error": _("Bad Request: The server could not understand your request.")}), 400
 
-        flash(_("Bad Request: The server could not understand your request due to invalid syntax or malformed data."), "error")
+        flash(_("Bad Request: The server could not understand your request due to invalid syntax or malformed data."), "danger")
         
         # UX Integrity: Attempt to redirect back to the page the user was on
         ref = request.referrer
@@ -304,7 +355,7 @@ def create_app(config_name=None):
                 return redirect(ref)
         try:
             return render_template('errors/400.html'), 400
-        except:
+        except Exception:
             return redirect(url_for('main.dashboard'))
 
     # Modular Blueprint Hub: Import all controllers from the routes package
@@ -330,40 +381,35 @@ def create_app(config_name=None):
     @app.errorhandler(403)
     def forbidden_error(error):
         try:
-            # AJAX Integrity: Return JSON if requested or is an API path
-            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path:
+            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path or request.path.startswith('/customer/search'):
                 return jsonify({"error": _("Forbidden: Access Denied")}), 403
-                
-            return render_template('errors/403.html'), 403
-        except:
-            return jsonify({"error": _("Forbidden: Access Denied")}), 403
-
+            return render_template('errors/403.html'), 403 # Rely on 500 handler for rendering errors
+        except Exception: # Catch any non-rendering errors
+            return jsonify({"error": _("Forbidden: Access Denied")}), 403 # Fallback for non-rendering errors
     @app.errorhandler(404)
     def not_found_error(error):
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path or request.path.startswith('/customer/search'):
+            return jsonify({"error": _("Not Found")}), 404
         try:
-            # AJAX Integrity: Return JSON if requested or is an API path
-            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path:
-                return jsonify({"error": _("Not Found")}), 404
-                
             return render_template('errors/404.html'), 404
-        except:
+        except Exception:
             return jsonify({"error": _("Not Found")}), 404
 
     @app.errorhandler(500)
     def internal_error(error):
         try:
             db.session.rollback()
-        except Exception:
-            pass
-        app.logger.error(f"Internal Server Error: {str(error)}")
+        except Exception as rollback_e:
+            app.logger.exception(f"Error during database rollback in 500 handler: {rollback_e}")
+        app.logger.exception(f"Internal Server Error: {error}") # Log with exception for stack trace
         
         # AJAX Integrity: Return JSON if requested or is an API path
-        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path:
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path or request.path.startswith('/customer/search'):
             return jsonify({"error": _("Internal Server Error")}), 500
             
         try:
             return render_template('errors/500.html'), 500
-        except:
+        except Exception:
             return jsonify({"error": _("Internal Server Error")}), 500
 
     @app.errorhandler(CSRFError)
@@ -372,7 +418,7 @@ def create_app(config_name=None):
         app.logger.warning(f"CSRF Failure: {e.description} at {request.path}")
 
         # AJAX Integrity: Return JSON if requested or background search
-        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or '/search' in request.path:
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or '/search' in request.path or request.path.startswith('/customer/search'):
             return jsonify({"error": _("Your session has expired or the form is no longer valid. Please try again.")}), 400
 
         flash(_("Your session has expired or the form is no longer valid. Please try again."), "info")
@@ -391,10 +437,10 @@ def create_app(config_name=None):
         app.logger.critical("PII Decryption failed! ENCRYPTION_KEY is likely mismatched with database content.")
         
         # Handle AJAX/JSON requests (search, modals)
-        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or '/search' in request.path:
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or '/search' in request.path or request.path.startswith('/customer/search'):
             return jsonify({'error': _('Security Error: Unable to decrypt data. Check system configuration.')}), 500
         
-        flash(_('Security Error: Unable to decrypt customer data. Your ENCRYPTION_KEY might be incorrect or has changed since this data was saved.'), 'error')
+        flash(_('Security Error: Unable to decrypt customer data. Your ENCRYPTION_KEY might be incorrect or has changed since this data was saved.'), 'danger')
         return redirect(url_for('main.dashboard'))
 
     @app.errorhandler(413)
@@ -402,10 +448,10 @@ def create_app(config_name=None):
         """Handle file uploads that exceed MAX_CONTENT_LENGTH for system integrity"""
         app.logger.warning(f"File upload too large (413): {request.path}")
 
-        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/customer/search') or '/search' in request.path:
             return jsonify({"error": _("The uploaded file is too large. Maximum size is 2MB.")}), 413
 
-        flash(_("The uploaded file is too large. Maximum size is 2MB."), "error")
+        flash(_("The uploaded file is too large. Maximum size is 2MB."), "danger")
         
         ref = request.referrer
         if ref:
@@ -415,7 +461,7 @@ def create_app(config_name=None):
                 return redirect(ref)
         try:
             return render_template('errors/413.html'), 413
-        except:
+        except Exception:
             return redirect(url_for('main.dashboard'))
 
     @app.errorhandler(415)
@@ -425,10 +471,10 @@ def create_app(config_name=None):
         app.logger.error(f"Unsupported Media Type (415): {str(error)} at {request.path}")
 
         # AJAX Integrity: Return JSON if requested or is an API path
-        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path:
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path or request.path.startswith('/customer/search'):
             return jsonify({"error": _("Technical Error: Unsupported request format.")}), 415
 
-        flash(_("Technical Error: Unsupported request format. Please try again."), "error")
+        flash(_("Technical Error: Unsupported request format. Please try again."), "danger")
         
         ref = request.referrer
         if ref:
@@ -436,10 +482,9 @@ def create_app(config_name=None):
             parsed_url = urlparse(request.url)
             if parsed_ref.netloc == parsed_url.netloc or not parsed_ref.netloc:
                 return redirect(ref)
-
         try:
             return render_template('errors/415.html'), 415
-        except:
+        except Exception:
             return redirect(url_for('main.dashboard'))
 
     @app.errorhandler(503)
@@ -447,13 +492,11 @@ def create_app(config_name=None):
         """Handle 503 Service Unavailable errors with branded template"""
         app.logger.error(f"Service Unavailable (503): {str(error)} at {request.path}")
 
-        # AJAX Integrity: Return JSON if requested or is an API path
-        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path:
+        if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/') or '/search' in request.path or request.path.startswith('/customer/search'):
             return jsonify({"error": _("Service Unavailable: The server is temporarily busy. Please try again later.")}), 503
-
         try:
             return render_template('errors/503.html'), 503
-        except:
+        except Exception:
             return jsonify({"error": _("Service Unavailable: The server is temporarily busy. Please try again later.")}), 503
 
     @app.before_request
@@ -469,10 +512,11 @@ def create_app(config_name=None):
                         if not settings or not settings.setup_completed:
                             return redirect(url_for('onboarding.setup'))
             except Exception:
-                # Silently skip onboarding check if the schema is currently being updated or is inaccessible
+                # Log the exception and silently skip onboarding check if the schema is currently being updated or is inaccessible
+                current_app.logger.exception("Error during onboarding check, likely schema related. Skipping.")
                 try:
                     db.session.rollback()
-                except:
+                except Exception: # Catch any exception during rollback
                     pass
     
     # Initialize Scheduler for automated backups
@@ -484,7 +528,10 @@ def create_app(config_name=None):
     # Create tables and initialize system parameters inside isolated contexts
     with app.app_context():
         db.create_all()
-        initialize_roles_and_permissions()
+        # INTEGRITY: Run migrations to ensure schema is up-to-date before seeding
+        # This is crucial for production readiness and prevents errors during initialization
+        upgrade() 
+        initialize_roles_and_permissions() # This function also patches columns
         initialize_default_data()
         initialize_superuser()
     

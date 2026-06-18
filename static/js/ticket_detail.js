@@ -1,100 +1,112 @@
+// ========================================
+// REPAIR SHOP TICKETING SYSTEM
+// Ticket Detail & Financial Updates
+// ========================================
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Note: Global confirmations (.confirm-action) are handled centrally in main.js
+    const container = document.getElementById('financialSummaryContainer');
+    if (!container) return;
 
-    // Integrity: Filter out technical null artifacts common in server-rendered templates
-    const getVal = (v) => (v && v !== 'None') ? v.trim() : '';
+    const ticketId = container.dataset.ticketId;
+    const currencySymbol = container.dataset.currencySymbol;
+    const currencyDecimals = parseInt(container.dataset.currencyDecimals) || 2;
 
-    // 1. UX Fix: Auto-open modals if returning with validation errors
-    // Ensures a consistent experience when form validation fails.
-    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        document.querySelectorAll('.modal').forEach(modalEl => {
-            if (modalEl.querySelector('.is-invalid')) {
-                bootstrap.Modal.getOrCreateInstance(modalEl).show();
-            }
-        });
-    }
+    const quickTaxToggle = document.getElementById('quickTaxToggle');
 
-    // 2. Payment Modal Logic (Calculator & Balance Filling)
-    const payAmtInput = document.getElementById('paymentAmount');
-    const fillBtn = document.getElementById('fillBalanceBtn');
-    const cashRecInput = document.getElementById('cashReceived');
-    const changeDiv = document.getElementById('changeToGive');
-
-    if (fillBtn && payAmtInput) {
-        fillBtn.addEventListener('click', function() {
-            // Integrity: Robust parsing for currency values and decimals
-            const balAttr = getVal(payAmtInput.dataset.balance);
-            const decAttr = getVal(payAmtInput.dataset.decimals);
-            const bal = parseFloat(balAttr) || 0;
-            const parsedDec = parseInt(decAttr, 10);
-            const dec = isNaN(parsedDec) ? 2 : parsedDec;
-            payAmtInput.value = isNaN(bal) ? (0).toFixed(dec) : bal.toFixed(dec);
-            updateChange();
-        });
-    }
-
-    function updateChange() {
-        if (!payAmtInput || !cashRecInput || !changeDiv) return;
-        const amt = parseFloat(payAmtInput.value) || 0;
-        const rec = parseFloat(cashRecInput.value) || 0;
-        const decAttr = getVal(payAmtInput.dataset.decimals);
-        const parsedDec = parseInt(decAttr, 10);
-        const dec = isNaN(parsedDec) ? 2 : parsedDec;
-        const diff = rec - amt;
-        changeDiv.textContent = (diff > 0 ? diff : 0).toFixed(dec);
-    }
-
-    if (payAmtInput) payAmtInput.addEventListener('input', updateChange);
-    if (cashRecInput) cashRecInput.addEventListener('input', updateChange);
-
-    // 3. Add Part Modal Logic (Toggle Manual vs Inventory)
-    const partSel = document.getElementById('partSelect');
-    const manName = document.getElementById('manualPartName');
-    const manCost = document.getElementById('partCost');
-    const manPrice = document.getElementById('partPrice');
-
-    if (partSel) {
-        const togglePartFields = function() {
-            const hasInv = !!getVal(partSel.value);
-            
-            if (manName) {
-                manName.disabled = hasInv;
-                manName.required = !hasInv;
-                if (hasInv) manName.value = '';
-            }
-            
-            if (manCost) {
-                manCost.disabled = hasInv;
-                if (hasInv) manCost.value = '';
-            }
-            
-            if (manPrice) {
-                manPrice.disabled = hasInv;
-                manPrice.required = !hasInv;
-                if (hasInv) manPrice.value = '';
-            }
-        };
-        
-        partSel.addEventListener('change', togglePartFields);
-        // Initialize state for correct validation on load
-        togglePartFields();
-    }
-
-    // 4. SKU Quick Search Logic
-    const skuSearch = document.getElementById('partSkuSearch');
-    if (skuSearch && partSel) {
-        skuSearch.addEventListener('input', function() {
-            const val = this.value.trim().toLowerCase();
-            if (!val) return;
-
-            for (let i = 0; i < partSel.options.length; i++) {
-                const opt = partSel.options[i];
-                const skuVal = getVal(opt.dataset.sku).toLowerCase();
-                if (skuVal && (skuVal === val || skuVal.startsWith(val))) {
-                    partSel.selectedIndex = i;
-                    partSel.dispatchEvent(new Event('change'));
-                    break;
+    async function updateTicketSummary() {
+        try {
+            const response = await fetch(`/ticket/summary/${ticketId}`, {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await response.json().catch(() => ({}));
+            if (response.ok && data.success) {
+                const subtotalEl = document.getElementById('subtotal_display');
+                const taxAmountEl = document.getElementById('tax_amount_display');
+                
+                if (subtotalEl) subtotalEl.textContent = data.subtotal_amount;
+                if (taxAmountEl) taxAmountEl.textContent = data.tax_amount;
+                
+                const discountDisplay = document.getElementById('discount_amount_display'); // Conditionally rendered
+                if (discountDisplay && data.discount_amount) discountDisplay.textContent = data.discount_amount;
+                
+                const loyaltyDiscountDisplay = document.getElementById('loyalty_discount_display'); // Conditionally rendered
+                if (loyaltyDiscountDisplay && data.loyalty_discount) loyaltyDiscountDisplay.textContent = data.loyalty_discount;
+                
+                const grandTotalEl = document.getElementById('grand_total_display');
+                const totalPaidEl = document.getElementById('total_paid_display');
+                
+                if (grandTotalEl) grandTotalEl.textContent = data.grand_total;
+                if (totalPaidEl) totalPaidEl.textContent = data.total_paid;
+                
+                const balanceDueEl = document.getElementById('balance_due_display');
+                const balanceDueLbl = document.getElementById('balance_due_label');
+                const balanceDueRowEl = document.getElementById('balanceDueRow');
+                
+                if (balanceDueEl && balanceDueRowEl) {
+                    balanceDueEl.textContent = data.balance_due;
+                    
+                    // Dependable Localization: Handle both dot and comma decimal separators for robust sign detection
+                    const normalizedValue = data.balance_due.replace(/[^\d.,-]/g, '').replace(',', '.');
+                    const rawValue = parseFloat(normalizedValue);
+                    
+                    if (!isNaN(rawValue) && rawValue > 0) {
+                        balanceDueRowEl.classList.remove('text-success');
+                        balanceDueRowEl.classList.add('text-danger');
+                        if (balanceDueLbl) balanceDueLbl.textContent = balanceDueEl.dataset.balanceDueText;
+                    } else if (!isNaN(rawValue)) {
+                        balanceDueRowEl.classList.remove('text-danger');
+                        balanceDueRowEl.classList.add('text-success');
+                        if (balanceDueLbl) balanceDueLbl.textContent = balanceDueEl.dataset.changeDueText;
+                    } else {
+                        balanceDueRowEl.classList.remove('text-danger');
+                        balanceDueRowEl.classList.add('text-success');
+                        if (balanceDueLbl) balanceDueLbl.textContent = balanceDueEl.dataset.changeDueText;
+                    }
                 }
+
+                const pointsPreviewEl = document.getElementById('points_preview');
+                if (pointsPreviewEl) pointsPreviewEl.textContent = `+${data.est_points} ${container.dataset.pointsLabel || 'pts'}`;
+
+                if (taxAmountEl) {
+                    const taxRow = taxAmountEl.closest('div');
+                    if (taxRow) data.include_tax ? taxRow.classList.remove('text-muted') : taxRow.classList.add('text-muted');
+                }
+                if (subtotalEl) {
+                    const subtotalRow = subtotalEl.closest('div');
+                    if (subtotalRow) data.include_tax ? subtotalRow.classList.remove('text-muted') : subtotalRow.classList.add('text-muted');
+                }
+            } else {
+                const fallbackMsg = container.dataset.errorUpdate || 'Failed to update summary.';
+                alert(data.error || data.message || fallbackMsg);
+            }
+        } catch (e) { 
+            console.error(e); 
+            const errorMsg = container.dataset.errorUpdate || 'An error occurred while updating the summary.';
+            alert(errorMsg); 
+        }
+    }
+
+    if (quickTaxToggle) {
+        quickTaxToggle.addEventListener('change', async function() {
+            try {
+                const response = await fetch(`/ticket/toggle_tax/${ticketId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({ include_tax: this.checked })
+                });
+                if (response.ok) {
+                    updateTicketSummary();
+                } else {
+                    const data = await response.json().catch(() => ({}));
+                    const fallbackMsg = container.dataset.errorTax || 'Failed to toggle tax.';
+                    alert(data.message || fallbackMsg);
+                    this.checked = !this.checked; // Revert toggle state on error
+                }
+            } catch (e) { 
+                console.error('Tax toggle failed', e); 
+                const errorMsg = container.dataset.errorTax || 'An error occurred while toggling tax.';
+                alert(errorMsg); 
             }
         });
     }

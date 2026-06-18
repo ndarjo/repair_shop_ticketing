@@ -6,8 +6,11 @@
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="card shadow-sm border-0 mt-4">
-            <div class="card-header bg-secondary text-white">
-                <h4 class="mb-0"><i class="fas fa-archive me-2"></i>{{ _('Confirm Archiving Ticket') }}</h4>
+            <div class="card-header bg-secondary text-white d-flex align-items-center p-3">
+                <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn-link text-white p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Ticket') }}">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                </a>
+                <h4 class="mb-0"><i class="fas fa-archive me-2"></i>{{ _('Archive Ticket: %(num)s', num=ticket.ticket_number) }}</h4>
             </div>
             <div class="card-body">
                 <p class="lead">

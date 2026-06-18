@@ -8,7 +8,7 @@
     <h2>{{ _('Service Types & Pricing') }}</h2>
     {% if current_user.has_permission('manage_settings') %}
     <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">
-        <i class="fas fa-plus-square me-1" aria-hidden="true"></i> {{ _('New Service') }}
+        <i class="fas fa-plus-circle me-1" aria-hidden="true"></i> {{ _('New Service') }}
     </button>
     {% endif %}
 </div>
@@ -30,16 +30,10 @@
             <input type="text" name="q" class="form-control flex-grow-1 me-2" 
             placeholder="{{ _('Search services...') }}" 
             value="{{ search_query or '' }}">
-            <button type="submit" class="btn btn-outline-primary d-flex flex-column align-items-center justify-content-center" style="width: 110px;">
-                <i class="fas fa-search mb-1" aria-hidden="true"></i>
-                <span>{{ _('Search') }}</span>
-            </button>
+            <button type="submit" class="btn btn-outline-primary" style="width: 110px;"><i class="fas fa-search me-1" aria-hidden="true"></i>{{ _('Search') }}</button>
             
             {% if search_query %}
-            <a href="{{ url_for('services.manage_services', location_id=selected_location) }}" class="btn btn-outline-primary ms-2 d-flex flex-column align-items-center justify-content-center" style="width: 110px;">
-                <i class="fas fa-times mb-1" aria-hidden="true"></i>
-                <span>{{ _('Clear') }}</span>
-            </a>
+            <a href="{{ url_for('services.manage_services', location_id=selected_location) }}" class="btn btn-outline-secondary ms-2" style="width: 110px;"><i class="fas fa-times me-1" aria-hidden="true"></i>{{ _('Clear') }}</a>
             {% endif %}
         </form>
     </div>
@@ -78,12 +72,13 @@
                                 data-name="{{ service.name }}"
                                 data-description="{{ service.description or '' }}"
                                 data-price="{{ '%.*f'|format(currency_decimals, service.price or 0) }}"
-                                data-active="{{ 'true' if service.is_active else 'false' }}">
-                            <i class="fas fa-edit" aria-hidden="true" class="btn-link text-decoration-none" title="{{ _('Edit Service') }}"></i>
+                                data-active="{{ 'true' if service.is_active else 'false' }}"
+                                title="{{ _('Edit Service') }}">
+                            <i class="fas fa-edit" aria-hidden="true"></i>
                         </button>
-                        <form action="{{ url_for('services.delete_service', service_id=service.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this service?') }}">
+                        <form action="{{ url_for('services.delete_service', service_id=service.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this service?')|forceescape }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" class="btn-link text-decoration-none" title="{{ _('Delete Service') }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Delete Service') }}">
                                 <i class="fas fa-trash-alt" aria-hidden="true"></i>
                             </button>
                         </form>
@@ -171,7 +166,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-outline-primary"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Create Service') }}</button>
+                    <button type="submit" class="btn btn-outline-primary"><i class="fas fa-plus-circle me-2" aria-hidden="true"></i>{{ _('Create Service') }}</button>
                 </div>
             </form>
         </div>

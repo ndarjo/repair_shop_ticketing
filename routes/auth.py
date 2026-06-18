@@ -4,7 +4,6 @@ from flask import Blueprint, current_app, flash, redirect, render_template, requ
 from flask_babel import _
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import func, select
-from babel.numbers import list_currencies
 
 from app import limiter
 from models import User, db
@@ -23,8 +22,8 @@ def login():
         password = request.form.get('password')
 
         if not username or not password:
-            flash(_('Username and password are required'), 'danger')
-            return render_template('Auth/login.html', last_username=username)
+            flash(_('Username and password are required.'), 'danger')
+            return render_template('auth/login.html', last_username=username)
         
         stmt = select(User).where(func.lower(User.username) == func.lower(username))
         user = db.session.scalar(stmt)
@@ -42,17 +41,17 @@ def login():
                 return redirect(next_page)
             else:
                 flash(_('Your account is deactivated. Please contact an administrator.'), 'danger')
-                return render_template('Auth/login.html', last_username=username)
+                return render_template('auth/login.html', last_username=username)
         else:
-            flash(_('Invalid username or password'), 'danger')
-            return render_template('Auth/login.html', last_username=username)
+            flash(_('Invalid username or password.'), 'danger')
+            return render_template('auth/login.html', last_username=username)
     
-    return render_template('Auth/login.html')
+    return render_template('auth/login.html')
 
 @auth_bp.route('/set_language/<code>')
 def set_language(code):
     """Endpoint for unauthenticated users to switch display language"""
-    if code in current_app.config['LANGUAGES']:
+    if code in current_app.config['SUPPORTED_LANGUAGES']:
         session['language'] = code
         if current_user.is_authenticated:
             current_user.language_preference = code
@@ -135,18 +134,9 @@ def profile():
                 current_user.theme_preference = theme
             if color in ['blue', 'green', 'purple', 'red', 'orange']:
                 current_user.color_theme = color
-            if language in current_app.config['LANGUAGES']:
+            if language in current_app.config['SUPPORTED_LANGUAGES']:
                 current_user.language_preference = language
                 session['language'] = language # UX Sync: Update current session language immediately
-
-            if current_user.has_permission('view_reports'):
-                currency = request.form.get('currency')
-                if currency in list_currencies():
-                    current_user.currency = currency
-                
-                decimals = request.form.get('currency_decimals', type=int)
-                if decimals in [0, 2, 3]:
-                    current_user.currency_decimals = decimals
 
             try:
                 db.session.commit()
@@ -159,4 +149,4 @@ def profile():
                 
     # UX Integrity: Default to current username on GET or failures
     display_username = (request.form.get('new_username') or current_user.username or '').strip()
-    return render_template('Auth/profile.html', new_username=display_username)
+    return render_template('auth/profile.html', new_username=display_username)

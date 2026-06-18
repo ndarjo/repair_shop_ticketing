@@ -35,6 +35,11 @@
     --color-orange-dark: #d66d00;
     --color-orange-light: #fff3e0;
 
+    /* Document & Invoice defaults */
+    --brand-color: #0d6efd;
+    --status-header-bg: #0d6efd;
+    --status-header-text: #ffffff;
+
 }
 
 /* Light Theme (Default) */
@@ -773,13 +778,13 @@ body.theme-dark .color-swatch {
     border-top-color: var(--bs-border-color);
 }
 .tooltip.bs-tooltip-end .tooltip-arrow::before {
-    border-end-color: var(--bs-border-color);
+    border-right-color: var(--bs-border-color);
 }
 .tooltip.bs-tooltip-bottom .tooltip-arrow::before {
     border-bottom-color: var(--bs-border-color);
 }
 .tooltip.bs-tooltip-start .tooltip-arrow::before {
-    border-start-color: var(--bs-border-color);
+    border-left-color: var(--bs-border-color);
 }
 
 /* Dark theme specific overrides for tooltips */
@@ -791,9 +796,9 @@ body.theme-dark .tooltip-inner {
 
 /* Tooltip arrow for dark theme (matches tooltip border) */
 body.theme-dark .tooltip.bs-tooltip-top .tooltip-arrow::before { border-top-color: var(--bs-border-color); }
-body.theme-dark .tooltip.bs-tooltip-end .tooltip-arrow::before { border-end-color: var(--bs-border-color); }
+body.theme-dark .tooltip.bs-tooltip-end .tooltip-arrow::before { border-right-color: var(--bs-border-color); }
 body.theme-dark .tooltip.bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: var(--bs-border-color); }
-body.theme-dark .tooltip.bs-tooltip-start .tooltip-arrow::before { border-start-color: var(--bs-border-color); }
+body.theme-dark .tooltip.bs-tooltip-start .tooltip-arrow::before { border-left-color: var(--bs-border-color); }
 
 
 /* Modal adjustments */
@@ -853,4 +858,98 @@ body.theme-dark .btn-adaptive {
 }
 .btn-adaptive i {
     color: inherit !important;
+}
+
+/* ========================================
+   INVOICE & DOCUMENT STYLES
+   ======================================== */
+.bg-custom { background-color: var(--brand-color) !important; }
+.footer-note-header { border-bottom: 1px solid var(--brand-color) !important; }
+.card-header.bg-custom { background-color: var(--status-header-bg) !important; color: var(--status-header-text) !important; }
+
+/* Status-based colors for headers */
+.invoice-card.status-paid { --status-header-bg: #198754; --status-header-text: #ffffff; }
+.invoice-card.status-partial { --status-header-bg: #ffc107; --status-header-text: #212529; }
+.invoice-card.status-unpaid { --status-header-bg: #dc3545; --status-header-text: #ffffff; }
+.invoice-card.status-draft { --status-header-bg: #6c757d; --status-header-text: #ffffff; }
+
+.paid-stamp, .draft-stamp {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    font-size: 5rem;
+    font-weight: bold;
+    padding: 10px 40px;
+    border-radius: 15px;
+    opacity: 0.1;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.paid-stamp {
+    border: 8px solid #28a745;
+    color: #28a745;
+}
+
+.draft-stamp {
+    border: 8px solid #6c757d;
+    color: #6c757d;
+}
+
+/* Invoice specific overrides for brand consistency */
+.invoice-card .border-primary { border-color: var(--brand-color) !important; }
+.invoice-card .text-primary { color: var(--brand-color) !important; }
+.invoice-card .btn-outline-primary { 
+    color: var(--brand-color) !important; 
+    border-color: var(--brand-color) !important; 
+}
+.invoice-card .btn-outline-primary:hover, 
+.invoice-card .btn-outline-primary:active, 
+.invoice-card .btn-outline-primary:focus { 
+    background-color: var(--brand-color) !important; 
+    color: #fff !important; 
+}
+
+/* ========================================
+   PRINT OPTIMIZATION
+   ======================================== */
+@media print {
+    /* Force light theme colors regardless of UI preference */
+    body.theme-dark, body.theme-light, :root {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        --bs-body-bg: #ffffff;
+        --bs-body-color: #000000;
+    }
+
+    /* Hide non-printable UI elements */
+    .navbar, .btn, .no-print, footer, .card-header .btn, .input-group, .breadcrumb {
+        display: none !important;
+    }
+
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+        background-color: transparent !important;
+    }
+
+    .table {
+        color: #000000 !important;
+        background-color: transparent !important;
+    }
+
+    .card-header { 
+        border-bottom: 2px solid #000 !important;
+        background-color: transparent !important;
+        color: #000 !important;
+        padding-left: 0 !important;
+    }
+    .bg-light { background-color: #ffffff !important; border: 1px solid #dee2e6 !important; }
+    .table thead { border-bottom: 2px solid #000 !important; }
+    .text-muted { color: #444 !important; }
+    .paid-stamp { display: block !important; opacity: 0.1 !important; color: #28a745 !important; border-color: #28a745 !important; z-index: -1; }
+    .border-top { border-top: 1px solid #dee2e6 !important; }
+    .footer-note-header { color: #000 !important; border-bottom: 1px solid #ccc; display: inline-block; }
+    code, pre { color: black !important; background-color: transparent !important; }
 }

@@ -1,17 +1,18 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
 
-{% block title %}{{ _('POS Dashboard') }} - {{ shop_info.shop_name if shop_info else _('Repair Shop') }}{% endblock %}
+{% block title %}{{ _('POS Terminal') }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name and shop_info.shop_name != 'None' else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <h1 class="h3 mb-0"><i class="fas fa-cash-register me-2 text-primary"></i>{{ _('POS Terminal') }}</h1>
+        <h1 class="h3 mb-0 text-break"><i class="fas fa-cash-register me-2 text-primary" aria-hidden="true"></i>{{ _('POS Terminal') }}</h1>
         <div class="d-flex gap-2 align-items-center">
             {% if (current_user.is_superuser or current_user.has_role('admin')) and locations %}
             <form action="{{ url_for('pos.index') }}" method="GET" class="d-flex gap-2 align-items-center me-3">
                 <label for="location-select" class="small fw-bold text-muted text-uppercase mb-0">{{ _('Branch View:') }}</label>
                 <select id="location-select" name="location_id" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                    <option value="">{{ _('All Branches') }}</option>
                     {% for loc in locations %}
                     <option value="{{ loc.id }}" {{ 'selected' if selected_location == loc.id else '' }}>
                         {{ loc.name }}
@@ -21,7 +22,7 @@
             </form>
             {% endif %}
             <a href="{{ url_for('pos.history') }}" class="btn btn-outline-primary shadow-sm">
-                <i class="fas fa-history me-1"></i> {{ _('Sales History') }}
+                <i class="fas fa-history me-1" aria-hidden="true"></i> {{ _('Sales History') }}
             </a>
         </div>
     </div>
@@ -31,7 +32,7 @@
         <div class="col-md-4 mb-4">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-dark text-white py-3">
-                    <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>{{ _('Start New Sale') }}</h5>
+                    <h5 class="mb-0"><i class="fas fa-plus-circle me-2" aria-hidden="true"></i>{{ _('Start New Sale') }}</h5>
                 </div>
                 <div class="card-body">
                     <form action="{{ url_for('pos.create_sale') }}" method="POST">
@@ -42,8 +43,10 @@
                             <label for="customer_id" class="form-label fw-bold">{{ _('Select Customer') }}</label>
                             <select name="customer_id" id="customer_id" class="form-select form-select-lg">
                                 <option value="">-- {{ _('Walk-in Customer') }} --</option>
-                                {% for customer in customers %}
-                                <option value="{{ customer.id }}">{{ customer.name or _('Unknown') }}{% if customer.phone %} ({{ customer.phone }}){% endif %}</option>
+                                {# INTEGRITY: Only list active, non-anonymized customers for the POS terminal #}
+                                {% for customer in customers if not customer.is_anonymized and not (customer.name and customer.name.startswith('DELETED_USER_')) %}
+                                <option value="{{ customer.id }}">
+                                    {{ customer.name if (customer.name and customer.name != 'None') else _('Customer') }}{% if customer.phone and customer.phone != 'None' %} ({{ customer.phone }}){% endif %}</option>
                                 {% endfor %}
                             </select>
                             <div class="form-text mt-2">
@@ -53,10 +56,10 @@
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-outline-primary btn-lg">
-                                <i class="fas fa-shopping-basket me-2"></i>{{ _('Open Cart') }}
+                                <i class="fas fa-shopping-basket me-2" aria-hidden="true"></i>{{ _('Open Cart') }}
                             </button>
                             <a href="{{ url_for('customer.new_customer') }}" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-user-plus me-2"></i>{{ _('Quick Add Customer') }}
+                                <i class="fas fa-user-plus me-2" aria-hidden="true"></i>{{ _('Quick Add Customer') }}
                             </a>
                         </div>
                     </form>
@@ -68,11 +71,11 @@
         <div class="col-md-8">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
-                    <h5 class="mb-0">{{ _('Available Inventory & Services') }}</h5>
+                    <h5 class="mb-0"><i class="fas fa-list-alt me-2" aria-hidden="true"></i>{{ _('Available Inventory & Services') }}</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="p-3 bg-light border-bottom fw-bold text-primary">
-                        <i class="fas fa-hand-holding-usd me-2"></i>{{ _('Services') }}
+                        <i class="fas fa-hand-holding-usd me-2" aria-hidden="true"></i>{{ _('Services') }}
                     </div>
                     <div id="catalog-services" class="table-responsive mb-0">
                         <table class="table table-hover align-middle mb-0">
@@ -84,7 +87,7 @@
                             </thead>
                             <tbody>
                                 {% for service in services.items %}
-                                <tr>
+                                <tr class="text-break">
                                     <td class="ps-4">{{ service.name or '' }}</td>
                                     <td class="text-end pe-4 fw-bold text-success">
                                         {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, service.price or 0) }}
@@ -99,12 +102,12 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="modal-footer">
+                    <div class="card-footer bg-white">
                         {{ render_pagination(services, 'pos.index', location_id=selected_location, page_p=parts.page, _anchor='catalog-services', page_arg_name='page_s') }}
                     </div>
 
                     <div class="p-3 bg-light border-top border-bottom fw-bold text-success">
-                        <i class="fas fa-boxes me-2"></i>{{ _('Spare Parts') }}
+                        <i class="fas fa-boxes me-2" aria-hidden="true"></i>{{ _('Spare Parts') }}
                     </div>
                     <div id="catalog-parts" class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
@@ -117,7 +120,7 @@
                             </thead>
                             <tbody>
                                 {% for part in parts.items %}
-                                <tr>
+                                <tr class="text-break">
                                     <td class="ps-4">
                                         <div class="fw-bold">{{ part.name or '' }}</div>
                                         <small class="text-muted">{{ part.description or '' }}</small>
@@ -136,7 +139,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="modal-footer">
+                    <div class="card-footer bg-white">
                         {{ render_pagination(parts, 'pos.index', location_id=selected_location, page_s=services.page, _anchor='catalog-parts', page_arg_name='page_p') }}
                     </div>
                 </div>

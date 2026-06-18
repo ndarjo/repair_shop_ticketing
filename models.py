@@ -165,6 +165,7 @@ class Customer(db.Model):
     # without revealing the actual number to the database engine.
     phone_hash = db.Column(db.String(64), index=True)
     is_anonymized = db.Column(db.Boolean, nullable=False, server_default='false', default=False, index=True)
+    loyalty_points = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
 
     created_at = db.Column(db.DateTime, default=datetime.now, index=True)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
@@ -196,9 +197,10 @@ class Customer(db.Model):
     @phone.setter
     def phone(self, value):
         if value:
+            val_str = str(value)
             # Consistency: Store hash of normalized digits to allow formatted search queries
-            normalized = re.sub(r'\D', '', value)
-            self._phone_encrypted = self._get_cipher().encrypt(value.encode()).decode()
+            normalized = re.sub(r'\D', '', val_str)
+            self._phone_encrypted = self._get_cipher().encrypt(val_str.encode()).decode()
             self.phone_hash = self.get_search_hash(normalized)
         else:
             self._phone_encrypted = ""
@@ -212,7 +214,8 @@ class Customer(db.Model):
     @address.setter
     def address(self, value):
         if value:
-            self._address_encrypted = self._get_cipher().encrypt(value.encode()).decode()
+            val_str = str(value)
+            self._address_encrypted = self._get_cipher().encrypt(val_str.encode()).decode()
         else:
             self._address_encrypted = ""
 
@@ -280,9 +283,10 @@ class Ticket(db.Model):
 
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=False, index=True)
 
-    items_included = db.Column(db.Text, nullable=False)
+    items_included = db.Column(db.Text, nullable=True)
     problem_description = db.Column(db.Text, nullable=False)
     current_phase = db.Column(db.String(40), default='Open', nullable=False, index=True)
+    include_tax = db.Column(db.Boolean, nullable=False, default=True)
     
     is_archived = db.Column(db.Boolean, nullable=False, default=False, index=True)
     device_picked_up = db.Column(db.Boolean, nullable=False, default=False)
@@ -324,12 +328,52 @@ class Ticket(db.Model):
 
     @property
     def grand_total(self):
-        """Sum of services and parts"""
-        return self.services_total + self.parts_total
+        """Tax-inclusive total amount (Synced with active invoice)"""
+        inv = self.invoices[0] if self.invoices else None
+        if inv:
+            return inv.total_amount
+        
+        # Fallback for display before invoice generation
+        sub = self.subtotal_amount
+        if not self.include_tax:
+            return sub
+        tax_rate = self.tax_info['rate']
+        return (sub * (1 + Decimal(str(tax_rate)) / 100)).quantize(Decimal('0.01'))
+
+    @property
+    def subtotal_amount(self):
+        """Pre-tax raw total (Synced with active invoice)"""
+        inv = self.invoices[0] if self.invoices else None
+        if inv:
+            return inv.subtotal_amount
+        return (self.services_total + self.parts_total).quantize(Decimal('0.01'))
+
+    @property
+    def tax_amount(self):
+        """Calculated tax portion (Synced with active invoice)"""
+        inv = self.invoices[0] if self.invoices else None
+        if inv:
+            return inv.tax_amount
+            
+        if not self.include_tax:
+            return Decimal('0.00')
+        return self.grand_total - self.subtotal_amount
+
+    @property
+    def tax_info(self):
+        """Returns the tax rate and label for display"""
+        shop_info = db.session.scalar(db.select(ShopSetting).filter_by(location_id=self.location_id))
+        if not shop_info:
+            shop_info = db.session.scalar(db.select(ShopSetting).filter_by(location_id=None))
+        if not shop_info:
+            shop_info = db.session.scalar(db.select(ShopSetting).limit(1))
+        return {'rate': Decimal(str(shop_info.tax_rate)) if shop_info else Decimal('0.00'), 'label': shop_info.tax_label if shop_info else 'Tax'}
 
     @property
     def total_paid(self):
         """Sum of all payments recorded for this ticket"""
+        # INTEGRITY: Ensure payments are only summed for the associated invoice
+        # This prevents double-counting if a ticket has multiple invoices (e.g., partial repairs)
         return sum((p.amount for p in self.payments), Decimal('0.00'))
 
     @property
@@ -516,9 +560,16 @@ class Invoice(db.Model):
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id', ondelete='CASCADE'), nullable=True, index=True)
 
     customer = db.relationship('Customer', backref='invoices')
+    location = db.relationship('Location', backref='branch_invoices')
     
     total_amount = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
     status = db.Column(db.String(20), default='Unpaid', index=True) # Unpaid, Partial, Paid
+    include_tax = db.Column(db.Boolean, nullable=False, default=True)
+    discount_amount = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
+    discount_type = db.Column(db.String(20), default='fixed') # fixed, percent
+    loyalty_discount_amount = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
+    loyalty_points_used = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
+    loyalty_points_earned = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
     created_at = db.Column(db.DateTime, default=datetime.now, index=True)
     
     # Cascade relationships remain intact
@@ -526,8 +577,37 @@ class Invoice(db.Model):
     payments = db.relationship('Payment', backref='invoice', lazy=True, cascade='all, delete-orphan')
 
     def calculate_total(self):
-        """Recalculate total amount from items and services"""
-        self.total_amount = self.subtotal + self.spare_parts_total
+        """Recalculate total amount applying discounts and taxes"""
+        sub = self.subtotal + self.spare_parts_total
+        
+        # Calculate manual discount
+        if self.discount_type == 'percent':
+            manual_discount = (sub * (self.discount_amount / Decimal('100'))).quantize(Decimal('0.01'))
+        else:
+            manual_discount = self.discount_amount
+            
+        # Net taxable subtotal (capped at 0)
+        taxable_sub = max(Decimal('0.00'), sub - manual_discount - self.loyalty_discount_amount)
+
+        if not self.include_tax:
+            self.total_amount = taxable_sub.quantize(Decimal('0.01'))
+        else:
+            shop_info = db.session.scalar(db.select(ShopSetting).filter_by(location_id=self.location_id)) or \
+                        db.session.scalar(db.select(ShopSetting).filter_by(location_id=None)) or \
+                        db.session.scalar(db.select(ShopSetting).limit(1))
+            rate = shop_info.tax_rate if shop_info else Decimal('0.00')
+            self.total_amount = (taxable_sub * (1 + rate / Decimal('100'))).quantize(Decimal('0.01'))
+        
+        # Forecast loyalty points to be earned on this purchase
+        shop_info = db.session.scalar(db.select(ShopSetting).filter_by(location_id=self.location_id)) or \
+                    db.session.scalar(db.select(ShopSetting).filter_by(location_id=None)) or \
+                    db.session.scalar(db.select(ShopSetting).limit(1))
+
+        if shop_info and shop_info.enable_loyalty_points:
+            self.loyalty_points_earned = (taxable_sub * shop_info.loyalty_points_per_currency).to_integral_value()
+        else:
+            self.loyalty_points_earned = Decimal('0.00')
+
         return self.total_amount
 
     @property
@@ -539,6 +619,34 @@ class Invoice(db.Model):
     def spare_parts_total(self):
         """Total from all items (parts and POS items) on this invoice"""
         return sum((item.total_price for item in self.items), Decimal('0.00'))
+
+    @property
+    def subtotal_amount(self):
+        """Pre-tax total"""
+        return (self.subtotal + self.spare_parts_total).quantize(Decimal('0.01'))
+
+    @property
+    def tax_amount(self):
+        """Calculated tax portion based on net taxable subtotal after discounts"""
+        sub = self.subtotal + self.spare_parts_total
+        if self.discount_type == 'percent':
+            manual_discount = (sub * (self.discount_amount / Decimal('100'))).quantize(Decimal('0.01'))
+        else:
+            manual_discount = self.discount_amount
+        taxable_sub = max(Decimal('0.00'), sub - manual_discount - self.loyalty_discount_amount)
+        return (self.total_amount - taxable_sub).quantize(Decimal('0.01'))
+
+    @property
+    def tax_info(self):
+        """Returns the tax rate and label for display"""
+        shop_info = db.session.scalar(db.select(ShopSetting).filter_by(location_id=self.location_id))
+        if not shop_info:
+            shop_info = db.session.scalar(db.select(ShopSetting).filter_by(location_id=None))
+        if not shop_info:
+            shop_info = db.session.scalar(db.select(ShopSetting).limit(1))
+
+        return {'rate': Decimal(str(shop_info.tax_rate)) if shop_info else Decimal('0.00'), 
+                'label': shop_info.tax_label if shop_info else 'Tax'}
 
     @property
     def down_payment(self):
@@ -604,9 +712,40 @@ class ShopSetting(db.Model):
     shop_phone = db.Column(db.String(30))
     shop_email = db.Column(db.String(120))
     logo_path = db.Column(db.String(255))
+    tax_id = db.Column(db.String(50))
+    invoice_label = db.Column(db.String(50), default='INVOICE')
+    receipt_label = db.Column(db.String(50), default='RECEIPT')
+    invoice_terms = db.Column(db.Text)
+    receipt_notes = db.Column(db.Text)
+    signature_label = db.Column(db.String(100), default='Customer Signature')
+    # New customizable closing greetings
+    invoice_closing_text = db.Column(db.String(255), default='Thank you for your business!')
+    receipt_closing_text = db.Column(db.String(255), default='Thank you for your business!')
     currency = db.Column(db.String(10), nullable=False, default='USD')
     currency_decimals = db.Column(db.Integer, nullable=False, default=2)
+    currency_symbol = db.Column(db.String(5), default='$')
     setup_completed = db.Column(db.Boolean, nullable=False, default=False)
+    show_technician = db.Column(db.Boolean, default=True)
+    show_device_sn = db.Column(db.Boolean, default=True)
+    show_unit_prices = db.Column(db.Boolean, default=True)
+    show_customer_phone = db.Column(db.Boolean, default=True)
+    show_customer_address = db.Column(db.Boolean, default=True)
+    show_sku = db.Column(db.Boolean, default=False)
+    enable_loyalty_points = db.Column(db.Boolean, default=False)
+    loyalty_label = db.Column(db.String(50), default='Loyalty Points')
+    loyalty_points_per_currency = db.Column(db.Numeric(10, 2), default=Decimal('1.00'))
+    loyalty_point_value = db.Column(db.Numeric(10, 4), default=Decimal('0.01'))
+    enable_discounts = db.Column(db.Boolean, default=True)
+    show_wholesale_cost = db.Column(db.Boolean, default=False)
+    brand_color = db.Column(db.String(20), default='#0d6efd')
+    pdf_page_format = db.Column(db.String(20), default='thermal')
+    show_logo_on_docs = db.Column(db.Boolean, default=True)
+    show_payment_history = db.Column(db.Boolean, default=True)
+    tax_rate = db.Column(db.Numeric(5, 2), default=Decimal('0.00'))
+    bank_details = db.Column(db.Text)
+    show_notes_on_docs = db.Column(db.Boolean, default=False)
+    tax_label = db.Column(db.String(20), default='Tax')
+    show_company_address = db.Column(db.Boolean, default=True)
 
     def __repr__(self):
         return f'<ShopSetting {self.shop_name}>'

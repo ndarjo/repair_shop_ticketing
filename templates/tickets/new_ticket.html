@@ -4,7 +4,10 @@
 
 {% block content %}
 <div class="card shadow-sm border-0">
-    <div class="card-header bg-primary text-white">
+    <div class="card-header bg-primary text-white d-flex align-items-center p-3">
+        <a href="{{ url_for('main.dashboard') }}" class="btn-link text-white p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Dashboard') }}">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        </a>
         <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>{{ _('New Repair Ticket') }}</h4>
     </div>
     <div class="card-body">
@@ -17,11 +20,17 @@
                     <label for="customer_search" class="form-label fw-bold">{{ _('1. Search Customer') }} *</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-user" aria-hidden="true"></i></span>
-                        <input type="text" id="customer_search" class="form-control" placeholder="{{ _('Type name or phone...') }}" autocomplete="off">
+                        <input type="text" id="customer_search" class="form-control" 
+                               placeholder="{{ _('Type name or phone...') }}" 
+                               data-searching-text="{{ _('Searching...') }}"
+                               data-no-results-text="{{ _('No customers found.') }}"
+                               data-error-text="{{ _('Search failed.') }}" autocomplete="off">
+                        {% if current_user.has_permission('create_customer') %}
                         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#newCustomerModal">
-                            <i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('New') }}</button>
+                            <i class="fas fa-plus-circle me-2" aria-hidden="true"></i>{{ _('New') }}</button>
+                        {% endif %}
                     </div>
-                    <input type="hidden" name="customer_id" id="customer_id">
+                    <input type="hidden" name="customer_id" id="customer_id" value="{{ customer_id or '' }}">
                     <div id="customer_results" class="list-group position-absolute w-100 z-3 shadow mt-1 bg-body" style="display: none; max-height: 250px; overflow-y: auto;"></div>
                 </div>
 
@@ -36,10 +45,12 @@
                                data-no-results-text="{{ _('No devices found.') }}"
                                data-no-devices-registered-text="{{ _('No devices registered for this customer.') }}"
                                disabled autocomplete="off">
+                        {% if current_user.has_permission('create_device') %}
                         <button type="button" id="new_device_btn" class="btn btn-outline-primary" disabled data-bs-toggle="modal" data-bs-target="#newDeviceModal">
-                            <i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('New') }}</button>
+                            <i class="fas fa-plus-circle me-2" aria-hidden="true"></i>{{ _('New') }}</button>
+                        {% endif %}
                     </div>
-                    <input type="hidden" name="device_id" id="device_id">
+                    <input type="hidden" name="device_id" id="device_id" value="{{ device_id or '' }}">
                     <div id="device_results" class="list-group position-absolute w-100 z-3 shadow mt-1 bg-body" style="display: none; max-height: 250px; overflow-y: auto;"></div>
                 </div>
 
@@ -58,55 +69,65 @@
                         </div>
                     {% endif %}
                     <label for="problem_description" class="form-label fw-bold">{{ _('Problem Description') }} *</label>
-                    <textarea name="problem_description" id="problem_description" class="form-control" rows="3" required placeholder="{{ _('Describe the issue in detail...') }}"></textarea>
+                    <textarea name="problem_description" id="problem_description" class="form-control" rows="3" required placeholder="{{ _('Describe the issue in detail...') }}">{{ problem_description or '' }}</textarea>
                 </div>
 
                 <div class="col-12">
                     <label for="items_included" class="form-label fw-bold">{{ _('Items Included (Charger, Case, etc.)') }}</label>
-                    <input type="text" name="items_included" id="items_included" class="form-control" placeholder="{{ _('e.g., Original Charger, Leather Case') }}">
+                    <input type="text" name="items_included" id="items_included" class="form-control" value="{{ items_included or '' }}" placeholder="{{ _('e.g., Original Charger, Leather Case') }}">
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-6">
                     <label for="assigned_to" class="form-label fw-bold">{{ _('Technician Assignment') }}</label>
                     <select name="assigned_to" id="assigned_to" class="form-select">
                         <option value="">{{ _('-- Unassigned --') }}</option>
                         {% for user in (users or []) %}
-                            <option value="{{ user.id }}">{{ user.full_name or user.username }}</option>
+                            <option value="{{ user.id }}" {% if assigned_to == user.id %}selected{% endif %}>{{ user.full_name or user.username }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <div class="col-md-3">
-                    <label for="down_payment" class="form-label fw-bold">{{ _('Down Payment') }}</label>
-                    <div class="input-group">
-                        <span class="input-group-text">{{ currency_symbol }}</span>
-                        <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="down_payment" id="down_payment" class="form-control" value="{{ '%.*f'|format(currency_decimals, 0.0) }}" min="0">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">{{ _('Tax Options') }}</label>
+                    <div class="form-check pt-1">
+                        <input class="form-check-input" type="checkbox" name="include_tax" id="include_tax" {% if include_tax is not defined or include_tax %}checked{% endif %}>
+                        <label class="form-check-label" for="include_tax">
+                            {{ _('Include %(label)s', label=shop_info.tax_label if (shop_info and shop_info.tax_label) else _('Tax')) }}
+                        </label>
                     </div>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-4">
+                    <label for="down_payment" class="form-label fw-bold">{{ _('Down Payment') }}</label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ currency_symbol }}</span>
+                        <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="down_payment" id="down_payment" class="form-control" value="{{ down_payment if down_payment is not none else '%.*f'|format(currency_decimals, 0.0) }}" min="0">
+                    </div>
+                </div>
+
+                <div class="col-md-4">
                     <label for="payment_method" class="form-label fw-bold">{{ _('Payment Method') }}</label>
                     <select name="payment_method" id="payment_method" class="form-select">
-                        <option value="Cash">{{ _('Cash') }}</option>
-                        <option value="Card">{{ _('Card') }}</option>
-                        <option value="Transfer">{{ _('Bank Transfer') }}</option>
-                        <option value="Check">{{ _('Check') }}</option>
-                        <option value="Other">{{ _('Other') }}</option>
+                        <option value="Cash" {% if payment_method == 'Cash' %}selected{% endif %}>{{ _('Cash') }}</option>
+                        <option value="Card" {% if payment_method == 'Card' %}selected{% endif %}>{{ _('Card') }}</option>
+                        <option value="Transfer" {% if payment_method == 'Transfer' %}selected{% endif %}>{{ _('Bank Transfer') }}</option>
+                        <option value="Check" {% if payment_method == 'Check' %}selected{% endif %}>{{ _('Check') }}</option>
+                        <option value="Other" {% if payment_method == 'Other' %}selected{% endif %}>{{ _('Other') }}</option>
                     </select>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <label for="created_date" class="form-label fw-bold">{{ _('Intake Date/Time') }}</label>
                     <div class="input-group">
-                        <input type="date" name="created_date" id="created_date" class="form-control" value="{{ now_date if now_date else '' }}" aria-label="{{ _('Intake Date') }}">
-                        <input type="time" name="created_time" id="created_time" class="form-control" value="{{ now_time if now_time else '' }}" aria-label="{{ _('Intake Time') }}">
+                        <input type="date" name="created_date" id="created_date" class="form-control" value="{{ created_date if created_date is not none else now.strftime('%Y-%m-%d') }}" aria-label="{{ _('Intake Date') }}">
+                        <input type="time" name="created_time" id="created_time" class="form-control" value="{{ created_time if created_time is not none else now.strftime('%H:%M') }}" aria-label="{{ _('Intake Time') }}">
                     </div>
                 </div>
 
                 <div class="col-12 text-end mt-4">
                     <hr>
                     <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary px-4 me-2">{{ _('Cancel') }}</a>
-                    <button type="submit" class="btn btn-outline-primary btn-lg px-5"><i class="fas fa-edit me-1" aria-hidden="true"></i>{{ _('Create Ticket') }}</button>
+                    <button type="submit" class="btn btn-outline-primary btn-lg px-5"><i class="fas fa-plus-circle me-2" aria-hidden="true"></i>{{ _('Create Ticket') }}</button>
                 </div>
             </div>
         </form>

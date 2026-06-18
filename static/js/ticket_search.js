@@ -74,15 +74,20 @@ function initCustomerSearch() {
         
         if (results) {
             const searchingText = getVal(searchInput.getAttribute('data-searching-text')) || 'Searching...';
-            results.innerHTML = `<div class="list-group-item text-muted"><i class="fas fa-spinner fa-spin me-2"></i>${searchingText}</div>`;
+            results.innerHTML = `<div class="list-group-item text-muted"><span class="spinner-border spinner-border-sm me-2"></span>${searchingText}</div>`;
             results.style.display = 'block';
         }
 
         const fetchId = ++lastFetchId;
         searchTimeout = setTimeout(() => {
-            fetch(`/customer/search?q=${encodeURIComponent(query)}`)
-                .then(response => {
-                    if (!response.ok) throw new Error('Search failed');
+            fetch(`/customer/search?q=${encodeURIComponent(query)}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(async response => {
+                    if (!response.ok) {
+                        const data = await response.json().catch(() => ({}));
+                        throw new Error(data.error || data.message || 'Search failed');
+                    }
                     return response.json();
                 })
                 .then(customers => {
@@ -109,7 +114,7 @@ function initCustomerSearch() {
                 .catch(error => {
                     console.error('Error:', error);
                     const errorText = getVal(searchInput.getAttribute('data-error-text')) || 'Search failed.';
-                    if (results) results.innerHTML = `<div class="list-group-item text-danger">${errorText}</div>`;
+                    if (results) results.innerHTML = `<div class="list-group-item text-danger">${error.message || errorText}</div>`;
                 });
         }, 300);
     });
@@ -179,15 +184,20 @@ function initDeviceSearch() {
 
         if (results) {
             const searchingText = getVal(searchInput.getAttribute('data-searching-text')) || 'Searching...';
-            results.innerHTML = `<div class="list-group-item text-muted"><i class="fas fa-spinner fa-spin me-2"></i>${searchingText}</div>`;
+            results.innerHTML = `<div class="list-group-item text-muted"><span class="spinner-border spinner-border-sm me-2"></span>${searchingText}</div>`;
             results.style.display = 'block';
         }
 
         const fetchId = ++lastFetchId;
         searchTimeout = setTimeout(() => {
-            fetch(`/device/search/${customerId}?q=${encodeURIComponent(query)}`)
-                .then(response => {
-                    if (!response.ok) throw new Error('Search failed');
+            fetch(`/device/search/${customerId}?q=${encodeURIComponent(query)}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(async response => {
+                    if (!response.ok) {
+                        const data = await response.json().catch(() => ({}));
+                        throw new Error(data.error || data.message || 'Search failed');
+                    }
                     return response.json();
                 })
                 .then(devices => {
@@ -201,7 +211,7 @@ function initDeviceSearch() {
                         
                         // If query is empty, it means the customer has zero devices in the database
                         const msg = currentQuery === '' ? noDevicesText : noResultsText;
-                        results.innerHTML = `<div class="list-group-item text-warning fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>${msg}</div>`;
+                        results.innerHTML = `<div class="list-group-item text-warning fw-bold"><span class="spinner-border spinner-border-sm me-2 d-none"></span><i class="fas fa-exclamation-triangle me-2"></i>${msg}</div>`;
                     }
 
                     devices.forEach(device => {
@@ -219,7 +229,7 @@ function initDeviceSearch() {
                 .catch(error => {
                     console.error('Error:', error);
                     const errorText = getVal(searchInput.getAttribute('data-error-text')) || 'Search failed.';
-                    if (results) results.innerHTML = `<div class="list-group-item text-danger">${errorText}</div>`;
+                    if (results) results.innerHTML = `<div class="list-group-item text-danger">${error.message || errorText}</div>`;
                 });
         }, 300);
     };
@@ -243,50 +253,6 @@ function selectDevice(deviceId, deviceDisplay) {
         deviceResults.style.display = 'none';
     }
 }
-
-/**
- * Shared AJAX utility to handle modal form submissions (Customer/Device)
- */
-window.handleModalSubmit = function(form, btn, url, successCallback) {
-    const formData = new FormData(form);
-    const originalText = btn.innerHTML;
-    
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> ' + (btn.getAttribute('data-loading-text') || 'Saving...');
-
-    fetch(url, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            alert(data.error);
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        } else {
-            // Success: Clean up modal and update the main ticket intake form
-            const modalEl = form.closest('.modal');
-            const modalInstance = bootstrap.Modal.getInstance(modalEl);
-            if (modalInstance) modalInstance.hide();
-            
-            form.reset();
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            
-            if (successCallback) successCallback(data.id, data.name || data.display);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An unexpected error occurred. Please try again.');
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-    });
-};
 
 function initNewCustomerModal() {
     const form = document.getElementById('newCustomerForm');

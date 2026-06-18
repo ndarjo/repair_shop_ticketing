@@ -55,13 +55,15 @@ class Config:
         db_name = os.getenv('DB_NAME', 'repair_shop')
         SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}" # type: ignore
     
-    # SECURITY FIX: Mask the database password in console logs to prevent credential leakage
+    # SECURITY FIX: Log the database URI (masked) only in DEBUG mode via logging
     try:
         from sqlalchemy.engine import make_url
-        masked_uri = make_url(SQLALCHEMY_DATABASE_URI).render_as_string(hide_password=True)
-        print(f"DEBUG: Using SQLALCHEMY_DATABASE_URI: {masked_uri}")
+        import logging as _logging
+        if _logging.getLogger().isEnabledFor(_logging.DEBUG):
+            masked_uri = make_url(SQLALCHEMY_DATABASE_URI).render_as_string(hide_password=True)
+            _logging.debug(f"Using SQLALCHEMY_DATABASE_URI: {masked_uri}")
     except Exception:
-        print("DEBUG: SQLALCHEMY_DATABASE_URI is set (Password Hidden)")
+        pass
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # SECURITY: Absolute session timeout (24 hours)

@@ -2,8 +2,9 @@ from flask import Blueprint, current_app, flash, jsonify, redirect, render_templ
 from flask_babel import _
 from flask_login import current_user, login_required
 from sqlalchemy import func, or_
+from sqlalchemy.orm import joinedload
 
-from models import Location, SparePart, SparePartPriceHistory, db
+from models import InvoiceItem, Location, SparePart, SparePartPriceHistory, db
 from .utils import require_permission, safe_decimal
 
 inventory_bp = Blueprint('inventory', __name__)
@@ -17,16 +18,15 @@ def manage_inventory():
     query = request.args.get('q', '').strip()
     selected_location = request.args.get('location_id', type=int)
     
-    is_admin = current_user.is_superuser or current_user.has_role('admin')
+    is_admin = current_user.is_superuser or current_user.has_role('admin') # Define once
 
     locations = []
     if current_user.is_superuser:
-        # Fetch all locations for the filter dropdown (Superusers only)
+        # INTEGRITY: Only superusers can bypass branch scoping for cross-location management
         locations = db.session.scalars(db.select(Location).order_by(Location.name)).all()
         location_filter = (SparePart.location_id == selected_location) if selected_location else True
     else:
-        # Multi-tenancy: Staff see their branch, Admins (non-superuser) see all by default
-        location_filter = SparePart.location_id == current_user.location_id if not is_admin else True
+        location_filter = (SparePart.location_id == current_user.location_id)
 
     stmt = db.select(SparePart).where(location_filter)
     
@@ -50,15 +50,36 @@ def manage_inventory():
 @require_permission('manage_inventory')
 def add_part():
     """Endpoint for creating a new catalog part"""
+    query = request.args.get('q', '').strip()
+    selected_location = request.args.get('location_id', type=int)
+    is_admin = current_user.is_superuser or current_user.has_role('admin')
+
+    locations = []
+    if current_user.is_superuser:
+        locations = db.session.scalars(db.select(Location).order_by(Location.name)).all()
+        location_filter = (SparePart.location_id == selected_location) if selected_location else True
+    else:
+        location_filter = (SparePart.location_id == current_user.location_id)
+
     sku = request.form.get('sku', '').strip().upper() or None
     name = request.form.get('name', '').strip()
     stock = request.form.get('stock_quantity', 0, type=int)
+    cost = safe_decimal(request.form.get('cost', '0.00'))
+    selling_price = safe_decimal(request.form.get('selling_price', '0.00'))
     
     if not name:
         flash(_('Part name is required.'), 'danger')
-        return redirect(url_for('inventory.manage_inventory'))
+        return render_template('parts/manage_parts.html', parts=db.paginate(db.select(SparePart).where(location_filter).order_by(SparePart.name), page=1, per_page=15),
+                               search_query=query, locations=locations, selected_location=selected_location,
+                               sku=sku, name=name, stock_quantity=stock, cost=cost, selling_price=selling_price)
 
-    loc_id = current_user.location_id or db.session.scalar(db.select(Location.id).limit(1))
+    # INTEGRITY: Respect the active branch context for superusers
+    loc_id = (selected_location if is_admin and selected_location else current_user.location_id) or \
+             db.session.scalar(db.select(Location.id).limit(1))
+    
+    # Fetch parts for the template on error
+    parts_for_template = db.paginate(db.select(SparePart).where(location_filter).order_by(SparePart.name), page=1, per_page=15)
+
 
     # Integrity: Check for duplicate names at this location
     exists = db.session.scalar(db.select(SparePart).where(
@@ -67,7 +88,9 @@ def add_part():
     ))
     if exists:
         flash(_('A part with this name already exists in your inventory.'), 'danger')
-        return redirect(url_for('inventory.manage_inventory'))
+        return render_template('parts/manage_parts.html', parts=parts_for_template,
+                               search_query=query, locations=locations, selected_location=selected_location,
+                               sku=sku, name=name, stock_quantity=stock, cost=cost, selling_price=selling_price)
 
     # Integrity: Ensure SKU uniqueness per location to prevent POS/Search collisions
     if sku:
@@ -76,14 +99,15 @@ def add_part():
         ))
         if sku_exists:
             flash(_('A part with this SKU already exists in your inventory.'), 'danger')
-            return redirect(url_for('inventory.manage_inventory'))
-
-    cost = safe_decimal(request.form.get('cost', '0.00'))
-    selling_price = safe_decimal(request.form.get('selling_price', '0.00'))
+            return render_template('parts/manage_parts.html', parts=parts_for_template,
+                                   search_query=query, locations=locations, selected_location=selected_location,
+                                   sku=sku, name=name, stock_quantity=stock, cost=cost, selling_price=selling_price)
 
     if stock < 0 or cost < 0 or selling_price < 0:
         flash(_('Stock, cost, and price cannot be negative.'), 'danger')
-        return redirect(url_for('inventory.manage_inventory'))
+        return render_template('parts/manage_parts.html', parts=parts_for_template,
+                               search_query=query, locations=locations, selected_location=selected_location,
+                               sku=sku, name=name, stock_quantity=stock, cost=cost, selling_price=selling_price)
 
     new_part = SparePart(
         sku=sku,
@@ -108,22 +132,39 @@ def add_part():
     try:
         db.session.commit()
         flash(_('New part added to inventory.'), 'success')
+        return redirect(url_for('inventory.manage_inventory', location_id=selected_location))
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Part addition error: {str(e)}")
         flash(_('Error adding part to inventory.'), 'danger')
-    return redirect(url_for('inventory.manage_inventory'))
+        # UX Integrity: Return form data on error to prevent data loss
+        return render_template('parts/manage_parts.html', parts=parts_for_template,
+                               search_query=query, locations=locations, selected_location=selected_location,
+                               sku=sku, name=name, stock_quantity=stock, cost=cost, selling_price=selling_price)
 
 @inventory_bp.route('/edit/<int:part_id>', methods=['POST'])
 @login_required
 @require_permission('manage_inventory')
 def edit_part(part_id):
     """Endpoint for updating existing part specifications"""
-    part = db.session.get(SparePart, part_id)
+    query = request.args.get('q', '').strip()
+    selected_location = request.args.get('location_id', type=int)
     is_admin = current_user.is_superuser or current_user.has_role('admin')
+    
+    locations = []
+    if current_user.is_superuser:
+        locations = db.session.scalars(db.select(Location).order_by(Location.name)).all()
+        location_filter = (SparePart.location_id == selected_location) if selected_location else True
+    else:
+        location_filter = (SparePart.location_id == current_user.location_id)
+
+    # Fetch parts for the template on error
+    parts_for_template = db.paginate(db.select(SparePart).where(location_filter).order_by(SparePart.name), page=1, per_page=15)
+
+    part = db.session.get(SparePart, part_id)
     if not part or (not is_admin and part.location_id != current_user.location_id):
         flash(_('Part not found.'), 'danger')
-        return redirect(url_for('inventory.manage_inventory'))
+        return render_template('parts/manage_parts.html', parts=parts_for_template, search_query=query, locations=locations, selected_location=selected_location)
 
     # Store current values to check for movement
     old_cost = part.cost
@@ -132,10 +173,14 @@ def edit_part(part_id):
     sku = request.form.get('sku', '').strip().upper() or None
     name = request.form.get('name', '').strip()
     stock = request.form.get('stock_quantity', 0, type=int)
+    cost = safe_decimal(request.form.get('cost', '0.00'))
+    selling_price = safe_decimal(request.form.get('selling_price', '0.00'))
 
     if not name:
         flash(_('Part name is required.'), 'danger')
-        return redirect(url_for('inventory.manage_inventory'))
+        return render_template('parts/manage_parts.html', parts=parts_for_template,
+                               search_query=query, locations=locations, selected_location=selected_location,
+                               part=part, sku=sku, name=name, stock_quantity=stock, cost=cost, selling_price=selling_price, is_active='is_active' in request.form)
 
     # Integrity: Check for duplicate names (excluding current part) at this location
     exists = db.session.scalar(db.select(SparePart).where(
@@ -145,7 +190,9 @@ def edit_part(part_id):
     ))
     if exists:
         flash(_('Another part already uses this name.'), 'danger')
-        return redirect(url_for('inventory.manage_inventory'))
+        return render_template('parts/manage_parts.html', parts=parts_for_template,
+                               search_query=query, locations=locations, selected_location=selected_location,
+                               part=part, sku=sku, name=name, stock_quantity=stock, cost=cost, selling_price=selling_price, is_active='is_active' in request.form)
 
     # Integrity: Check for SKU collisions excluding the current record
     if sku:
@@ -154,14 +201,15 @@ def edit_part(part_id):
         ))
         if sku_exists:
             flash(_('Another part already uses this SKU.'), 'danger')
-            return redirect(url_for('inventory.manage_inventory'))
-
-    cost = safe_decimal(request.form.get('cost', '0.00'))
-    selling_price = safe_decimal(request.form.get('selling_price', '0.00'))
+            return render_template('parts/manage_parts.html', parts=parts_for_template,
+                                   search_query=query, locations=locations, selected_location=selected_location,
+                                   part=part, sku=sku, name=name, stock_quantity=stock, cost=cost, selling_price=selling_price, is_active='is_active' in request.form)
 
     if stock < 0 or cost < 0 or selling_price < 0:
         flash(_('Stock, cost, and price cannot be negative.'), 'danger')
-        return redirect(url_for('inventory.manage_inventory'))
+        return render_template('parts/manage_parts.html', parts=parts_for_template,
+                               search_query=query, locations=locations, selected_location=selected_location,
+                               part=part, sku=sku, name=name, stock_quantity=stock, cost=cost, selling_price=selling_price, is_active='is_active' in request.form)
 
     part.sku = sku
     part.name = name
@@ -185,11 +233,15 @@ def edit_part(part_id):
     try:
         db.session.commit()
         flash(_('Inventory item updated.'), 'success')
+        return redirect(url_for('inventory.manage_inventory', location_id=selected_location))
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Part update error: {str(e)}")
         flash(_('Error updating inventory item.'), 'danger')
-    return redirect(url_for('inventory.manage_inventory'))
+        # UX Integrity: Return form data on error to prevent data loss
+        return render_template('parts/manage_parts.html', parts=parts_for_template,
+                               search_query=query, locations=locations, selected_location=selected_location,
+                               part=part, sku=sku, name=name, stock_quantity=stock, cost=cost, selling_price=selling_price, is_active='is_active' in request.form)
 
 @inventory_bp.route('/history/<int:part_id>')
 @login_required
@@ -219,9 +271,17 @@ def get_part_history(part_id):
 @require_permission('manage_inventory')
 def delete_part(part_id):
     """Endpoint for permanent removal of inventory items"""
+    selected_location = request.args.get('location_id', type=int)
+
     part = db.session.get(SparePart, part_id)
     is_admin = current_user.is_superuser or current_user.has_role('admin')
     if part and (is_admin or part.location_id == current_user.location_id):
+        # INTEGRITY: Check for linked InvoiceItem records before deletion
+        linked_invoice_items = db.session.scalar(db.select(func.count(InvoiceItem.id)).where(InvoiceItem.spare_part_id == part_id))
+        if linked_invoice_items > 0:
+            flash(_('Cannot delete part: It is linked to existing sales records. Archive it instead or remove from sales first.'), 'danger')
+            return redirect(url_for('inventory.manage_inventory', location_id=selected_location))
+
         try:
             db.session.delete(part)
             db.session.commit()
@@ -232,4 +292,4 @@ def delete_part(part_id):
             flash(_('Error deleting part. It may be linked to existing tickets.'), 'danger')
     else:
         flash(_('Part not found or access denied.'), 'danger')
-    return redirect(url_for('inventory.manage_inventory'))
+    return redirect(url_for('inventory.manage_inventory', location_id=selected_location))

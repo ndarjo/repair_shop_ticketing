@@ -1,6 +1,5 @@
 {% extends "base.html" %}
-
-{% block title %}{{ _('Edit Customer') }} - {{ customer.name }} - {{ shop_info.shop_name or _('Repair Shop') }}{% endblock %}
+{% block title %}{{ _('Edit Customer') }} - {{ customer.name or _('Customer') }} - {{ shop_info.shop_name if (shop_info and shop_info.shop_name and shop_info.shop_name != 'None') else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -21,15 +20,15 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="name" class="form-label">{{ _('Full Name') }} *</label>
-                                    <input type="text" class="form-control" id="name" name="name" value="{{ customer.name }}" required autofocus maxlength="120">
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ customer.name if (customer.name and customer.name != 'None') else '' }}" required autofocus autocomplete="name" placeholder="{{ _('e.g., John Doe') }}" aria-required="true" maxlength="120">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="phone" class="form-label">{{ _('Phone Number') }} *</label>
-                                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ customer.phone }}" required maxlength="20">
+                                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ customer.phone if (customer.phone and customer.phone != 'None') else '' }}" required autocomplete="tel" placeholder="{{ _('e.g., +1 555-0123') }}" aria-required="true" maxlength="20">
                                 </div>
                                 <div class="col-md-12 mb-0">
                                     <label for="address" class="form-label">{{ _('Address') }}</label>
-                                    <textarea class="form-control" id="address" name="address" rows="3" maxlength="500">{{ customer.address }}</textarea>
+                                    <textarea class="form-control" id="address" name="address" rows="3" placeholder="{{ _('Customer\'s physical address') }}" maxlength="500">{{ customer.address if (customer.address and customer.address != 'None') else '' }}</textarea>
                                 </div>
                             </div>
                         </div>

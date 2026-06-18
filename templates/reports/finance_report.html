@@ -4,10 +4,10 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h2>{{ _('Financial Analytics') }}</h2>
+    <h2 class="mb-0"><i class="fas fa-file-invoice-dollar me-3" aria-hidden="true"></i>{{ _('Financial Analytics') }}</h2>
     <div class="d-flex gap-2">
         <form action="{{ url_for('report.finance_report') }}" method="GET" class="d-inline-flex gap-2 align-items-center">
-            {% if current_user.is_superuser and locations %}
+            {% if (current_user.is_superuser or current_user.has_role('admin')) and locations %}
             <select name="location_id" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
                 <option value="">{{ _('All Locations') }}</option>
                 {% for loc in locations %}
@@ -23,14 +23,14 @@
                 <span class="input-group-text bg-transparent border-start-0 border-end-0 text-muted small">{{ _('To') }}</span>
                 <input type="month" name="end_month" class="form-control border-start-0 ps-0" value="{{ end_month or '' }}">
             </div>
-            <button type="submit" class="btn btn-sm btn-outline-primary" class="btn-link text-decoration-none" title="{{ _('Filter') }}"><i class="fas fa-filter" aria-hidden="true"></i></button>
+            <button type="submit" class="btn btn-sm btn-outline-primary" title="{{ _('Filter') }}"><i class="fas fa-filter" aria-hidden="true"></i></button>
             {% if start_month or end_month %}
-                <a href="{{ url_for('report.finance_report', location_id=selected_location if selected_location else None) }}" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-eraser" aria-hidden="true" class="btn-link text-decoration-none" title="{{ _('Clear') }}"></i></a>
+                <a href="{{ url_for('report.finance_report', location_id=selected_location if selected_location else None) }}" class="btn btn-sm btn-outline-secondary" title="{{ _('Clear') }}">
+                    <i class="fas fa-times" aria-hidden="true"></i></a>
             {% endif %}
         </form>
-        <a href="{{ url_for('report.reports') }}" class="btn btn-sm btn-outline-primary">
-            <i class="fas fa-arrow-circle-left" aria-hidden="true" class="btn-link text-decoration-none" title="{{ _('Back to Reports') }}"></i></a>
+        <a href="{{ url_for('report.reports') }}" class="btn btn-sm btn-outline-primary" title="{{ _('Back to Reports') }}">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i></a>
     </div>
 </div>
 
@@ -83,8 +83,8 @@
 </div>
 
 <div class="card shadow-sm border-0 mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="fas fa-chart-line me-2 "></i>{{ _('Net Income Trends') }}</h5>
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-chart-line me-2" aria-hidden="true"></i>{{ _('Net Income Trends') }}</h5>
     </div>
     <div class="card-body">
         <div style="height: 300px;">
@@ -104,8 +104,8 @@
 </div>
 
 <div class="card shadow-sm border-0">
-    <div class="card-header ">
-        <h5 class="mb-0">{{ _('Customer Payment History') }}</h5>
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-history me-2" aria-hidden="true"></i>{{ _('Customer Payment History') }}</h5>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -113,6 +113,7 @@
                 <tr>
                     <th>{{ _('Date & Time') }}</th>
                     <th>{{ _('Customer') }}</th>
+                    <th>{{ _('Invoice #') }}</th>
                     <th>{{ _('Ticket #') }}</th>
                     <th>{{ _('Method') }}</th>
                     <th>{{ _('Reference') }}</th>
@@ -123,6 +124,7 @@
                 {% for payment in (payment_history or []) %}
                 {% set ticket = payment.ticket %}
                 {% set customer = ticket.customer if ticket else (payment.invoice.customer if payment.invoice else None) %}
+                {% set invoice = payment.invoice %}
                 <tr>
                     <td><small>{{ payment.paid_at.strftime('%Y-%m-%d %H:%M') if payment.paid_at else '-' }}</small></td>
                     <td>
@@ -134,12 +136,31 @@
                         {% endif %}
                     </td>
                     <td>
+                        {% if invoice %}
+                            {% if invoice.ticket_id %}
+                                <a href="{{ url_for('ticket.view_invoice', ticket_id=invoice.ticket_id) }}" class="text-decoration-none fw-bold" target="_blank">
+                                    {{ invoice.invoice_number }}
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('pos.print_invoice', invoice_id=invoice.id) }}" class="text-decoration-none fw-bold" target="_blank" title="{{ _('Print Receipt') }}">
+                                    {{ invoice.invoice_number }}
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
                         {% if ticket %}
                         <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="badge bg-secondary text-dark text-decoration-none">
                             {{ ticket.ticket_number }}
                         </a>
+                        {% elif invoice %}
+                        <a href="{{ url_for('pos.cart', invoice_id=invoice.id) }}" class="badge bg-secondary text-dark text-decoration-none">
+                            {{ _('POS Sale') }}
+                        </a>
                         {% else %}
-                        <span class="badge bg-secondary">{{ _('POS Sale') }}</span>
+                        <span class="text-muted">-</span>
                         {% endif %}
                     </td>
                     <td>{{ _(payment.payment_method) if payment.payment_method else '-' }}</td>
@@ -148,7 +169,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">{{ _('No payment records found.') }}</td>
+                    <td colspan="7" class="text-center text-muted py-4">{{ _('No payment records found.') }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -157,8 +178,8 @@
 </div>
 
 <div class="card shadow-sm border-0 mt-4">
-    <div class="card-header  d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">{{ _('Material Usage & Hardware Tracking') }}</h5>
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-microchip me-2" aria-hidden="true"></i>{{ _('Material Usage & Hardware Tracking') }}</h5>
         <small class="fw-bold ">{{ _('Includes Inventory & Manual Items') }}</small>
     </div>
     <div class="table-responsive">
@@ -168,22 +189,31 @@
                     <th>{{ _('Item Description') }}</th>
                     <th>{{ _('Type') }}</th>
                     <th>{{ _('Customer') }}</th>
+                    <th>{{ _('Invoice #') }}</th>
                     <th>{{ _('Ticket #') }}</th>
                     <th class="text-end">{{ _('Qty') }}</th>
+                    {% if shop_info and shop_info.show_wholesale_cost %}
                     <th class="text-end">{{ _('Unit Cost') }}</th>
+                    {% endif %}
                     <th class="text-end">{{ _('Unit Price') }}</th>
                     <th class="text-end">{{ _('Total') }}</th>
+                    {% if shop_info and shop_info.show_wholesale_cost %}
+                    <th class="text-end">{{ _('Profit') }}</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% for item in (material_usage or []) %}
-                {% set ticket = item.invoice.ticket if item.invoice else None %}
-                {% set customer = ticket.customer if ticket else (item.invoice.customer if item.invoice else None) %}
+                {% set invoice = item.invoice %}
+                {% set ticket = invoice.ticket if invoice else None %}
+                {% set customer = ticket.customer if ticket else (invoice.customer if invoice else None) %}
                 <tr>
                     <td class="text-break"><strong>{{ item.description or '' }}</strong></td>
-                    <td>
+                    <td> {# Item Type #}
                         {% if item.spare_part_id %}
-                            <span class="badge bg-secondary">{{ _('Inventory') }}</span>
+                            <span class="badge bg-secondary">
+                                {% if item.part and item.part.sku %}[{{ item.part.sku }}] {% endif %}{{ _('Inventory') }} {# Display SKU #}
+                            </span>
                         {% else %}
                             <span class="badge bg-warning text-dark">{{ _('Manual Entry') }}</span>
                         {% endif %}
@@ -197,21 +227,45 @@
                         {% endif %}
                     </td>
                     <td>
+                        {% if invoice %}
+                            {% if invoice.ticket_id %}
+                                <a href="{{ url_for('ticket.view_invoice', ticket_id=invoice.ticket_id) }}" class="text-decoration-none fw-bold" target="_blank">
+                                    {{ invoice.invoice_number }}
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('pos.print_invoice', invoice_id=invoice.id) }}" class="text-decoration-none fw-bold" target="_blank" title="{{ _('Print Receipt') }}">
+                                    {{ invoice.invoice_number }}
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
                         {% if ticket %}
                             <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="badge bg-secondary">
                                 {{ ticket.ticket_number }}
                             </a>
+                        {% elif invoice %}
+                        <a href="{{ url_for('pos.cart', invoice_id=invoice.id) }}" class="badge bg-secondary text-dark text-decoration-none">
+                            {{ _('Direct Sale') }}
+                        </a>
                         {% else %}
-                        <span class="badge bg-secondary">{{ _('Direct Sale') }}</span>
+                        <span class="text-muted">-</span>
                         {% endif %}
                     </td>
                     <td class="text-end">{{ item.quantity or 0 }}</td>
+                    {% if shop_info and shop_info.show_wholesale_cost %} {# Conditional Unit Cost #}
                     <td class="text-end text-muted small">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.cost_price or 0) }}</td>
+                    {% endif %} {# End Conditional Unit Cost #}
                     <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price or 0) }}</td>
                     <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price or 0) }}</td>
+                    {% if shop_info and shop_info.show_wholesale_cost %} {# Conditional Profit #}
+                    <td class="text-end fw-bold text-success">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, (item.total_price or 0) - ((item.cost_price or 0) * (item.quantity or 0))) }}</td>
+                    {% endif %}
                 </tr>
                 {% else %}
-                <tr><td colspan="8" class="text-center text-muted py-4">{{ _('No materials recorded yet.') }}</td></tr>
+                <tr><td colspan="{{ 10 if shop_info and shop_info.show_wholesale_cost else 8 }}" class="text-center text-muted py-4">{{ _('No materials recorded yet.') }}</td></tr> {# Adjust colspan #}
                 {% endfor %}
             </tbody>
         </table>

@@ -118,7 +118,7 @@
                             <input type="hidden" name="action" value="change_username">
                             <div class="mb-3">
                                 <label for="new_username" class="form-label">{{ _('New Username') }}</label>
-                                <input type="text" class="form-control" id="new_username" name="new_username" required autocomplete="username" aria-required="true" maxlength="80">
+                                <input type="text" class="form-control" id="new_username" name="new_username" value="{{ new_username if new_username is defined else current_user.username }}" required autocomplete="username" aria-required="true" maxlength="80">
                             </div>
                             <button type="submit" class="btn btn-outline-warning"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Change Username') }}</button>
                         </form>

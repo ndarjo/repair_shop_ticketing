@@ -7,7 +7,7 @@
     <div class="col-md-10 offset-md-1">
         {% if current_user.has_permission('create_device') %}
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <h1 class="mb-0">{{ _('Add New Device') }}</h1>
+            <h1 class="mb-0 text-break">{{ _('Add New Device') }}</h1>
             <a href="{{ url_for('device.devices_list') }}" class="btn btn-outline-primary"><i class="fas fa-arrow-circle-left me-1" aria-hidden="true"></i>{{ _('Back to Devices') }}</a>
         </div>
 

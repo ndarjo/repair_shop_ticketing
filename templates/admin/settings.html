@@ -8,7 +8,7 @@
         {% if current_user.has_permission('admin_manage_branding') %}
         <div class="d-flex align-items-center mb-4">
             <a href="{{ url_for('admin.dashboard') }}" class="btn-link p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Admin Panel') }}"><i class="fas fa-arrow-circle-left" aria-hidden="true"></i></a>
-            <h1 class="mb-0">{{ _('Shop Branding & Settings') }}</h1>
+            <h1 class="mb-0"><i class="fas fa-palette me-3" aria-hidden="true"></i>{{ _('Shop Branding & Settings') }}</h1>
         </div>
         
         <div class="card">
@@ -22,8 +22,8 @@
                             <h5 class="mb-0">{{ _('Identity & Branding') }}</h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4 text-center mb-3">
+                            <div class="row g-4 align-items-center">
+                                <div class="col-md-4 text-center">
                                     <label for="shop_logo" class="form-label d-block">{{ _('Shop Logo') }}</label>
                                     <div class="mb-3">
                                         {% if settings and settings.logo_path %}
@@ -38,14 +38,19 @@
                                     <small id="logoHelp" class="text-muted d-block mt-1">{{ _('Recommended: Square PNG/SVG (Max 2MB)') }}</small>
                                 </div>
                                 <div class="col-md-8">
-                                    <div class="mb-3">
+                                    <div>
                                         <label for="shop_name" class="form-label">{{ _('Shop Name') }} *</label>
-                                        <input type="text" class="form-control" id="shop_name" name="shop_name" value="{{ shop_name if shop_name is defined else (settings.shop_name if settings and settings.shop_name else '') or _('Repair Shop') }}" required placeholder="{{ _('e.g., My Repair Shop') }}" maxlength="100" autocomplete="organization" aria-required="true">
+                                        <input type="text" class="form-control" id="shop_name" name="shop_name" value="{{ shop_name if shop_name is defined else (settings.shop_name if settings and settings.shop_name else _('Repair Shop')) }}" required placeholder="{{ _('e.g., My Repair Shop') }}" maxlength="100" autocomplete="organization" aria-required="true">
                                     </div>
-                                    <div class="mb-3">
+                                    <div class="mt-3">
                                         <label for="shop_address" class="form-label">{{ _('Shop Address (Location)') }}</label>
-                                        <textarea class="form-control" id="shop_address" name="shop_address" rows="3" placeholder="{{ _('Street, City, State, Zip') }}" maxlength="500" aria-describedby="addressHelp" autocomplete="street-address">{{ shop_address if shop_address is defined else (settings.shop_address if settings and settings.shop_address else '') }}</textarea>
+                                        <textarea class="form-control" id="shop_address" name="shop_address" rows="3" placeholder="{{ _('Street, City, State, Zip') }}" maxlength="500" aria-describedby="addressHelp" autocomplete="street-address">{{ shop_address if shop_address is defined else (settings.shop_address if settings else '') }}</textarea>
                                         <small id="addressHelp" class="text-muted">{{ _('This will appear on customer invoices and reports.') }}</small>
+                                    </div>
+                                    <div class="mt-3">
+                                        <label for="brand_color" class="form-label">{{ _('Brand Color') }}</label>
+                                        <input type="color" class="form-control form-control-color w-100" id="brand_color" name="brand_color" value="{{ brand_color if brand_color is defined else (settings.brand_color if settings and settings.brand_color else '#0d6efd') }}" title="{{ _('Choose your brand color') }}">
+                                        <small class="text-muted">{{ _('Used for headers and accents in documents.') }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -58,7 +63,7 @@
                             <h5 class="mb-0">{{ _('Regional & Currency') }}</h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
+                            <div class="row g-4 align-items-center">
                                 <div class="col-md-6 mb-3">
                                     <label for="currency" class="form-label">{{ _('Shop Currency') }}</label>
                                     <select id="currency" name="currency" class="form-select">
@@ -72,10 +77,20 @@
                                     <label for="currency_decimals" class="form-label">{{ _('Currency Decimals') }}</label>
                                     <select id="currency_decimals" name="currency_decimals" class="form-select">
                                         {% set active_decimals = selected_currency_decimals if selected_currency_decimals is defined else (settings.currency_decimals if settings else 2) %}
-                                        <option value="0" {% if active_decimals == 0 %}selected{% endif %}>{{ _('0 (e.g. 1500)') }}</option>
-                                        <option value="2" {% if active_decimals == 2 %}selected{% endif %}>{{ _('2 (e.g. 15.00)') }}</option>
-                                        <option value="3" {% if active_decimals == 3 %}selected{% endif %}>{{ _('3') }}</option>
+                                        <option value="0" {% if active_decimals|string == '0' %}selected{% endif %}>{{ _('0 (e.g., 1500)') }}</option>
+                                        <option value="2" {% if active_decimals|string == '2' %}selected{% endif %}>{{ _('2 (e.g., 15.00)') }}</option>
+                                        <option value="3" {% if active_decimals|string == '3' %}selected{% endif %}>{{ _('3') }}</option>
                                     </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="tax_rate" class="form-label">{{ _('Tax Rate (%%)') }}</label>
+                                    <input type="number" step="0.01" class="form-control" id="tax_rate" name="tax_rate" value="{{ tax_rate if tax_rate is defined else (settings.tax_rate if settings else '0.00') }}" placeholder="{{ _('0.00') }}" min="0">
+                                    <small class="text-muted">{{ _('Percentage to apply to subtotals.') }}</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="tax_label" class="form-label">{{ _('Tax Label') }}</label>
+                                    <input type="text" class="form-control" id="tax_label" name="tax_label" value="{{ tax_label if tax_label is defined else (settings.tax_label if settings and settings.tax_label else _('Tax')) }}" placeholder="{{ _('e.g. VAT, GST, Tax') }}" maxlength="20">
+                                    <small class="text-muted">{{ _('Display name for tax (e.g., VAT, GST).') }}</small>
                                 </div>
                             </div>
                         </div>
@@ -87,7 +102,7 @@
                             <h5 class="mb-0">{{ _('Contact Information') }}</h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
+                            <div class="row g-4 align-items-center">
                                 <div class="col-md-6 mb-3">
                                     <label for="shop_phone" class="form-label">{{ _('Contact Phone') }}</label>
                                     <input type="tel" class="form-control" id="shop_phone" name="shop_phone" value="{{ shop_phone if shop_phone is defined else (settings.shop_phone if settings and settings.shop_phone else '') }}" placeholder="{{ _('+1 (555) 000-0000') }}" maxlength="20" autocomplete="tel">
@@ -96,13 +111,148 @@
                                     <label for="shop_email" class="form-label">{{ _('Contact Email') }}</label>
                                     <input type="email" class="form-control" id="shop_email" name="shop_email" value="{{ shop_email if shop_email is defined else (settings.shop_email if settings and settings.shop_email else '') }}" placeholder="{{ _('contact@example.com') }}" maxlength="120" autocomplete="email">
                                 </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="tax_id" class="form-label">{{ _('Tax ID / Business Registration') }}</label>
+                                    <input type="text" class="form-control" id="tax_id" name="tax_id" value="{{ tax_id if tax_id is defined else (settings.tax_id if settings and settings.tax_id else '') }}" placeholder="{{ _('e.g. VAT #, Tax Reg #') }}" maxlength="50">
+                                    <small class="text-muted">{{ _('This will be displayed in the document header.') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Document Customization -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ _('PDF & Print Customization') }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-4 align-items-center">
+                                <div class="col-md-6 mb-3">
+                                    <label for="invoice_label" class="form-label">{{ _('Invoice Title') }}</label>
+                                    <input type="text" class="form-control" id="invoice_label" name="invoice_label" value="{{ invoice_label if invoice_label is defined else (settings.invoice_label if settings and settings.invoice_label else _('INVOICE')) }}" placeholder="{{ _('e.g. TAX INVOICE') }}" maxlength="50">
+                                    <small class="text-muted">{{ _('Label used for unpaid/pending documents.') }}</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="receipt_label" class="form-label">{{ _('Receipt Title') }}</label>
+                                    <input type="text" class="form-control" id="receipt_label" name="receipt_label" value="{{ receipt_label if receipt_label is defined else (settings.receipt_label if settings and settings.receipt_label else _('RECEIPT')) }}" placeholder="{{ _('e.g. PAYMENT RECEIPT') }}" maxlength="50">
+                                    <small class="text-muted">{{ _('Label used for fully paid documents.') }}</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="signature_label" class="form-label">{{ _('Signature Line Label') }}</label>
+                                    <input type="text" class="form-control" id="signature_label" name="signature_label" value="{{ signature_label if signature_label is defined else (settings.signature_label if settings and settings.signature_label else _('Customer Signature')) }}" placeholder="{{ _('e.g. Received By') }}" maxlength="100">
+                                    <small class="text-muted">{{ _('Text displayed under the signature line on invoices.') }}</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="invoice_terms" class="form-label">{{ _('Invoice Footer (Unpaid)') }}</label>
+                                <textarea class="form-control" id="invoice_terms" name="invoice_terms" rows="4" placeholder="{{ _('e.g. 30 days warranty on labor. No refunds on special ordered parts.') }}" maxlength="1000">{{ invoice_terms if invoice_terms is defined else (settings.invoice_terms if settings else '') }}</textarea>
+                                    <small class="text-muted">{{ _('Warranty info and terms for unpaid jobs.') }}</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="receipt_notes" class="form-label">{{ _('Receipt Footer (Paid)') }}</label>
+                                    <textarea class="form-control" id="receipt_notes" name="receipt_notes" rows="4" placeholder="{{ _('Thank you for choosing us!') }}" maxlength="1000">{{ receipt_notes if receipt_notes is defined else (settings.receipt_notes if settings else '') }}</textarea>
+                                    <small class="text-muted">{{ _('Notes or thank you message for completed payments.') }}</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="invoice_closing_text" class="form-label">{{ _('Invoice Closing Greeting') }}</label>
+                                    <input type="text" class="form-control" id="invoice_closing_text" name="invoice_closing_text" value="{{ invoice_closing_text if invoice_closing_text is defined else (settings.invoice_closing_text if settings and settings.invoice_closing_text else _('Thank you for your business!')) }}" maxlength="255">
+                                    <small class="text-muted">{{ _('Final line of text for invoices.') }}</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="receipt_closing_text" class="form-label">{{ _('Receipt Closing Greeting') }}</label>
+                                    <input type="text" class="form-control" id="receipt_closing_text" name="receipt_closing_text" value="{{ receipt_closing_text if receipt_closing_text is defined else (settings.receipt_closing_text if settings and settings.receipt_closing_text else _('Thank you for your business!')) }}" maxlength="255">
+                                    <small class="text-muted">{{ _('Final line of text for receipts.') }}</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="pdf_page_format" class="form-label">{{ _('PDF Page Format') }}</label>
+                                    <select id="pdf_page_format" name="pdf_page_format" class="form-select">
+                                        {% set active_format = pdf_page_format if pdf_page_format is defined else (settings.pdf_page_format if settings else 'thermal') %}
+                                        <option value="thermal" {% if active_format == 'thermal' %}selected{% endif %}>{{ _('Thermal (80mm)') }}</option>
+                                        <option value="a4" {% if active_format == 'a4' %}selected{% endif %}>{{ _('Standard (A4)') }}</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="bank_details" class="form-label">{{ _('Payment Instructions / Bank Details') }}</label>
+                                    <textarea class="form-control" id="bank_details" name="bank_details" rows="3" placeholder="{{ _('Bank Name: ... IBAN: ...') }}" maxlength="1000">{{ bank_details if bank_details is defined else (settings.bank_details if settings else '') }}</textarea>
+                                    <small class="text-muted">{{ _('Displayed at the bottom of invoices for bank transfers.') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visibility & Privacy Toggles -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ _('Visibility & Privacy Toggles') }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-4 align-items-center">
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show_logo_on_docs" name="show_logo_on_docs" {% if settings and settings.show_logo_on_docs %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_logo_on_docs">{{ _('Show Logo on Docs') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show_company_address" name="show_company_address" {% if settings and settings.show_company_address %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_company_address">{{ _('Show Shop Address') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show_technician" name="show_technician" {% if settings and settings.show_technician %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_technician">{{ _('Show Technician Name') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show_device_sn" name="show_device_sn" {% if settings and settings.show_device_sn %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_device_sn">{{ _('Show Device S/N') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show_unit_prices" name="show_unit_prices" {% if settings and settings.show_unit_prices %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_unit_prices">{{ _('Show Unit Prices/Qty') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show_sku" name="show_sku" {% if settings and settings.show_sku %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_sku">{{ _('Show Item SKUs') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show_customer_phone" name="show_customer_phone" {% if settings and settings.show_customer_phone %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_customer_phone">{{ _('Show Customer Phone') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show_customer_address" name="show_customer_address" {% if settings and settings.show_customer_address %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_customer_address">{{ _('Show Customer Address') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show_payment_history" name="show_payment_history" {% if settings and settings.show_payment_history %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_payment_history">{{ _('Show Payment History') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show_notes_on_docs" name="show_notes_on_docs" {% if settings and settings.show_notes_on_docs %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_notes_on_docs">{{ _('Show Repair Notes') }}</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Submit Buttons -->
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-outline-warning"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Save Changes') }}</button>
+                        <button type="submit" class="btn btn-outline-primary"><i class="fas fa-save me-2" aria-hidden="true"></i>{{ _('Save Changes') }}</button>
                         <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary">{{ _('Cancel') }}</a>
                     </div>
                 </form>

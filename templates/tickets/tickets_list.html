@@ -1,22 +1,30 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
 
-{% block title %}{{ _('All Tickets - Repair Shop') }}{% endblock %}
+{% block title %}{{ _('Pickup History - Repair Shop') if current_view == 'history' else _('Repair Tickets - Repair Shop') }}{% endblock %}
 
 {% block content %}
 {% set is_searching = search_query is defined and search_query and search_query != 'None' %}
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2>{% if current_view == 'history' %}{{ _('Pickup History') }}{% else %}{{ _('Repair Tickets') }}{% endif %}</h2>
+        <h2 class="mb-0">
+            {% if current_view == 'history' %}
+                <i class="fas fa-history me-2" aria-hidden="true"></i>{{ _('Pickup History') }}
+            {% else %}
+                <i class="fas fa-tools me-2" aria-hidden="true"></i>{{ _('Repair Tickets') }}
+            {% endif %}
+        </h2>
     </div>
     <div class="d-flex gap-2">
         <div class="btn-group">
             <a href="{{ url_for('ticket.tickets_list', view='active') }}" class="btn btn-outline-secondary {% if current_view != 'history' %}active{% endif %}">{{ _('Active') }}</a>
             <a href="{{ url_for('ticket.tickets_list', view='history') }}" class="btn btn-outline-secondary {% if current_view == 'history' %}active{% endif %}">{{ _('Picked Up') }}</a>
         </div>
+        {% if current_user.has_permission('create_ticket') %}
         <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-outline-primary">
-            <i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('Create Ticket') }}</a>
+            <i class="fas fa-plus-circle me-2" aria-hidden="true"></i>{{ _('Create Ticket') }}</a>
+        {% endif %}
     </div>
 </div>
 <!-- Ticket Search -->
@@ -35,11 +43,11 @@
                 </select>
             {% endif %}
 
-            <input type="text" name="q" class="form-control flex-grow-1 me-2" placeholder="{{ _('Search by #, customer, device...') }}" value="{{ search_query or '' }}">
-            <button type="submit" class="btn btn-outline-primary" style="width: 110px;"><i class="fas fa-search" aria-hidden="true"></i> {{ _('Search') }}</button>
+            <input type="text" name="q" class="form-control flex-grow-1 me-2" placeholder="{{ _('Search by #, customer, device...') }}" value="{{ search_query if (search_query and search_query != 'None') else '' }}">
+            <button type="submit" class="btn btn-outline-primary" style="width: 110px;"><i class="fas fa-search me-1" aria-hidden="true"></i> {{ _('Search') }}</button>
             
             {% if is_searching %}
-            <a href="{{ url_for('ticket.tickets_list', location_id=selected_location) }}" class="btn btn-outline-primary ms-2" style="width: 110px;"><i class="fas fa-times me-1" aria-hidden="true"></i>{{ _('Clear') }}</a>
+            <a href="{{ url_for('ticket.tickets_list', view=current_view, location_id=selected_location) }}" class="btn btn-outline-secondary ms-2" style="width: 110px;"><i class="fas fa-times me-1" aria-hidden="true"></i>{{ _('Clear') }}</a>
             {% endif %}
         </form>
     </div>
@@ -49,31 +57,31 @@
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th class="text-nowrap">{{ _('Ticket #') }}</th>
+                    <th class="ps-3 text-nowrap">{{ _('Ticket #') }}</th>
                     <th>{{ _('Customer') }}</th>
                     <th>{{ _('Device') }}</th>
                     <th class="text-center">{{ _('Phase') }}</th>
                     <th>{{ _('Technician') }}</th>
                     <th class="text-nowrap">{{ _('Created') }}</th>
-                    <th class="text-end">{{ _('Action') }}</th>
+                    <th class="text-end pe-4">{{ _('Action') }}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for ticket in tickets.items %}
                 <tr>
-                    <td class="text-nowrap"><strong>{{ ticket.ticket_number }}</strong></td>
-                    <td class="text-break">{{ ticket.customer.name if ticket.customer else '-' }}</td>
-                    <td class="text-break">{{ ticket.device.display if ticket.device else '-' }}</td>
+                    <td class="ps-3 text-nowrap"><strong>{{ ticket.ticket_number }}</strong></td>
+                    <td class="text-break">{{ ticket.customer.name if ticket.customer else _('N/A') }}</td>
+                    <td class="text-break">{{ ticket.device.display if ticket.device else _('N/A') }}</td>
                     <td class="text-center">
                         <span class="badge d-inline-flex align-items-center justify-content-center bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}secondary{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
                             {{ _(ticket.current_phase) if ticket.current_phase else _('Unknown') }}
                         </span>
                     </td>
                     <td><small>{{ ticket.assigned_to_user.full_name or ticket.assigned_to_user.username if ticket.assigned_to_user else _('Unassigned') }}</small></td>
-                    <td class="text-nowrap"><small>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if ticket.created_at else '-' }}</small></td>
-                    <td class="text-end">
-                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" class="btn-link text-decoration-none" title="{{ _('View Ticket Details') }}">
-                            <i class="fas fa-search-plus" aria-hidden="true"></i></a>
+                    <td class="text-nowrap"><small>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') if ticket.created_at else _('N/A') }}</small></td>
+                    <td class="text-end pe-4">
+                        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('View Ticket Details') }}">
+                            <i class="fas fa-eye" aria-hidden="true"></i></a>
                     </td>
                 </tr>
                 {% else %}
@@ -85,7 +93,7 @@
         </table>
     </div>
     <div class="card-footer">
-        {{ render_pagination(tickets, 'ticket.tickets_list', view=current_view, q=search_query if search_query else None, location_id=selected_location if selected_location else None) }}
+        {{ render_pagination(tickets, 'ticket.tickets_list', view=current_view, q=search_query if (search_query and search_query != 'None') else None, location_id=selected_location if selected_location else None) }}
     </div>
 </div>
 {% endblock %}

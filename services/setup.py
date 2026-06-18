@@ -16,6 +16,46 @@ def initialize_roles_and_permissions():
             conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'USD' NOT NULL"))
             conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS currency_decimals INTEGER DEFAULT 2 NOT NULL"))
             conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS location_id INTEGER REFERENCES locations(id)"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS invoice_terms TEXT"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS receipt_notes TEXT"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS invoice_label VARCHAR(50) DEFAULT 'INVOICE'"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS receipt_label VARCHAR(50) DEFAULT 'RECEIPT'"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS tax_id VARCHAR(50)"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS signature_label VARCHAR(100) DEFAULT 'Customer Signature'"))
+            # New customizable closing greetings
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS invoice_closing_text VARCHAR(255) DEFAULT 'Thank you for your business!'"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS receipt_closing_text VARCHAR(255) DEFAULT 'Thank you for your business!'"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS show_technician BOOLEAN DEFAULT TRUE"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS show_device_sn BOOLEAN DEFAULT TRUE"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS show_unit_prices BOOLEAN DEFAULT TRUE"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS show_customer_phone BOOLEAN DEFAULT TRUE"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS show_customer_address BOOLEAN DEFAULT TRUE"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS show_sku BOOLEAN DEFAULT FALSE"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS brand_color VARCHAR(20) DEFAULT '#0d6efd'"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS pdf_page_format VARCHAR(20) DEFAULT 'thermal'"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS show_logo_on_docs BOOLEAN DEFAULT TRUE"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS show_payment_history BOOLEAN DEFAULT TRUE"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS tax_rate NUMERIC(5,2) DEFAULT 0.00"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS bank_details TEXT"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS show_notes_on_docs BOOLEAN DEFAULT FALSE"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS enable_loyalty_points BOOLEAN DEFAULT FALSE"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS loyalty_label VARCHAR(50) DEFAULT 'Loyalty Points'"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS loyalty_points_per_currency NUMERIC(10,2) DEFAULT 1.00"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS loyalty_point_value NUMERIC(10,4) DEFAULT 0.01"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS enable_discounts BOOLEAN DEFAULT TRUE"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS show_wholesale_cost BOOLEAN DEFAULT FALSE")) # Added in previous diff
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS tax_label VARCHAR(20) DEFAULT 'Tax'"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS show_company_address BOOLEAN DEFAULT TRUE"))
+            conn.execute(text("ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS currency_symbol VARCHAR(5) DEFAULT '$'"))
+            # Patch for VAT/Tax toggle per ticket/invoice
+            conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS include_tax BOOLEAN DEFAULT TRUE NOT NULL"))
+            conn.execute(text("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS include_tax BOOLEAN DEFAULT TRUE NOT NULL"))
+            conn.execute(text("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(10,2) DEFAULT 0.00"))
+            conn.execute(text("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS discount_type VARCHAR(20) DEFAULT 'fixed'"))
+            conn.execute(text("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS loyalty_discount_amount NUMERIC(10,2) DEFAULT 0.00"))
+            conn.execute(text("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS loyalty_points_used NUMERIC(10,2) DEFAULT 0.00"))
+            conn.execute(text("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS loyalty_points_earned NUMERIC(10,2) DEFAULT 0.00"))
+            conn.execute(text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS loyalty_points NUMERIC(10,2) DEFAULT 0.00"))
             conn.commit()
     except Exception:
         # Fallback or silent skip for SQLite environments during testing/development
@@ -41,7 +81,7 @@ def initialize_roles_and_permissions():
     for p_name in permissions:
         perm = db.session.scalar(db.select(Permission).where(Permission.name == p_name))
         if not perm:
-            perm = Permission(name=p_name, category=_('General'))
+            perm = Permission(name=p_name, category='General')
             db.session.add(perm)
         perm_objs[p_name] = perm
     db.session.flush()
@@ -56,7 +96,7 @@ def initialize_roles_and_permissions():
             'manage_inventory', 'add_service', 'remove_service', 'add_part', 'remove_part',
             'process_payments', 'process_sales', 'create_invoice',
             'view_reports', 'manage_settings',
-            'admin_access_dashboard', 'admin_manage_users', 
+            'admin_access_dashboard', 'admin_manage_users', 'admin_manage_branding',
             'admin_view_system_status', 'admin_manage_backups',
             'admin_manage_common_problems'
         ],

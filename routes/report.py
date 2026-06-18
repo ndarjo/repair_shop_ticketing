@@ -5,9 +5,9 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_babel import _
 from flask_login import login_required, current_user
 from sqlalchemy import desc, func
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
-from models import Customer, Invoice, InvoiceItem, Location, Payment, Ticket, db
+from models import Customer, Invoice, InvoiceItem, Location, Payment, Ticket, ShopSetting, db
 from services.core import ReportingService
 from .utils import require_permission
 
@@ -21,25 +21,35 @@ def reports():
     selected_month = request.args.get('month')
     selected_location = request.args.get('location_id', type=int)
 
-    # UX Integrity: Discover locations for the branch switcher (Superusers only)
-    locations = db.session.scalars(db.select(Location).order_by(Location.name)).all() if current_user.is_superuser else []
+    # UI CONSISTENCY: Align branch switching permissions with the inventory and finance modules
+    is_admin = current_user.is_superuser or current_user.has_role('admin')
+    locations = db.session.scalars(db.select(Location).order_by(Location.name)).all() if is_admin else []
 
-    if current_user.is_superuser:
+    if is_admin:
         effective_loc_id = selected_location
         location_filter = (Invoice.location_id == selected_location) if selected_location else True
     else:
         if current_user.location_id is None:
-            flash(_('You are not assigned to a location. Please contact an administrator.'), 'error')
+            flash(_('You are not assigned to a location. Please contact an administrator.'), 'danger')
             return redirect(url_for('main.dashboard'))
         effective_loc_id = current_user.location_id
         location_filter = (Invoice.location_id == effective_loc_id)
 
-    # Scoped financial reporting with filter synchronization
-    rev_stmt = db.select(func.sum(Payment.amount)).join(Invoice, Payment.invoice_id == Invoice.id).where(location_filter)
+    # Fetch settings scoped to the effective location
+    shop_info = db.session.scalar(db.select(ShopSetting).filter_by(location_id=effective_loc_id)) or \
+                db.session.scalar(db.select(ShopSetting).filter_by(location_id=None)) or \
+                db.session.scalar(db.select(ShopSetting).limit(1))
+
+    # INTEGRITY: Fetch objects with eager loading to access computed properties safely.
+    rev_stmt = db.select(
+        Payment,
+        Invoice
+    ).join(Invoice, Payment.invoice_id == Invoice.id)\
+     .options(joinedload(Invoice.ticket).selectinload(Ticket.ticket_services), selectinload(Invoice.items))\
+     .where(location_filter)
     
     if selected_month and selected_month != 'all':
         rev_stmt = rev_stmt.where(func.to_char(Payment.paid_at, 'YYYY-MM') == selected_month)
-    gross_revenue = db.session.scalar(rev_stmt) or Decimal('0.00')
     
     cost_stmt = (
         db.select(func.sum(InvoiceItem.cost_price * InvoiceItem.quantity))
@@ -63,12 +73,25 @@ def reports():
     if selected_month and selected_month != 'all':
         total_stmt = total_stmt.where(func.to_char(Ticket.created_at, 'YYYY-MM') == selected_month)
 
+    # Calculate accurate net profit by iterating through transactions to respect historical tax ratios
+    rev_results = db.session.execute(rev_stmt).all()
+    net_revenue_total = Decimal('0.00')
+    gross_revenue_total = Decimal('0.00')
+    
+    for payment, invoice in rev_results:
+        gross_revenue_total += payment.amount
+        if invoice.total_amount and invoice.total_amount > 0:
+            tax_ratio = invoice.tax_amount / invoice.total_amount
+            net_revenue_total += payment.amount * (1 - tax_ratio)
+        else:
+            net_revenue_total += payment.amount
+
     monthly_stats = {
         'total_tickets': db.session.scalar(total_stmt) or 0,
         'completed_tickets': db.session.scalar(completed_stmt) or 0,
-        'gross_revenue': gross_revenue,
+        'gross_revenue': gross_revenue_total,
         'hardware_cost': hardware_cost,
-        'net_profit': gross_revenue - hardware_cost,
+        'net_profit': net_revenue_total - hardware_cost,
         'selected_month': selected_month
     }
 
@@ -83,8 +106,7 @@ def reports():
     # UI Consistency: Ensure the dropdown has at least a current context fallback
     if not available_months:
         # Try to pull months from financial analysis service for parity with finance_report
-        analysis_loc_id = effective_loc_id or (locations[0].id if locations else None)
-        analysis = ReportingService.get_financial_analysis(analysis_loc_id) if analysis_loc_id else []
+        analysis = ReportingService.get_financial_analysis(effective_loc_id)
         available_months = [m['month'] for m in analysis] if analysis else [datetime.now().strftime('%Y-%m')]
 
     # UX: Fetch recent invoices (both Repair and POS) for the activity feed
@@ -97,7 +119,8 @@ def reports():
                            available_months=available_months, 
                            selected_month=selected_month,
                            locations=locations,
-                           selected_location=effective_loc_id)
+                           selected_location=effective_loc_id,
+                           shop_info=shop_info)
 
 @report_bp.route('/finance')
 @login_required
@@ -114,25 +137,27 @@ def finance_report():
     selected_month = start_month if start_month == end_month else None
     selected_location = request.args.get('location_id', type=int)
 
-    # UX Integrity: Discover locations for the branch switcher (Superusers only)
-    locations = db.session.scalars(db.select(Location).order_by(Location.name)).all() if current_user.is_superuser else []
+    # UI Consistency: Enable location switching for all administrative staff
+    is_admin = current_user.is_superuser or current_user.has_role('admin')
+    locations = db.session.scalars(db.select(Location).order_by(Location.name)).all() if is_admin else []
 
-    if current_user.is_superuser:
+    if is_admin:
         effective_loc_id = selected_location
         location_filter = (Invoice.location_id == selected_location) if selected_location else True
     else:
         if current_user.location_id is None:
-            flash(_('You are not assigned to a location. Please contact an administrator.'), 'error')
+            flash(_('You are not assigned to a location. Please contact an administrator.'), 'danger')
             return redirect(url_for('main.dashboard'))
         effective_loc_id = current_user.location_id
         location_filter = (Invoice.location_id == effective_loc_id)
 
-    # UX Integrity: For superusers in global view, fallback to primary location for 
-    # the analysis chart context to avoid an empty/broken dashboard state.
-    analysis_loc_id = effective_loc_id
-    if not analysis_loc_id and locations:
-        analysis_loc_id = locations[0].id
-    monthly_analysis = ReportingService.get_financial_analysis(analysis_loc_id) if analysis_loc_id else []
+    # INTEGRITY: Fetch settings scoped to the effective location
+    shop_info = db.session.scalar(db.select(ShopSetting).filter_by(location_id=effective_loc_id)) or \
+                db.session.scalar(db.select(ShopSetting).filter_by(location_id=None)) or \
+                db.session.scalar(db.select(ShopSetting).limit(1))
+
+    # Integrity: Retrieve financial trends scoped to the selected location or all locations.
+    monthly_analysis = ReportingService.get_financial_analysis(effective_loc_id)
     
     # Filter monthly analysis trend chart if range is provided
     if start_month or end_month:
@@ -142,8 +167,14 @@ def finance_report():
                (not end_month or m['month'] <= end_month)
         ]
 
-    # Sync aggregate KPIs with current filters
-    rev_stmt = db.select(func.sum(Payment.amount)).join(Invoice, Payment.invoice_id == Invoice.id).where(location_filter)
+    # INTEGRITY: Align with Dashboard aggregate logic for financial accuracy.
+    rev_stmt = db.select(
+        Payment,
+        Invoice
+    ).join(Invoice, Payment.invoice_id == Invoice.id)\
+     .options(joinedload(Invoice.ticket).selectinload(Ticket.ticket_services), selectinload(Invoice.items))\
+     .where(location_filter)
+
     cost_stmt = (
         db.select(func.sum(InvoiceItem.cost_price * InvoiceItem.quantity))
         .join(Invoice, InvoiceItem.invoice_id == Invoice.id)
@@ -157,9 +188,21 @@ def finance_report():
         rev_stmt = rev_stmt.where(func.to_char(Payment.paid_at, 'YYYY-MM') <= end_month)
         cost_stmt = cost_stmt.where(func.to_char(Invoice.created_at, 'YYYY-MM') <= end_month)
 
-    total_revenue = db.session.scalar(rev_stmt) or Decimal('0.00')
-    total_hardware_cost = db.session.scalar(cost_stmt) or Decimal('0.00')
+    # Aggregate revenue while respecting historical tax ratios per invoice
+    rev_results = db.session.execute(rev_stmt).all()
+    net_revenue_total = Decimal('0.00')
+    total_revenue = Decimal('0.00')
     
+    for payment, invoice in rev_results:
+        total_revenue += payment.amount
+        if invoice.total_amount and invoice.total_amount > 0:
+            tax_ratio = invoice.tax_amount / invoice.total_amount
+            net_revenue_total += payment.amount * (1 - tax_ratio)
+        else:
+            net_revenue_total += payment.amount
+
+    total_hardware_cost = db.session.scalar(cost_stmt) or Decimal('0.00')
+
     # INTEGRITY: Discover months from both ticket creation and payment activity to ensure full data reachability
     ticket_loc_filter = (Ticket.location_id == effective_loc_id) if effective_loc_id else True
     t_months_stmt = db.select(func.to_char(Ticket.created_at, 'YYYY-MM').label('m')).where(ticket_loc_filter)
@@ -203,7 +246,7 @@ def finance_report():
     return render_template('reports/finance_report.html', 
                            total_revenue=total_revenue,
                            total_hardware_cost=total_hardware_cost,
-                           net_profit=total_revenue - total_hardware_cost,
+                           net_profit=net_revenue_total - total_hardware_cost,
                            monthly_analysis=monthly_analysis,
                            selected_month=selected_month,
                            start_month=start_month,
@@ -212,4 +255,5 @@ def finance_report():
                            payment_history=payment_history,
                            material_usage=material_usage,
                            locations=locations,
-                           selected_location=effective_loc_id)
+                           selected_location=effective_loc_id,
+                           shop_info=shop_info)

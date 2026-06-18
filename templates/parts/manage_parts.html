@@ -7,7 +7,7 @@
 {% set is_searching = search_query is defined and search_query and search_query != 'None' %}
 <div class="row">
     <div class="col-md-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
             <h2>{{ _('Spare Parts & Hardware') }}</h2>
             {% if current_user.has_permission('manage_inventory') %}
             <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPartModal">
@@ -63,7 +63,7 @@
                     <tbody>
                         {% for part in parts.items %}
                         <tr>
-                            <td><code class="text-primary">{{ part.sku if (part.sku and part.sku != 'None') else '-' }}</code></td>
+                            <td><code class="text-primary text-break">{{ part.sku if (part.sku and part.sku != 'None') else '-' }}</code></td>
                             <td>
                                 <strong class="text-break">{{ part.name if (part.name and part.name != 'None') else '' }}</strong><br>
                                 <small class="text-muted text-break">{{ part.description if (part.description and part.description != 'None') else '-' }}</small>
@@ -98,6 +98,7 @@
                                 <button class="btn btn-sm btn-outline-warning edit-part-btn" 
                                         data-bs-toggle="modal" 
                                         data-bs-target="#editPartModal"
+                                        title="{{ _('Edit Part Details') }}"
                                         data-id="{{ part.id }}"
                                         data-sku="{{ part.sku if (part.sku and part.sku != 'None') else '' }}"
                                         data-name="{{ part.name if (part.name and part.name != 'None') else '' }}"
@@ -106,11 +107,11 @@
                                         data-price="{{ '%.*f'|format(currency_decimals, part.selling_price or 0) }}"
                                         data-stock="{{ part.stock_quantity or 0 }}"
                                         data-active="{{ 'true' if part.is_active else 'false' }}">
-                                    <i class="fas fa-edit" aria-hidden="true" class="btn-link text-decoration-none" title="{{ _('Edit Part Details') }}"></i>
+                                    <i class="fas fa-edit" aria-hidden="true"></i>
                                 </button>
                                 <form action="{{ url_for('inventory.delete_part', part_id=part.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Are you sure you want to permanently delete this part?') }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" class="btn-link text-decoration-none" title="{{ _('Delete Part') }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Delete Part') }}">
                                         <i class="fas fa-trash-alt" aria-hidden="true"></i></button>
                                 </form>
                                 {% endif %}
@@ -235,7 +236,7 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                            <button type="submit" class="btn btn-outline-primary"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Add to Inventory') }}</button>
+                            <button type="submit" class="btn btn-outline-primary"><i class="fas fa-plus-square me-2" aria-hidden="true"></i>{{ _('Add to Inventory') }}</button>
                         </div>
                     </form>
                 </div>

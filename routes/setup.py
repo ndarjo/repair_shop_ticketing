@@ -1,4 +1,4 @@
-from babel.numbers import list_currencies, get_currency_name
+from babel.numbers import list_currencies, get_currency_name, get_currency_symbol
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from flask_babel import _, get_locale
 from flask_login import current_user, login_required
@@ -27,6 +27,13 @@ def setup():
         flash(_('Database schema is outdated. Please run "flask seed" to synchronize system tables.'), 'danger')
         return redirect(url_for('main.dashboard'))
 
+    # Prepare localized currency list for the dropdown
+    # UI CONSISTENCY: Align format with the global context processor used in settings
+    locale = get_locale()
+    all_currencies = [(code, f"{get_currency_name(code, locale=locale)} ({get_currency_symbol(code, locale=locale)})") 
+                      for code in list_currencies()]
+    all_currencies.sort(key=lambda x: x[1])
+
     if request.method == 'POST':
         shop_name = request.form.get('shop_name', '').strip()
         shop_address = request.form.get('shop_address', '').strip()
@@ -34,16 +41,22 @@ def setup():
         shop_email = request.form.get('shop_email', '').strip()
         language = request.form.get('language')
         currency = request.form.get('currency')
+        currency_symbol = request.form.get('currency_symbol', '$').strip()
+        decimals = request.form.get('currency_decimals', type=int, default=2)
 
         if not shop_name:
             flash(_('Shop name is required.'), 'error')
             return render_template('onboarding/setup.html', 
+                                   settings=shop_settings,
                                    shop_name=shop_name, 
                                    shop_address=shop_address, 
                                    shop_phone=shop_phone, 
                                    shop_email=shop_email,
                                    selected_language=language, 
-                                   selected_currency=currency)
+                                   selected_currency=currency, 
+                                   selected_currency_symbol=currency_symbol,
+                                   selected_currency_decimals=decimals,
+                                   all_currencies=all_currencies)
 
         try:
             # INTEGRITY: Ensure a primary location exists and is linked to the setup
@@ -67,11 +80,13 @@ def setup():
             shop_settings.shop_address = shop_address
             shop_settings.shop_phone = shop_phone
             shop_settings.shop_email = shop_email
-            shop_settings.currency = currency or 'USD'
-            shop_settings.currency_decimals = request.form.get('currency_decimals', type=int, default=2)
+            if currency and currency in list_currencies():
+                shop_settings.currency = currency
+            shop_settings.currency_symbol = currency_symbol
+            shop_settings.currency_decimals = decimals
 
             # Sync User Preferences with Setup Choices
-            if language in current_app.config['LANGUAGES']:
+            if language in current_app.config['SUPPORTED_LANGUAGES']:
                 current_user.language_preference = language
                 session['language'] = language # UX Sync: Update current session language immediately
 
@@ -88,17 +103,16 @@ def setup():
             current_app.logger.error(f"Onboarding setup failed: {str(e)}")
             flash(_('An error occurred during setup. Please try again.'), 'error')
             return render_template('onboarding/setup.html', 
+                                   settings=shop_settings,
                                    shop_name=shop_name, 
                                    shop_address=shop_address, 
                                    shop_phone=shop_phone, 
                                    shop_email=shop_email,
                                    selected_language=language, 
-                                   selected_currency=currency)
-        
-    # Prepare localized currency list for the dropdown
-    all_currencies = [(code, f"{code} - {get_currency_name(code, locale=get_locale())}") 
-                      for code in list_currencies()]
-    all_currencies.sort(key=lambda x: x[1])
+                                   selected_currency=currency, 
+                                   selected_currency_symbol=currency_symbol,
+                                   selected_currency_decimals=decimals,
+                                   all_currencies=all_currencies)
 
     return render_template('onboarding/setup.html',
                            settings=shop_settings,
@@ -109,4 +123,5 @@ def setup():
                            shop_email=shop_settings.shop_email if shop_settings else '',
                            selected_language=current_user.language_preference or session.get('language'),
                            selected_currency=shop_settings.currency if shop_settings else current_user.currency,
-                           selected_currency_decimals=shop_settings.currency_decimals if shop_settings else 2)
+                           selected_currency_decimals=shop_settings.currency_decimals if shop_settings else 2,
+                           selected_currency_symbol=shop_settings.currency_symbol if shop_settings else '$')

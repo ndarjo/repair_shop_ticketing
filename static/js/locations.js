@@ -12,15 +12,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!button) return;
 
             /**
-             * Helper to extract attributes and handle Python's "None" string representation
-             * to ensure a clean UI and data integrity.
+             * Integrity: Helper to handle technical null artifacts and trim whitespace
              */
-            const getVal = (attr) => {
-                const val = button.getAttribute(attr);
-                return (val && val !== 'None') ? val : '';
-            };
+            const getVal = (v) => (v && v !== 'None') ? v.trim() : '';
 
-            const id = getVal('data-id');
+            const id = getVal(button.getAttribute('data-id'));
             if (id) {
                 editForm.action = `/admin/locations/edit/${id}`;
                 
@@ -29,10 +25,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const phon = document.getElementById('editLocationPhone');
                 const email = document.getElementById('editLocationEmail');
                 
-                if (name) name.value = getVal('data-name');
-                if (addr) addr.value = getVal('data-address');
-                if (phon) phon.value = getVal('data-phone');
-                if (email) email.value = getVal('data-email');
+                if (name) name.value = getVal(button.getAttribute('data-name'));
+                if (addr) addr.value = getVal(button.getAttribute('data-address'));
+                if (phon) phon.value = getVal(button.getAttribute('data-phone'));
+                if (email) email.value = getVal(button.getAttribute('data-email'));
             }
         });
     }

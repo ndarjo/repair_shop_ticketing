@@ -22,7 +22,7 @@
             </form>
             {% endif %}
             <a href="{{ url_for('pos.index') }}" class="btn btn-outline-primary">
-                <i class="fas fa-arrow-circle-left me-2" aria-hidden="true"></i>{{ _('Back to Sales') }}
+                <i class="fas fa-arrow-left me-2" aria-hidden="true"></i>{{ _('Back to Sales') }}
             </a>
         </div>
     </div>
@@ -51,7 +51,7 @@
                             <td class="fw-bold">{{ invoice.invoice_number or '' }}</td>
                             <td>
                                 {% set customer_obj = invoice.customer or (invoice.ticket.customer if invoice.ticket else none) %}
-                                {{ customer_obj.name if customer_obj else _('Walk-in') }}
+                                {{ customer_obj.name if customer_obj else _('Walk-in Customer') }}
                             </td>
                             <td>
                                 {% if invoice.ticket_id %}
@@ -99,7 +99,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="modal-footer">
+            <div class="card-footer bg-white">
                 {{ render_pagination(invoices, 'pos.history', location_id=selected_location) }}
             </div>
         </div>

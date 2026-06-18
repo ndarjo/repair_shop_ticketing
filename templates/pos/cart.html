@@ -1,245 +1,350 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Checkout') }} - {{ invoice.invoice_number if (invoice.invoice_number and invoice.invoice_number != 'None') else '' }}{% endblock %}
+{% block title %}{{ _('POS Sale - Invoice #%(num)s', num=invoice.invoice_number) }} - {{ shop_info.shop_name if shop_info and shop_info.shop_name and shop_info.shop_name != 'None' else _('Repair Shop') }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row mb-4">
-        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h1 class="h2 mb-0"><i class="fas fa-shopping-cart me-2 text-primary"></i>{{ _('Sale Details') if invoice.status == 'Paid' else _('Current Sale') }}</h1>
-            <div class="d-flex gap-2">
-                {% if not invoice.ticket_id and invoice.status != 'Paid' and (invoice.full_payment_received or 0) == 0 %}
-                <form action="{{ url_for('pos.delete_sale', invoice_id=invoice.id) }}" method="POST" class="confirm-action" data-confirm="{{ _('Are you sure you want to cancel and permanently delete this draft sale? This will restore any reserved stock.')|forceescape }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-outline-danger" aria-label="{{ _('Cancel Sale') }}">
-                        <i class="fas fa-times me-2" aria-hidden="true"></i>{{ _('Cancel Sale') }}
-                    </button>
-                </form>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h1 class="h3 mb-0 text-break"><i class="fas fa-cash-register me-3" aria-hidden="true"></i>{{ _('Sale Details') }} <span class="text-muted fw-light">#{{ invoice.invoice_number }}</span></h1>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('pos.index', location_id=invoice.location_id) }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2" aria-hidden="true"></i>{{ _('Back to POS') }}</a>
+        {% if invoice.status != 'Paid' %}
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#checkoutModal"><i class="fas fa-money-bill-wave me-2" aria-hidden="true"></i>{{ _('Checkout') }}</button>
+        {% else %}
+        <a href="{{ url_for('pos.print_invoice', invoice_id=invoice.id) }}" target="_blank" class="btn btn-outline-info"><i class="fas fa-print me-2" aria-hidden="true"></i>{{ _('Print Receipt') }}</a>
+        {% endif %}
+    </div>
+</div>
+
+{% if invoice.status == 'Paid' %}
+<div class="alert alert-success d-flex align-items-center" role="alert">
+    <i class="fas fa-check-circle me-2" aria-hidden="true"></i>
+    <div>
+        {{ _('This sale has been completed and paid in full.') }}
+    </div>
+</div>
+{% elif invoice.status == 'Partial' %}
+<div class="alert alert-warning d-flex align-items-center" role="alert">
+    <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>
+    <div>
+        {{ _('This sale has a partial payment. Balance due: ') }}
+        <span class="fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.remaining_balance) }}</span>
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ _('Items in Cart') }}</h5>
+                {% if invoice.status != 'Paid' and shop_info and shop_info.tax_rate > 0 %}
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="includeTaxToggle" {% if invoice.include_tax %}checked{% endif %}>
+                    <label class="form-check-label" for="includeTaxToggle">{{ _('Include Tax') }} ({{ "%.2f"|format(shop_info.tax_rate) }}%)</label>
+                </div>
                 {% endif %}
-                <a href="{{ url_for('pos.index') }}" class="btn btn-outline-primary">
-                    <i class="fas fa-arrow-circle-left me-1" aria-hidden="true"></i>{{ _('Back to POS') }}
-                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Description') }}</th>
+                            {% if shop_info and shop_info.show_sku %}
+                            <th>{{ _('SKU') }}</th>
+                            {% endif %}
+                            <th class="text-center">{{ _('Qty') }}</th>
+                            <th class="text-end">{{ _('Unit Price') }}</th>
+                            <th class="text-end">{{ _('Total') }}</th>
+                            {% if invoice.status != 'Paid' %}
+                            <th class="text-center">{{ _('Action') }}</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in invoice.items %}
+                        <tr>
+                            <td>
+                                <strong class="text-break">{{ item.description }}</strong>
+                                {% if item.part and item.part.sku %}
+                                <br><small class="text-muted">{{ _('Cost:') }} {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.cost_price) }}</small>
+                                {% endif %}
+                            </td>
+                            {% if shop_info and shop_info.show_sku %}
+                            <td class="text-break">
+                                {% if item.part and item.part.sku %}
+                                <span class="badge bg-light text-dark">{{ item.part.sku }}</span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                            <td class="text-center" style="width: 100px;">
+                                {% if invoice.status != 'Paid' %}
+                                <form class="update-item-form d-flex gap-1" data-item-id="{{ item.id }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="number" name="quantity" class="form-control form-control-sm text-center" value="{{ item.quantity }}" min="1" aria-label="{{ _('Quantity') }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="{{ _('Update Quantity') }}" aria-label="{{ _('Update Quantity') }}"><i class="fas fa-sync-alt" aria-hidden="true"></i></button>
+                                </form>
+                                {% else %}{{ item.quantity }}{% endif %}
+                            </td>
+                            <td class="text-end" style="width: 120px;">
+                                {% if invoice.status != 'Paid' %}
+                                <form class="update-item-form d-flex gap-1" data-item-id="{{ item.id }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="number" step="any" name="unit_price" class="form-control form-control-sm text-end" value="{{ '%.*f'|format(currency_decimals, item.unit_price) }}" aria-label="{{ _('Unit Price') }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="{{ _('Update Price') }}" aria-label="{{ _('Update Price') }}"><i class="fas fa-check" aria-hidden="true"></i></button>
+                                </form>
+                                {% else %}{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price) }}{% endif %}
+                            </td>
+                            <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price) }}</td>
+                            {% if invoice.status != 'Paid' %}
+                            <td class="text-center">
+                                <form action="{{ url_for('pos.remove_item', invoice_id=invoice.id, item_id=item.id) }}" method="POST" class="d-inline confirm-action" data-confirm="{{ _('Are you sure you want to remove this item?') }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Remove Item') }}" aria-label="{{ _('Remove Item') }}"><i class="fas fa-trash" aria-hidden="true"></i></button>
+                                </form>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="{{ (6 if shop_info and shop_info.show_sku else 5) if invoice.status != 'Paid' else (5 if shop_info and shop_info.show_sku else 4) }}" class="text-center text-muted py-4">{{ _('No items in cart.') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="{{ 4 if shop_info and shop_info.show_sku else 3 }}" class="text-end fw-bold">{{ _('Subtotal:') }}</td>
+                            <td class="text-end fw-bold" id="subtotal_amount">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.subtotal_amount) }}</td>
+                            {% if invoice.status != 'Paid' %}<td></td>{% endif %}
+                        </tr>
+                        {% if shop_info and shop_info.tax_rate > 0 %}
+                        <tr {% if not invoice.include_tax %}class="text-muted"{% endif %}>
+                            <td colspan="{{ 4 if shop_info and shop_info.show_sku else 3 }}" class="text-end fw-bold">{{ shop_info.tax_label or _('Tax') }} (<span id="tax_rate_display">{{ "%.2f"|format(invoice.tax_info['rate']) }}</span>%):</td>
+                            <td class="text-end fw-bold" id="tax_amount">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.tax_amount) }}</td>
+                            {% if invoice.status != 'Paid' %}<td></td>{% endif %}
+                        </tr>
+                        {% endif %}
+                        {% if invoice.discount_amount and invoice.discount_amount > 0 %}
+                        <tr class="text-success">
+                            <td colspan="{{ 4 if shop_info and shop_info.show_sku else 3 }}" class="text-end fw-bold">{{ _('Discount:') }}</td>
+                            <td class="text-end fw-bold" id="discount_amount_display">-{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.discount_amount) }}</td>
+                            {% if invoice.status != 'Paid' %}<td></td>{% endif %}
+                        </tr>
+                        {% endif %}
+                        {% if invoice.loyalty_discount_amount and invoice.loyalty_discount_amount > 0 %}
+                        <tr class="text-info">
+                            <td colspan="{{ 4 if shop_info and shop_info.show_sku else 3 }}" class="text-end fw-bold">{{ shop_info.loyalty_label or _('Loyalty Discount') }}:</td>
+                            <td class="text-end fw-bold" id="loyalty_discount_display">-{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.loyalty_discount_amount) }}</td>
+                            {% if invoice.status != 'Paid' %}<td></td>{% endif %}
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td colspan="{{ 4 if shop_info and shop_info.show_sku else 3 }}" class="text-end fw-bold fs-5">{{ _('Grand Total:') }}</td>
+                            <td class="text-end fw-bold fs-5" id="total_amount">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.total_amount) }}</td>
+                            {% if invoice.status != 'Paid' %}<td></td>{% endif %}
+                        </tr>
+                        <tr>
+                            <td colspan="{{ 4 if shop_info and shop_info.show_sku else 3 }}" class="text-end fw-bold">{{ _('Paid:') }}</td>
+                            <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.full_payment_received) }}</td>
+                            {% if invoice.status != 'Paid' %}<td></td>{% endif %}
+                        </tr>
+                        <tr>
+                            <td colspan="{{ 4 if shop_info and shop_info.show_sku else 3 }}" class="text-end fw-bold text-danger fs-5">{{ _('Balance Due:') }}</td>
+                            <td class="text-end fw-bold text-danger fs-5" id="balance_due">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.remaining_balance) }}</td>
+                            {% if invoice.status != 'Paid' %}<td></td>{% endif %}
+                        </tr>
+                        {% if shop_info and shop_info.enable_loyalty_points and invoice.customer and invoice.status != 'Paid' %}
+                        <tr class="text-info">
+                            <td colspan="{{ 4 if shop_info and shop_info.show_sku else 3 }}" class="text-end fw-bold">{{ shop_info.loyalty_label or _('Loyalty Points') }} {{ _('Earned:') }}</td>
+                            <td class="text-end fw-bold" id="est_points_display">+{{ (invoice.subtotal_amount * (shop_info.loyalty_points_per_currency or 0))|round|int }} {{ _('pts') }}</td>
+                            <td></td>
+                        </tr>
+                        {% endif %}
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        {% if invoice.status != 'Paid' %}
+        {% if shop_info and shop_info.enable_loyalty_points and invoice.customer %}
+        <div class="card shadow-sm border-0 mb-4 border-start border-info border-4">
+            <div class="card-body">
+                <h6 class="text-info text-uppercase small fw-bold mb-3"><i class="fas fa-star me-2" aria-hidden="true"></i>{{ shop_info.loyalty_label }}</h6>
+                <p class="mb-2">{{ _('Available Balance:') }} <strong id="loyalty_balance">{{ "%.0f"|format(invoice.customer.loyalty_points) }}</strong></p>
+                <div class="row g-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="col-8">
+                                <input type="number" id="loyalty_points_input" class="form-control" placeholder="{{ _('Points to redeem') }}" value="{{ invoice.loyalty_points_used|int }}">
+                    </div>
+                    <div class="col-4">
+                                <button type="button" id="redeemLoyaltyBtn" class="btn btn-outline-info w-100">{{ _('Apply') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if shop_info and shop_info.enable_discounts %}
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-tag me-2" aria-hidden="true"></i>{{ _('Apply Discount') }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 align-items-end">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="col-md-5">
+                                <label for="discount_amount_input" class="form-label small fw-bold">{{ _('Amount') }}</label>
+                        <input type="number" step="any" id="discount_amount_input" class="form-control" value="{{ invoice.discount_amount or 0 }}" min="0">
+                    </div>
+                    <div class="col-md-4">
+                                <label for="discount_type_input" class="form-label small fw-bold">{{ _('Type') }}</label>
+                        <select id="discount_type_input" class="form-select">
+                            <option value="fixed" {% if invoice.discount_type == 'fixed' %}selected{% endif %}>{{ _('Fixed') }} ({{ currency_symbol }})</option>
+                            <option value="percent" {% if invoice.discount_type == 'percent' %}selected{% endif %}>{{ _('Percent') }} (%)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" id="applyDiscountBtn" class="btn btn-outline-primary w-100">{{ _('Apply') }}</button>
+                    </div>
+                </div>
+                {% if invoice.discount_amount and invoice.discount_amount > 0 %}
+                <small class="text-success d-block mt-2">
+                    {{ _('Discount applied:') }} {{ invoice.discount_amount }} {{ '%' if invoice.discount_type == 'percent' else currency_symbol }}
+                </small>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">{{ _('Add Item') }}</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('pos.add_item', invoice_id=invoice.id) }}" method="POST" class="row g-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="col-md-6">
+                        <label for="item_type" class="form-label">{{ _('Item Type') }}</label>
+                        <select class="form-select" id="item_type" name="type" required>
+                            <option value="part">{{ _('Part') }}</option>
+                            <option value="service">{{ _('Service') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 text-break">
+                        <label for="item_id" class="form-label">{{ _('Select Item') }}</label>
+                        <select class="form-select" id="item_id" name="id" required>
+                            <!-- Options will be dynamically loaded by JS -->
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="quantity" class="form-label">{{ _('Quantity') }}</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" value="1" min="1" required>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-plus-circle me-2" aria-hidden="true"></i>{{ _('Add to Cart') }}</button>
+                    </div>
+                </form>
+                <hr class="my-4">
+                <form action="{{ url_for('pos.add_by_sku', invoice_id=invoice.id) }}" method="POST" class="row g-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="col-md-6">
+                        <label for="sku_input" class="form-label">{{ _('Add by SKU / Barcode') }}</label>
+                        <input type="text" class="form-control" id="sku_input" name="sku" placeholder="{{ _('Scan or enter SKU') }}" autofocus>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <button type="submit" class="btn btn-outline-secondary"><i class="fas fa-barcode me-2" aria-hidden="true"></i>{{ _('Add by SKU') }}</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Item Selection -->
-        {% if invoice.status != 'Paid' %}
-        <div class="col-lg-8 mb-4">
-            <div class="card shadow-sm border-0 mb-4 bg-primary text-white">
-                <div class="card-body">
-                    <form action="{{ url_for('pos.add_by_sku', invoice_id=invoice.id) }}" method="POST" id="skuScannerForm">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <div class="input-group input-group-lg">
-                            <span class="input-group-text bg-white border-0"><i class="fas fa-barcode text-primary" aria-hidden="true"></i></span>
-                            <input type="text" name="sku" class="form-control border-0" placeholder="{{ _('Scan Barcode / Enter SKU to Quick Add...') }}" autofocus autocomplete="off" maxlength="50">
-                        </div>
-                    </form>
-                </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">{{ _('Customer Details') }}</h5>
             </div>
-
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-light py-3">
-                    <h5 class="mb-0"><i class="fas fa-plus-circle me-2" aria-hidden="true"></i>{{ _('Add Items to Sale') }}</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <!-- Add Service Form -->
-                        <div class="col-md-6">
-                            <form action="{{ url_for('pos.add_item', invoice_id=invoice.id) }}" method="POST" class="h-100 p-3 border rounded">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="type" value="service">
-                                <label class="form-label fw-bold">{{ _('Service') }}</label>
-                                <select name="id" class="form-select mb-3" required aria-required="true">
-                                    <option value="">-- {{ _('Select Service') }} --</option>
-                                    {% for s in services %}
-                                    <option value="{{ s.id }}">{{ s.name if (s.name and s.name != 'None') else '' }} ({{ currency_symbol }}{{ "%.*f"|format(currency_decimals, s.price or 0) }})</option>
-                                    {% endfor %}
-                                </select>
-                                <div class="input-group">
-                                    <input type="number" name="quantity" class="form-control" value="1" min="1">
-                                    <button class="btn btn-outline-primary" type="submit">{{ _('Add Service') }}</button>
-                                </div>
-                            </form>
-                        </div>
-                        <!-- Add Part Form -->
-                        <div class="col-md-6">
-                            <form action="{{ url_for('pos.add_item', invoice_id=invoice.id) }}" method="POST" class="h-100 p-3 border rounded">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="type" value="part">
-                                <label class="form-label fw-bold">{{ _('Spare Part') }}</label>
-                                <select name="id" class="form-select mb-3" required aria-required="true">
-                                    <option value="">-- {{ _('Select Part') }} --</option>
-                                    {% for p in parts %}
-                                    <option value="{{ p.id }}">{{ p.name if (p.name and p.name != 'None') else '' }} ({{ _('Stock') }}: {{ p.stock_quantity or 0 }})</option>
-                                    {% endfor %}
-                                </select>
-                                <div class="input-group">
-                                    <input type="number" name="quantity" class="form-control" value="1" min="1">
-                                    <button class="btn btn-outline-success" type="submit">{{ _('Add Part') }}</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-
-            <!-- Cart Items Table -->
-            <div class="card shadow-sm border-0 {{ 'col-lg-8' if invoice.status == 'Paid' else '' }}">
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="ps-4">{{ _('Description') }}</th>
-                                    <th class="text-center">{{ _('Qty') }}</th>
-                                    <th class="text-end">{{ _('Price') }}</th>
-                                    <th class="text-end">{{ _('Total') }}</th>
-                                    {% if invoice.status != 'Paid' %}
-                                        <th class="text-center" style="width: 50px;"></th>
-                                    {% endif %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {# Repair-specific services (Ticket Service Bridge) #}
-                                {% if invoice.ticket %}
-                                    {% for ts in invoice.ticket.ticket_services %}
-                                    <tr class="table-info">
-                                        <td class="ps-4">
-                                            <span class="badge bg-light text-dark me-2">{{ _('Service') }}</span>
-                                            {{ ts.service.name if (ts.service and ts.service.name and ts.service.name != 'None') else _('Repair Service') }}
-                                        </td>
-                                        <td class="text-center">{{ ts.quantity }}</td>
-                                        <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price_charged) }}</td>
-                                        <td class="text-end fw-bold">
-                                            {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price_charged * ts.quantity) }}
-                                        </td>
-                                        {% if invoice.status != 'Paid' %}
-                                        <td class="text-center">
-                                            <form action="{{ url_for('pos.remove_service', invoice_id=invoice.id, ts_id=ts.id) }}" method="POST" class="confirm-action" data-confirm="{{ _('Remove service from cart?')|forceescape }}">
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="{{ _('Remove') }}"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
-                                            </form>
-                                        </td>
-                                        {% endif %}
-                                    </tr>
-                                    {% endfor %}
-                                {% endif %}
-
-                                {# Standalone items (Parts or POS-added services) #}
-                                {% for item in invoice.items %}
-                                <tr>
-                                    <td class="ps-4">
-                                        {% if item.spare_part_id %}
-                                            <span class="badge bg-light text-dark me-2">{{ _('Part') }}</span>
-                                        {% elif not invoice.ticket_id %}
-                                            <span class="badge bg-light text-dark me-2">{{ _('Service') }}</span>
-                                        {% endif %}
-                                        {{ item.description if (item.description and item.description != 'None') else '' }}
-                                    </td>
-                                    <td class="text-center">{{ item.quantity }}</td>
-                                    <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price) }}</td>
-                                    <td class="text-end fw-bold">
-                                        {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price) }}
-                                    </td>
-                                    {% if invoice.status != 'Paid' %}
-                                    <td class="text-center">
-                                        <form action="{{ url_for('pos.remove_item', invoice_id=invoice.id, item_id=item.id) }}" method="POST" class="confirm-action" data-confirm="{{ _('Remove item from cart?')|forceescape }}">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="{{ _('Remove') }}"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
-                                        </form>
-                                    </td>
-                                    {% endif %}
-                                </tr>
-                                {% endfor %}
-                                {% if not invoice.items and (not invoice.ticket or not invoice.ticket.ticket_services) %}
-                                <tr>
-                                    <td colspan="5" class="text-center py-5 text-muted">
-                                        <i class="fas fa-shopping-basket fa-2x mb-2 d-block" aria-hidden="true"></i>
-                                        {{ _('Cart is empty. Add items above to proceed.') }}
-                                    </td>
-                                </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <div class="card-body">
+                {% if invoice.customer %}
+                <p class="mb-1"><strong>{{ _('Name:') }}</strong> <span class="text-break">{{ invoice.customer.name }}</span></p>
+                <p class="mb-1"><strong>{{ _('Phone:') }}</strong> <span class="text-break">{{ invoice.customer.phone or '-' }}</span></p>
+                <p class="mb-1"><strong>{{ _('Address:') }}</strong> <span class="text-break">{{ invoice.customer.address or '-' }}</span></p>
+                {% else %}
+                <p class="text-muted">{{ _('Walk-in Customer') }}</p>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Checkout Sidebar -->
-        <div class="col-lg-4">
-            <div class="card shadow-sm border-0 mb-4 sticky-top" style="top: 20px;">
-                <div class="card-header bg-dark text-white py-3">
-                    <h5 class="mb-0"><i class="fas fa-file-invoice-dollar me-2" aria-hidden="true"></i>{{ _('Sale Summary') if invoice.status == 'Paid' else _('Summary & Payment') }}</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>{{ _('Customer') }}:</span>
-                            <span class="fw-bold">{{ invoice.customer.name if (invoice.customer and invoice.customer.name and invoice.customer.name != 'None') else _('Walk-in') }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>{{ _('Invoice Number') }}:</span>
-                            <span class="text-muted small">{{ invoice.invoice_number }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>{{ _('Status') }}:</span>
-                            <span class="badge {{ 'bg-success' if invoice.status == 'Paid' else 'bg-warning text-dark' }}">{{ _(invoice.status) }}</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">{{ _('Total Paid') if invoice.status == 'Paid' else _('Total Due') }}:</h4>
-                            <h4 class="mb-0 {{ 'text-success' if invoice.status == 'Paid' else 'text-primary' }}">
-                                {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.total_amount) }}
-                            </h4>
-                        </div>
-                    </div>
-
-                    {% if invoice.status != 'Paid' %}
-                    <form action="{{ url_for('pos.checkout', invoice_id=invoice.id) }}" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">{{ _('Amount to Pay') }}</label>
-                            <div class="input-group input-group-lg">
-                                <span class="input-group-text" aria-hidden="true">{{ currency_symbol }}</span>
-                                <input type="number" step="{{ 1 / (10**currency_decimals) if currency_decimals > 0 else 1 }}" name="amount" class="form-control" 
-                                       value="{{ invoice.total_amount }}" required aria-required="true">
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">{{ _('Payment Method') }}</label>
-                            <select name="method" class="form-select" required aria-required="true">
-                                <option value="Cash">{{ _('Cash') }}</option>
-                                <option value="Card">{{ _('Card') }}</option>
-                                <option value="Bank Transfer">{{ _('Bank Transfer') }}</option>
-                                <option value="Other">{{ _('Other') }}</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label">{{ _('Reference / Notes') }}</label>
-                            <input type="text" name="reference" class="form-control" placeholder="{{ _('Optional reference #') }}" maxlength="100">
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-outline-primary btn-lg" 
-                                    {% if not invoice.items and (not invoice.ticket or not invoice.ticket.ticket_services) %}disabled{% endif %}>
-                                <i class="fas fa-check-circle me-2" aria-hidden="true"></i>{{ _('Process Sale') }}
-                            </button>
-                        </div>
-                    </form>
-                    {% else %}
-                        <div class="alert alert-success text-center mb-0">
-                            <i class="fas fa-check-double me-2" aria-hidden="true"></i>{{ _('Transaction Completed') }}
-                        </div>
-                    {% endif %}
-                </div>
+        {% if invoice.payments %}
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">{{ _('Payment History') }}</h5>
             </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for payment in invoice.payments %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted">{{ payment.paid_at.strftime('%Y-%m-%d %H:%M') }}</small><br>
+                            <strong>{{ _(payment.payment_method) }}</strong>
+                            {% if payment.transaction_reference %}<br><small class="text-muted">{{ payment.transaction_reference }}</small>{% endif %}
+                        </div>
+                        <div class="text-end">
+                            <span class="fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, payment.amount) }}</span>
+                            {% if invoice.status != 'Paid' %}
+                                    <form action="{{ url_for('pos.void_payment', ticket_id=invoice.ticket_id or 0, payment_id=payment.id) }}" method="POST" class="d-inline ms-2 confirm-action" data-confirm="{{ _('Are you sure you want to void this payment?')|forceescape }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Void Payment') }}" aria-label="{{ _('Void Payment') }}"><i class="fas fa-times" aria-hidden="true"></i></button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Checkout Modal -->
+<div class="modal fade" id="checkoutModal" tabindex="-1" aria-labelledby="checkoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ url_for('pos.checkout', invoice_id=invoice.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="checkoutModalLabel"><i class="fas fa-shopping-check me-2" aria-hidden="true"></i>{{ _('Complete Sale') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="lead text-center mb-4">
+                        {{ _('Total Amount Due:') }} <span class="fw-bold fs-4 text-danger" id="modal_balance_due">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.remaining_balance) }}</span>
+                    </p>
+                    <div class="mb-3">
+                        <label for="payment_amount" class="form-label">{{ _('Amount Received') }}</label>
+                        <input type="number" step="any" class="form-control" id="payment_amount" name="amount" value="{{ "%.*f"|format(currency_decimals, invoice.remaining_balance) }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payment_method" class="form-label">{{ _('Payment Method') }}</label>
+                        <select class="form-select" id="payment_method" name="method" required>
+                            <option value="Cash">{{ _('Cash') }}</option>
+                            <option value="Card">{{ _('Card') }}</option>
+                            <option value="Bank Transfer">{{ _('Bank Transfer') }}</option>
+                            <option value="Other">{{ _('Other') }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transaction_reference" class="form-label">{{ _('Transaction Reference (Optional)') }}</label>
+                        <input type="text" class="form-control" id="transaction_reference" name="reference">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ _('Record Payment') }}</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -247,11 +352,24 @@
 
 {% block scripts %}
 <script>
-    // Simple utility to prevent double-submission on checkout
-    document.querySelector('form[action*="checkout"]').addEventListener('submit', function() {
-        const btn = this.querySelector('button[type="submit"]');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>{{ _("Processing...") }}';
-    });
+    window.POS_CONFIG = {
+        services: {{ services|tojson }},
+        parts: {{ parts|tojson }},
+        invoiceId: {{ invoice.id }},
+        currencyDecimals: {{ currency_decimals }},
+        csrfToken: "{{ csrf_token() }}",
+        urls: {
+            updateItemDetails: "{{ url_for('pos.update_item_details', invoice_id=invoice.id, item_id=0) }}",
+            toggleTax: "{{ url_for('pos.toggle_tax', invoice_id=invoice.id) }}",
+            updateDiscount: "{{ url_for('pos.update_discount', invoice_id=invoice.id) }}",
+            redeemLoyalty: "{{ url_for('pos.redeem_loyalty', invoice_id=invoice.id) }}"
+        },
+        translations: {
+            noItems: "{{ _('No items available') }}",
+            updateError: "{{ _('An error occurred while updating item details.') }}",
+            pts: "{{ _('pts') }}"
+        }
+    };
 </script>
+<script src="{{ url_for('static', filename='js/pos.js') }}"></script>
 {% endblock %}

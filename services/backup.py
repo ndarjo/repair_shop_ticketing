@@ -128,13 +128,18 @@ class BackupService:
         snapshot_success = False
         if 'postgresql' in db_url:
             try:
-                # Clean URI: strip driver dialects for system tools like pg_dump
                 url_obj = make_url(db_url)
-                clean_url = url_obj.render_as_string(hide_password=False)
-                if '+' in url_obj.drivername:
-                    base_scheme = url_obj.drivername.split('+')[0]
-                    clean_url = base_scheme + clean_url[len(url_obj.drivername):] if clean_url.startswith(url_obj.drivername) else clean_url
-                subprocess.run(['pg_dump', '--dbname', clean_url, '-Fc', '-f', dump_path], check=True, capture_output=True)
+                env = os.environ.copy()
+                if url_obj.password:
+                    env['PGPASSWORD'] = url_obj.password
+                
+                cmd = ['pg_dump', '-Fc', '-f', dump_path]
+                if url_obj.host: cmd.extend(['-h', url_obj.host])
+                if url_obj.port: cmd.extend(['-p', str(url_obj.port)])
+                if url_obj.username: cmd.extend(['-U', url_obj.username])
+                cmd.append(url_obj.database)
+
+                subprocess.run(cmd, env=env, check=True, capture_output=True)
                 snapshot_success = True
             except Exception as e:
                 current_app.logger.error(f"Automated full dump failed: {str(e)}")
@@ -168,11 +173,6 @@ class BackupService:
         try:
             url = make_url(db_url)
             db_name = url.database
-            # System tools require raw scheme without driver dialects
-            clean_url = url.render_as_string(hide_password=False)
-            if '+' in url.drivername:
-                base_scheme = url.drivername.split('+')[0]
-                clean_url = base_scheme + clean_url[len(url.drivername):] if clean_url.startswith(url.drivername) else clean_url
 
             # 1. Release active connections (except this one) to prevent locks
             db.session.execute(text("""
@@ -186,9 +186,17 @@ class BackupService:
             # --clean: Drop database objects before recreating them
             # --if-exists: Use IF EXISTS when dropping objects
             # --no-owner: Do not set ownership of objects to match the original database
-            cmd = ['pg_restore', '--dbname', clean_url, '--clean', '--if-exists', '--no-owner', file_path]
+            env = os.environ.copy()
+            if url.password:
+                env['PGPASSWORD'] = url.password
+
+            cmd = ['pg_restore', '--clean', '--if-exists', '--no-owner', '-d', url.database]
+            if url.host: cmd.extend(['-h', url.host])
+            if url.port: cmd.extend(['-p', str(url.port)])
+            if url.username: cmd.extend(['-U', url.username])
+            cmd.append(file_path)
             
-            subprocess.run(cmd, check=True, capture_output=True)
+            subprocess.run(cmd, env=env, check=True, capture_output=True)
             return True, _("Success")
 
         except subprocess.CalledProcessError as e:

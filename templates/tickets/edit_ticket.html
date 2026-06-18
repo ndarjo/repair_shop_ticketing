@@ -1,11 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Edit Ticket') }} {{ ticket.ticket_number }}{% endblock %}
+{% block title %}{{ _('Edit Ticket: %(num)s', num=ticket.ticket_number) }}{% endblock %}
 
 {% block content %}
 <div class="card shadow-sm border-0">
-    <div class="card-header bg-shadow text-dark">
-        <h4 class="mb-0"><i class="fas fa-edit me-2"></i>{{ _('Edit Repair Ticket:') }} {{ ticket.ticket_number }}</h4>
+    <div class="card-header bg-primary text-white d-flex align-items-center p-3">
+        <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn-link text-white p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Ticket') }}">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        </a>
+        <h4 class="mb-0"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Edit Repair Ticket: %(num)s', num=ticket.ticket_number) }}</h4>
     </div>
     <div class="card-body">
         {% if ticket.current_phase == 'Already Taken' %}
@@ -15,22 +18,33 @@
         {% endif %}
         <form action="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="row g-3">
+            <div class="row g-4">
                 <div class="col-md-6">
                     <label for="customer_display" class="form-label fw-bold">{{ _('Customer') }}</label>
-                    <input type="text" id="customer_display" class="form-control bg-light" value="{{ ticket.customer.name if ticket.customer else '-' }}" readonly disabled>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-user" aria-hidden="true"></i></span>
+                        <input type="text" id="customer_display" class="form-control bg-light" value="{{ ticket.customer.name if ticket.customer else '-' }}" readonly disabled>
+                    </div>
                 </div>
                 <div class="col-md-6">
                     <label for="device_display" class="form-label fw-bold">{{ _('Device') }}</label>
-                    <input type="text" id="device_display" class="form-control bg-light" value="{{ ticket.device.display if ticket.device else '-' }}" readonly disabled>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-laptop" aria-hidden="true"></i></span>
+                        <input type="text" id="device_display" class="form-control bg-light" value="{{ ticket.device.display if ticket.device else '-' }}" readonly disabled>
+                    </div>
+                </div>
+
+                <div class="col-12 mt-4">
+                    <h6 class="text-uppercase text-muted small fw-bold">{{ _('Problem & Intake Details') }}</h6>
+                    <hr class="mt-1">
                 </div>
 
                 <div class="col-12">
-                    <label for="items_included" class="form-label fw-bold">{{ _('Items Included') }}</label>
+                    <label for="items_included" class="form-label fw-bold">{{ _('Items Included (Charger, Case, etc.)') }}</label>
                     <input type="text" name="items_included" id="items_included" class="form-control" value="{{ ticket.items_included or '' }}" placeholder="{{ _('e.g., Original Charger, Leather Case') }}">
                 </div>
 
-                <div class="col-12">
+                <div class="col-md-12">
                     <label for="problem_description" class="form-label fw-bold">{{ _('Problem Description') }} *</label>
                     <textarea name="problem_description" id="problem_description" class="form-control" rows="3" required placeholder="{{ _('Describe the issue in detail...') }}">{{ ticket.problem_description or '' }}</textarea>
                 </div>
@@ -45,10 +59,20 @@
                     </select>
                 </div>
 
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">{{ _('Tax Options') }}</label>
+                    <div class="form-check pt-1">
+                        <input class="form-check-input" type="checkbox" name="include_tax" id="include_tax" {% if ticket.include_tax %}checked{% endif %}>
+                        <label class="form-check-label" for="include_tax">
+                            {{ _('Include %(label)s', label=shop_info.tax_label if (shop_info and shop_info.tax_label) else _('Tax')) }}
+                        </label>
+                    </div>
+                </div>
+
                 <div class="col-12 text-end mt-4">
                     <hr>
                     <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-outline-secondary px-4 me-2">{{ _('Cancel') }}</a>
-                    <button type="submit" class="btn btn-outline-warning btn-lg px-5"><i class="fas fa-edit me-2" aria-hidden="true"></i>{{ _('Save Changes') }}</button>
+                    <button type="submit" class="btn btn-outline-primary btn-lg px-5"><i class="fas fa-save me-2" aria-hidden="true"></i>{{ _('Save Changes') }}</button>
                 </div>
             </div>
         </form>

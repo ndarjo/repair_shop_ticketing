@@ -1,66 +1,114 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Invoice') }} {{ invoice.invoice_number or '' }}{% endblock %}
+{% block title %}
+    {% set label = (shop_info.receipt_label if (shop_info and invoice.status == 'Paid') else (shop_info.invoice_label if shop_info else None)) or (_('Receipt') if invoice.status == 'Paid' else _('Invoice')) %}
+    {{ _('%(label)s: %(num)s', label=label, num=invoice.invoice_number or '') }}
+{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm border-0 mt-2 mb-5">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center p-3">
-        <h4 class="mb-0"><i class="bi bi-receipt-cutoff me-2"></i>{{ _('Invoice Details') }}</h4>
-        <h4 class="mb-0"><i class="fas fa-file-invoice me-2"></i>{{ _('Invoice Details') }}</h4>
+{% set receipt_text = shop_info.receipt_label if (shop_info and shop_info.receipt_label) else _('RECEIPT') %}
+{% set invoice_text = shop_info.invoice_label if (shop_info and shop_info.invoice_label) else _('INVOICE') %}
+{% set is_paid = invoice.status == 'Paid' %}
+{% set doc_label = receipt_text if is_paid else invoice_text %}
+<div class="card shadow-sm border-0 mt-2 mb-5 invoice-card status-{{ (invoice.status or 'unpaid')|lower }}" 
+     style="--brand-color: {{ (shop_info.brand_color if (shop_info and shop_info.brand_color) else '#0d6efd') }};">
+    <div class="card-header bg-custom text-white d-flex justify-content-between align-items-center p-3 shadow-none">
+        <h4 class="mb-0"><i class="fas {{ 'fa-check-circle' if is_paid else 'fa-file-invoice' }} me-2" aria-hidden="true"></i>{{ doc_label }}</h4>
         <span class="badge bg-{{ 'success' if invoice.status == 'Paid' else 'warning' if invoice.status == 'Partial' else 'info' }} rounded-pill px-3">
-            {{ _(invoice.status) }}
+            {{ _(invoice.status) if invoice.status else _('Unknown') }}
         </span>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body p-4 position-relative">
+        {% if is_paid %}
+        <div class="paid-stamp">
+            {{ _('PAID') }}
+        </div>
+        {% elif invoice.status == 'Draft' %}
+        <div class="draft-stamp">
+            {{ _('DRAFT') }}
+        </div>
+        {% endif %}
         <div class="row mb-4">
             <div class="col-md-6">
                 <div class="d-flex align-items-center mb-3">
-                    {% if shop_info and shop_info.logo_path %}
+                    {% if shop_info and shop_info.logo_path and (shop_info.show_logo_on_docs if shop_info.show_logo_on_docs is defined else True) %}
                         <img src="{{ url_for('static', filename='uploads/logos/' + shop_info.logo_path) }}" alt="Logo" height="50" class="me-3">
                     {% endif %}
+                    {% set loc = invoice.location or (invoice.ticket.location if invoice.ticket else None) %}
                     <div>
-                        <h6 class="text-uppercase text-muted small fw-bold mb-1">{{ _('Invoice From:') }}</h6>
-                    <h5 class="mb-0">{{ shop_info.shop_name or _('Repair Shop') }}</h5>
+                        <h6 class="text-uppercase text-muted small fw-bold mb-1">{{ _('From:') }}</h6>
+                        <h5 class="mb-0">{{ (shop_info.shop_name if shop_info else None) or _('Repair Shop') }}</h5>
+                        {% if loc and loc.name and shop_info and loc.name != shop_info.shop_name %}
+                            <p class="mb-0 small fw-bold text-muted">{{ loc.name }}</p>
+                        {% endif %}
                     </div>
                 </div>
-            <p class="text-muted small mb-1" style="white-space: pre-line;">{{ shop_info.shop_address or _('System Generated Invoice') }}</p>
-
-                <h6 class="text-uppercase text-muted small fw-bold mt-3">{{ _('Bill To:') }}</h6>
-                <h5 class="mb-0">{{ invoice.ticket.customer.name if invoice.ticket and invoice.ticket.customer else '-' }}</h5>
-                <p class="mb-0">{{ invoice.ticket.customer.phone if invoice.ticket and invoice.ticket.customer else '' }}</p>
+                {% if not shop_info or shop_info.show_company_address %}
+                <p class="text-muted small mb-0" style="white-space: pre-line;">{{ loc.address if loc and loc.address else ((shop_info.shop_address if shop_info else None) or _('System Generated Document')) }}</p>
+                {% endif %}
+                {% set shop_phone = loc.phone if loc and loc.phone else shop_info.shop_phone %}
+                {% if shop_phone %}<p class="text-muted small mb-0">{{ _('Tel:') }} {{ shop_phone }}</p>{% endif %}
+                {% set shop_email = loc.email if loc and loc.email else shop_info.shop_email %}
+                {% if shop_email %}<p class="text-muted small mb-0">{{ _('Email:') }} {{ shop_email }}</p>{% endif %}
+                {% if shop_info and shop_info.tax_id %}<p class="text-muted small mb-0">{{ _('Tax ID:') }} {{ shop_info.tax_id }}</p>{% endif %}
+                
+                <div class="mt-4 border-start border-primary border-4 ps-3">
+                    {% set active_customer = invoice.customer or (invoice.ticket.customer if invoice.ticket else None) %}
+                    <small class="text-uppercase text-muted fw-bold mb-1 d-block">{{ _('Bill To') }}</small>
+                    <h5 class="mb-1">{{ active_customer.name if active_customer else _('Walk-in Customer') }}</h5>
+                    {% if (not shop_info or shop_info.show_customer_phone) and active_customer and active_customer.phone %}
+                        <p class="mb-0">{{ active_customer.phone }}</p>
+                    {% endif %}
+                    {% if (not shop_info or shop_info.show_customer_address) and active_customer and active_customer.address %}
+                        <p class="mb-0 text-muted small">{{ active_customer.address }}</p>
+                    {% endif %}
+                </div>
+                {% if (not shop_info or shop_info.show_technician) and invoice.ticket and invoice.ticket.assigned_to_user %}
+                    <p class="mb-0 text-muted small"><strong>{{ _('Technician:') }}</strong> {{ invoice.ticket.assigned_to_user.full_name or invoice.ticket.assigned_to_user.username }}</p>
+                {% endif %}
             </div>
             <div class="col-md-6 text-md-end">
                 <h3 class="mb-0">{{ invoice.invoice_number or '-' }}</h3>
                 <p class="text-muted small">{{ _('Date:') }} {{ invoice.created_at.strftime('%d %b %Y') if invoice.created_at else '-' }}</p>
                 
                 <h6 class="text-uppercase text-muted small fw-bold mt-3">{{ _('Device Info:') }}</h6>
-                <p class="mb-0"><strong>{{ invoice.ticket.device.display if invoice.ticket and invoice.ticket.device else '-' }}</strong></p>
+                {% if invoice.ticket %}
+                    <p class="mb-0"><strong>{{ invoice.ticket.device.display if invoice.ticket.device else '-' }}</strong></p>
+                    {% if (not shop_info or shop_info.show_device_sn) and invoice.ticket.device and invoice.ticket.device.serial_number %}
+                        <p class="mb-0 text-muted small">{{ _('S/N:') }} <code>{{ invoice.ticket.device.serial_number }}</code></p>
+                    {% endif %}
+                {% else %}
+                    <p class="mb-0 text-muted"><em>{{ _('Direct Sale / Point of Purchase') }}</em></p>
+                {% endif %}
                 <p class="text-muted small">{{ _('Ticket:') }} {{ invoice.ticket.ticket_number if invoice.ticket else '-' }}</p>
             </div>
         </div>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle">
-                <thead class="table-sm">
+                <thead>
                     <tr>
                         <th scope="col">{{ _('Description') }}</th>
-                        <th scope="col" class="text-center">{{ _('Qty') }}</th>
+                        {% if not shop_info or shop_info.show_unit_prices %}<th scope="col" class="text-center">{{ _('Qty') }}</th>{% endif %}
                         <th scope="col" class="text-end">{{ _('Total') }}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for ts in (invoice.ticket.ticket_services if invoice.ticket else []) %}
+                    {% for ts in (invoice.ticket.ticket_services if (invoice.ticket and invoice.ticket.ticket_services) else []) %}
                     <tr class="table-sm">
                         <td>{{ _(ts.service.name) if ts.service else _('Service') }}</td>
-                        <td class="text-center">{{ ts.quantity or 0 }}</td>
+                        {% if not shop_info or shop_info.show_unit_prices %}<td class="text-center">{{ ts.quantity or 0 }}</td>{% endif %}
                         <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, (ts.price_charged or 0) * (ts.quantity or 0)) }}</td>
                     </tr>
                     {% endfor %}
                     
                     {% for item in (invoice.items or []) %}
                     <tr class="table-sm">
-                        <td>{{ item.description or _('Part/Material') }}</td>
-                        <td class="text-center">{{ item.quantity or 0 }}</td>
+                        <td>
+                            {% if (shop_info and shop_info.show_sku) and item.part and item.part.sku %}<small class="text-muted">[{{ item.part.sku }}]</small> {% endif %}
+                            {{ item.description or _('Part/Material') }}
+                        </td>
+                        {% if not shop_info or shop_info.show_unit_prices %}<td class="text-center">{{ item.quantity or 0 }}</td>{% endif %}
                         <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price or 0) }}</td>
                     </tr>
                     {% endfor %}
@@ -70,10 +118,37 @@
 
         <div class="row justify-content-end mt-4">
             <div class="col-md-5">
+                {% set subtotal = invoice.subtotal_amount or 0 %}
+                {% set tax_rate = invoice.tax_info.rate or 0 %}
+                {% set tax_amount = invoice.tax_amount or 0 %}
+                {% set grand_total = invoice.total_amount or 0 %}
+                {% set tax_lbl = (shop_info.tax_label if (shop_info and shop_info.tax_label) else None) or _('Tax') %}
                 <table class="table table-sm table-borderless">
+                    {% if tax_rate > 0 %}
                     <tr>
                         <td class="text-muted">{{ _('Subtotal:') }}</td>
-                        <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.total_amount or 0) }}</td>
+                        <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, subtotal) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">{{ _('%(label)s (%(rate)s%%):', label=tax_lbl, rate="%.2f"|format(tax_rate)) }}</td>
+                        <td class="text-end fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, tax_amount) }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if invoice.discount_amount and invoice.discount_amount > 0 %}
+                    <tr class="text-success">
+                        <td class="text-muted">{{ _('Discount:') }}</td>
+                        <td class="text-end fw-bold">-{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.discount_amount) }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if invoice.loyalty_discount_amount and invoice.loyalty_discount_amount > 0 %}
+                    <tr class="text-info border-bottom border-info border-opacity-10">
+                        <td class="text-muted small italic">{{ shop_info.loyalty_label or _('Loyalty Discount') }}:</td>
+                        <td class="text-end fw-bold">-{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.loyalty_discount_amount) }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="border-top">
+                        <td class="pt-2"><strong>{{ _('Grand Total:') }}</strong></td>
+                        <td class="text-end pt-2"><strong>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, grand_total) }}</strong></td>
                     </tr>
                     {% if (invoice.full_payment_received or 0) > 0 %}
                     <tr>
@@ -81,47 +156,123 @@
                         <td class="text-end text-success fw-bold">-{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.full_payment_received or 0) }}</td>
                     </tr>
                     {% endif %}
-                    <tr class="border-top">
-                        <td class="pt-2"><h5 class="mb-0">{{ _('Balance Due:') }}</h5></td>
-                        <td class="text-end pt-2 text-{{ 'success' if (invoice.remaining_balance or 0) <= 0 else 'danger' }}"><h5 class="mb-0 fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, invoice.remaining_balance or 0) }}</h5></td>
+                    {% set balance = grand_total - invoice.full_payment_received %}
+                    <tr class="border-top bg-light">
+                        <td class="pt-2"><h5 class="mb-0">{{ _('Change Due:') if balance < 0 else _('Balance Due:') }}</h5></td>
+                        <td class="text-end pt-2 text-{{ 'success' if balance <= 0 else 'danger' }}"><h5 class="mb-0 fw-bold">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, balance|abs) }}</h5></td>
                     </tr>
                 </table>
             </div>
         </div>
+
+        {% if invoice.payments and (not shop_info or shop_info.show_payment_history) %}
+        <div class="mt-4 p-3 bg-light rounded">
+            <h6 class="text-uppercase text-muted small fw-bold mb-3"><i class="fas fa-history me-2" aria-hidden="true"></i>{{ _('Payment History') }}</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-borderless mb-0 small">
+                    <thead>
+                        <tr class="border-bottom">
+                            <th>{{ _('Date') }}</th>
+                            <th>{{ _('Method') }}</th>
+                            <th class="text-end">{{ _('Amount') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in invoice.payments %}
+                        <tr>
+                            <td>{{ p.paid_at.strftime('%d %b %Y') }}</td>
+                            <td>{{ _(p.payment_method) if p.payment_method else '-' }}</td>
+                            <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, p.amount) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if invoice.loyalty_points_earned > 0 %}
+        <div class="mt-3 p-2 border rounded bg-light d-inline-block">
+            <small class="text-info fw-bold text-uppercase" style="font-size: 0.7rem;">{{ shop_info.loyalty_label or _('Loyalty Points') }}</small>
+            <p class="mb-0 fw-bold">{{ _('Points Earned this visit:') }} <span class="text-primary">+{{ invoice.loyalty_points_earned|int }} {{ _('pts') }}</span></p>
+        </div>
+        {% endif %}
+
+        {% if shop_info and shop_info.show_notes_on_docs %}
+            {% set public_notes = [] %}
+            {% for n in (invoice.ticket.notes if (invoice.ticket and invoice.ticket.notes) else []) %}
+                {% if not n.is_internal %}{% set _ = public_notes.append(n) %}{% endif %}
+            {% endfor %}
+            {% if public_notes %}
+            <div class="mt-4">
+                <h6 class="text-uppercase text-muted small fw-bold mb-2 border-bottom pb-1"><i class="fas fa-sticky-note me-2" aria-hidden="true"></i>{{ _('Repair Notes') }}</h6>
+                <div class="p-3 bg-light rounded small">
+                    {% for note in public_notes %}
+                        <p class="mb-1"><strong>{{ note.created_at.strftime('%d %b') }}:</strong> {{ note.content }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
+
+        {% if shop_info and shop_info.bank_details %}
+        <div class="mt-4">
+            <h6 class="text-uppercase text-muted small fw-bold mb-2 border-bottom pb-1"><i class="fas fa-university me-2" aria-hidden="true"></i>{{ _('Payment Instructions') }}</h6>
+            <p class="text-muted small mb-0" style="white-space: pre-wrap;">{{ shop_info.bank_details }}</p>
+        </div>
+        {% endif %}
+        
+        {% set footer_label = (shop_info.receipt_label if is_paid else shop_info.invoice_label) if shop_info else (receipt_text if is_paid else invoice_text) %}
+        {# Terminology Customization: Switch between warranty terms and payment success notes #}
+        {% set footer_note = (shop_info.receipt_notes if is_paid else shop_info.invoice_terms) if shop_info else None %}
+        {% if footer_note %}
+        <div class="mt-5">
+            <h6 class="text-uppercase text-muted small fw-bold mb-2 footer-note-header">
+                {{ _('%(label)s Notes:', label=footer_label) if is_paid else _('%(label)s Terms & Conditions:', label=footer_label) }}</h6>
+            <p class="text-muted small mb-0" style="white-space: pre-wrap; line-height: 1.5; font-size: 0.85rem;">{{ footer_note }}</p>
+        </div>
+        {% endif %}
+
+        {% if invoice.status != 'Paid' %} {# Customer signature only for unpaid invoices #}
+        <div class="mt-5 pt-4">
+            <div class="row">
+                <div class="col-md-4 border-top border-dark text-center">
+                    {% set sig_label = shop_info.signature_label if shop_info and shop_info.signature_label else _('Customer Signature') %}
+                    <small class="text-muted text-uppercase fw-bold d-block mt-1" style="font-size: 0.65rem;">{{ sig_label }}</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-5 border-top pt-3"> {# Use specific closing greeting #}
+            {% set closing_greeting = (shop_info.receipt_closing_text if invoice.status == 'Paid' else shop_info.invoice_closing_text) if shop_info else None %}
+            <p class="text-muted small fst-italic">{{ closing_greeting or _('Thank you for your business!') }}</p>
+        </div>
     </div>
     <div class="card-footer border-0 p-4 text-center d-print-none">
+        {% if invoice.ticket_id %}
         <a href="{{ url_for('ticket.view_ticket', ticket_id=invoice.ticket_id) }}" class="btn btn-outline-primary px-4 me-2">
-             <i class="fas fa-arrow-circle-left me-2" aria-hidden="true"></i>{{ _('Back to Ticket') }}
+             <i class="fas fa-arrow-left me-2" aria-hidden="true"></i>{{ _('Back to Ticket') }}
         </a>
-        <a href="{{ url_for('ticket.download_invoice_pdf', ticket_id=invoice.ticket_id) }}" class="btn btn-outline-primary px-4 me-2">
-            <i class="fas fa-file-pdf me-2"></i>{{ _('Download PDF') }}
-        </a>
+
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-file-pdf me-2" aria-hidden="true"></i>{{ _('Download PDF') }}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('ticket.download_invoice_pdf', ticket_id=invoice.ticket_id, type='invoice') }}">{{ _('Download Invoice') }}</a></li>
+                {% if is_paid %}
+                <li><a class="dropdown-item" href="{{ url_for('ticket.download_invoice_pdf', ticket_id=invoice.ticket_id, type='receipt') }}">{{ _('Download Receipt') }}</a></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+
         <button id="printInvoiceBtn" class="btn btn-outline-primary px-4">
-            <i class="fas fa-print me-2"></i>{{ _('Print Invoice') }}
+            <i class="fas fa-print me-2" aria-hidden="true"></i>{{ _('Print Document') }}
         </button>
     </div>
 </div>
 {% endblock %}
 
-{% block styles %}
-<style>
-@media print {
-    .navbar, .footer, .alert, .d-print-none { display: none !important; }
-    .container { width: 100% !important; max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
-    .card { border: none !important; box-shadow: none !important; }
-}
-</style>
-{% endblock %}
-
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const printBtn = document.getElementById('printInvoiceBtn');
-    if (printBtn) {
-        printBtn.addEventListener('click', function() {
-            window.print();
-        });
-    }
-});
-</script>
-{% endblock %}
+{# INTEGRITY: Print logic is handled globally by main.js via event delegation #}

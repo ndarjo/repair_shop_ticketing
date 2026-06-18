@@ -1,21 +1,24 @@
 {% extends "base.html" %}
-{% block title %}{{ _('Ticket') }} {{ ticket.ticket_number }}{% endblock %}
+{% block title %}{{ _('Ticket: %(num)s', num=ticket.ticket_number) }}{% endblock %}
 {% block content %}
 
 <div class="card">
-    <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-        <h4 class="mb-0">{{ _('Ticket:') }} {{ ticket.ticket_number }}</h4>
+    <div class="card-header bg-primary text-white d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 p-3">
+        <div class="d-flex align-items-center">
+            <a href="{{ url_for('ticket.tickets_list') }}" class="btn-link text-white p-0 me-3 fs-4 text-decoration-none" title="{{ _('Back to Ticket List') }}"><i class="fas fa-arrow-left" aria-hidden="true"></i></a>
+            <h4 class="mb-0"><i class="fas fa-receipt me-2" aria-hidden="true"></i>{{ _('Ticket: %(num)s', num=ticket.ticket_number) }}</h4>
+        </div>
         <div class="d-flex flex-wrap gap-2">
             {% if ticket.current_phase == 'Already Taken' %}
-                <span class="badge bg-dark text-light"><i class="fas fa-lock me-1"></i> {{ _('Ticket Locked') }}</span>
+                <span class="badge bg-dark text-light d-inline-flex align-items-center"><i class="fas fa-lock me-1" aria-hidden="true"></i> {{ _('Ticket Locked') }}</span>
             {% else %}
                 {% if current_user.has_permission('update_phase') or current_user.has_permission('mark_as_paid') or current_user.has_permission('mark_as_taken') %}
-                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updatePhaseModal">{{ _('Update Phase') }}</button>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updatePhaseModal"><i class="fas fa-stream me-1" aria-hidden="true"></i>{{ _('Update Phase') }}</button>
                 {% endif %}
                 {% if current_user.has_permission('process_payments') %}
-                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">{{ _('Record Payment') }}</button>
+                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#recordPaymentModal"><i class="fas fa-wallet me-1" aria-hidden="true"></i>{{ _('Record Payment') }}</button>
                 {% endif %}
-                <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-warning" class="btn-link text-decoration-none" title="{{ _('Edit Ticket Details') }}"><i class="fas fa-edit" aria-hidden="true"></i></a>
+                <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('Edit Ticket Details') }}"><i class="fas fa-edit" aria-hidden="true"></i></a>
             {% endif %}
 
             {% if current_user.has_permission('create_invoice') %}
@@ -25,21 +28,21 @@
                     {% if not active_invoice %}
                         <form action="{{ url_for('ticket.create_invoice', ticket_id=ticket.id) }}" method="POST" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-outline-info text-white"> class="btn-link text-decoration-none" title="{{ _('Create Invoice') }}">
-                                <i class="fas fa-pencil-square" aria-hidden="true"></i></button>
+                            <button type="submit" class="btn btn-sm btn-outline-primary" title="{{ _('Create Invoice') }}">
+                                <i class="fas fa-file-invoice" aria-hidden="true"></i></button>
                         </form>
                     {% elif active_invoice.status == 'Draft' %}
                         <form action="{{ url_for('ticket.create_invoice', ticket_id=ticket.id) }}" method="POST" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-outline-info text-white" class="btn-link text-decoration-none" title="{{ _('Finalize Invoice') }}">
+                            <button type="submit" class="btn btn-sm btn-outline-primary" title="{{ _('Finalize Invoice') }}">
                                 <i class="fas fa-check" aria-hidden="true"></i></button>
                         </form>
                     {% else %}
                         <div class="btn-group">
-                            <a href="{{ url_for('ticket.view_invoice', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" class="btn-link text-decoration-none" title="{{ _('View Invoices') }}">
+                            <a href="{{ url_for('ticket.view_invoice', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('View Invoices') }}">
                                 <i class="fas fa-eye" aria-hidden="true"></i>
                             </a>
-                            <a href="{{ url_for('ticket.download_invoice_pdf', ticket_id=ticket.id) }}"  class="btn btn-sm btn-outline-primary" class="btn-link text-decoration-none" title="{{ _('Download PDF') }}">
+                            <a href="{{ url_for('ticket.download_invoice_pdf', ticket_id=ticket.id, type='invoice') }}"  class="btn btn-sm btn-outline-primary" title="{{ _('Download PDF') }}">
                                 <i class="fas fa-file-pdf" aria-hidden="true"></i>
                             </a>
                         </div>
@@ -64,7 +67,7 @@
             </form>
             {% endif %}
             <div class="badge d-inline-flex align-items-center justify-content-center bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}secondary{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
-                {{ _(ticket.current_phase) }}
+                {{ _(ticket.current_phase) if ticket.current_phase else _('Unknown') }}
             </div>
         </div>
     </div>
@@ -79,6 +82,23 @@
             <div class="col-md-6">
                 <p><strong>{{ _('Created:') }}</strong> {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
                 <p><strong>{{ _('Technician:') }}</strong> {{ ticket.assigned_to_user.full_name if ticket.assigned_to_user else _('Unassigned') }}</p>
+                
+                {% if ticket.device and (ticket.device.cpu or ticket.device.ram or ticket.device.storage_capacity) %}
+                <div class="mt-2 p-2 bg-light border rounded">
+                    <small class="text-uppercase fw-bold text-muted d-block mb-1" style="font-size: 0.7rem;">{{ _('Technical Specs') }}</small>
+                    <div class="row g-0 small">
+                        {% if ticket.device.cpu %}
+                        <div class="col-6 mb-1"><strong>{{ _('CPU:') }}</strong> {{ ticket.device.cpu }}</div>
+                        {% endif %}
+                        {% if ticket.device.ram %}
+                        <div class="col-6 mb-1"><strong>{{ _('RAM:') }}</strong> {{ ticket.device.ram }}</div>
+                        {% endif %}
+                        {% if ticket.device.storage_capacity %}
+                        <div class="col-12 mb-1"><strong>{{ _('Storage:') }}</strong> {{ ticket.device.storage_capacity }} ({{ ticket.device.storage_type or '-' }})</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
         <hr>
@@ -86,7 +106,7 @@
         <p style="white-space: pre-wrap;">{{ ticket.problem_description }}</p>
 
         {% if ticket.items_included %}
-        <h6><i class="fas fa-box-open me-2 text-muted"></i>{{ _('Items Included') }}</h6>
+        <h6><i class="fas fa-box-open me-2 text-muted" aria-hidden="true"></i>{{ _('Items Included') }}</h6>
         <p class="text-muted" style="white-space: pre-wrap;">{{ ticket.items_included }}</p>
         {% endif %}
         
@@ -98,10 +118,10 @@
                     {% if ticket.current_phase != 'Already Taken' %}
                     <div>
                         {% if current_user.has_permission('add_service') %}
-                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal"><i class="fas fa-plus-square me-1" aria-hidden="true"></i>{{ _('Add Service') }}</button>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal"><i class="fas fa-plus-circle me-1" aria-hidden="true"></i>{{ _('Add Service') }}</button>
                         {% endif %}
                         {% if current_user.has_permission('add_part') %}
-                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPartModal"><i class="fas fa-plus-square me-1" aria-hidden="true"></i>{{ _('Add Part') }}</button>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPartModal"><i class="fas fa-plus-circle me-1" aria-hidden="true"></i>{{ _('Add Part') }}</button>
                         {% endif %}
                     </div>
                     {% endif %}
@@ -111,6 +131,9 @@
                         <thead>
                             <tr>
                                 <th>{{ _('Description') }}</th>
+                                {% if shop_info and shop_info.show_sku %}
+                                <th>{{ _('SKU') }}</th>
+                                {% endif %}
                                 <th class="text-center">{{ _('Qty') }}</th>
                                 <th class="text-end">{{ _('Price') }}</th>
                                 <th class="text-end">{{ _('Total') }}</th>
@@ -122,15 +145,18 @@
                             {% set ts_total = (ts.price_charged or 0) * (ts.quantity or 0) %}
                             <tr>
                                 <td><span class="badge bg-light text-dark me-1">{{ _('Svc') }}</span> {{ _(ts.service.name) if ts.service else _('Service') }}</td>
+                                {% if shop_info and shop_info.show_sku %}
+                                <td>-</td> {# Services don't have SKUs #}
+                                {% endif %}
                                 <td class="text-center">{{ ts.quantity or 0 }}</td>
                                 <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts.price_charged or 0) }}</td>
                                 <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ts_total) }}</td>
                                 <td class="text-end">
                                     {% if current_user.has_permission('remove_service') and ticket.current_phase != 'Already Taken' %}
-                                    <form action="{{ url_for('ticket.remove_service', ticket_id=ticket.id, ts_id=ts.id) }}" method="POST" style="display:inline;">
+                                    <form action="{{ url_for('ticket.remove_service', ticket_id=ticket.id, ts_id=ts.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Remove this service?')|forceescape }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action"  class="btn-link text-decoration-none" title="{{ _('Remove Services') }}" data-confirm="{{ _('Remove service?')|forceescape }}" aria-label="{{ _('Remove service') }}">
-                                            <i class="fas fa-trash-alt"></i></button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Remove Service') }}" aria-label="{{ _('Remove Service') }}">
+                                            <i class="fas fa-trash-alt" aria-hidden="true"></i></button>
                                     </form>
                                     {% endif %}
                                 </td>
@@ -140,16 +166,24 @@
                             {% for inv in ticket.invoices %}
                                 {% for item in inv.items %}
                                 <tr class="table-sm">
-                                    <td><span class="badge bg-light text-dark me-1">{{ _('Part') }}</span> {{ item.description }}</td>
+                                    <td> {# Removed redundant class="btn-link text-decoration-none" #}
+                                        <span class="badge bg-light text-dark me-1">{{ _('Part') }}</span>
+                                        <strong>{{ item.description }}</strong>
+                                    </td>
+                                    {% if shop_info and shop_info.show_sku %}
+                                    <td>
+                                        {% if item.part and item.part.sku %}<span class="badge bg-light text-dark">{{ item.part.sku }}</span>{% else %}-{% endif %}
+                                    </td>
+                                    {% endif %}
                                     <td class="text-center">{{ item.quantity or 0 }}</td>
                                     <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.unit_price or 0) }}</td>
                                     <td class="text-end">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, item.total_price or 0) }}</td>
                                     <td class="text-end">
                                         {% if current_user.has_permission('remove_part') and ticket.current_phase != 'Already Taken' %}
-                                        <form action="{{ url_for('ticket.remove_part', ticket_id=ticket.id, item_id=item.id) }}" method="POST" style="display:inline;">
+                                        <form action="{{ url_for('ticket.remove_part', ticket_id=ticket.id, item_id=item.id) }}" method="POST" style="display:inline;" class="confirm-action" data-confirm="{{ _('Remove this part from costs?')|forceescape }}">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" class="btn-link text-decoration-none" title="{{ _('Remove Part') }}" data-confirm="{{ _('Remove this part from costs?')|forceescape }}" aria-label="{{ _('Remove part') }}">
-                                                <i class="fas fa-trash-alt"></i></button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Remove Part') }}" aria-label="{{ _('Remove Part') }}">
+                                                <i class="fas fa-trash-alt" aria-hidden="true"></i></button>
                                         </form>
                                         {% endif %}
                                     </td>
@@ -158,13 +192,22 @@
                             {% endfor %}
 
                             {% if not ticket.ticket_services and not ticket.invoices %}
-                            <tr><td colspan="5" class="text-center text-muted">{{ _('No services or parts added yet.') }}</td></tr>
+                            <tr><td colspan="{{ 6 if shop_info and shop_info.show_sku else 5 }}" class="text-center text-muted">{{ _('No services or parts added yet.') }}</td></tr>
                             {% endif %}
                         </tbody>
                     </table>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4" 
+                 id="financialSummaryContainer"
+                 data-currency-symbol="{{ currency_symbol }}"
+                 data-currency-decimals="{{ currency_decimals }}"
+                 data-error-update="{{ _('An error occurred while updating the summary.')|forceescape }}"
+                 data-error-tax="{{ _('An error occurred while toggling tax.')|forceescape }}"
+                 data-fallback-msg="{{ _('Failed to update summary.')|forceescape }}"
+                 data-points-label="{{ _('pts') }}"
+                 data-ticket-id="{{ ticket.id }}">
+                {% set active_invoice = ticket.invoices[0] if ticket.invoices else None %}
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
                         <h6 class="text-uppercase text-muted small fw-bold">{{ _('Financial Summary') }}</h6>
@@ -181,22 +224,50 @@
                             <span>{{ _('Materials:') }}</span>
                             <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.parts_total or 0) }}</span>
                         </div>
+                        {% if ticket.tax_info.rate > 0 %}
+                        <div class="d-flex justify-content-between mb-1 border-top pt-1 {% if not ticket.include_tax %}text-muted{% endif %}">
+                            <div class="form-check form-switch small">
+                                <input class="form-check-input" type="checkbox" id="quickTaxToggle" {% if ticket.include_tax %}checked{% endif %} {% if ticket.current_phase == 'Already Taken' %}disabled{% endif %} data-ticket-id="{{ ticket.id }}">
+                                <label class="form-check-label text-muted" for="quickTaxToggle">{{ _('Subtotal:') }}</label>
+                            </div>
+                            <span class="small" id="subtotal_display">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.subtotal_amount or 0) }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1 {% if not ticket.include_tax %}text-muted{% endif %}">
+                            <span class="text-muted">{{ ticket.tax_info.label or _('Tax') }} ({{ "%.2f"|format(ticket.tax_info.rate) }}%):</span>
+                            <span id="tax_amount_display">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.tax_amount or 0) }}</span>
+                        </div>
+                        {% endif %}
+                        {% if active_invoice and (active_invoice.discount_amount or 0) > 0 %}
+                        <div class="d-flex justify-content-between mb-1 text-success">
+                            <span>{{ _('Discount:') }}</span>
+                            <span id="discount_amount_display">- {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, active_invoice.discount_amount or 0) }}</span>
+                        </div>
+                        {% endif %}
+                        {% if active_invoice and (active_invoice.loyalty_discount_amount or 0) > 0 %}
+                        <div class="d-flex justify-content-between mb-1 text-info">
+                            <span>{{ shop_info.loyalty_label or _('Loyalty Discount') }}:</span>
+                            <span id="loyalty_discount_display">- {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, active_invoice.loyalty_discount_amount or 0) }}</span>
+                        </div>
+                        {% endif %}
+                        {% if shop_info and shop_info.enable_loyalty_points and ticket.customer and not ticket.is_archived %}
+                        <div class="d-flex justify-content-between mb-1 text-info small border-top border-info border-opacity-10 pt-1">
+                            <span class="fst-italic">{{ shop_info.loyalty_label }} {{ _('to be earned') }}:</span>
+                            <span id="points_preview" class="fw-bold">+{{ (active_invoice.subtotal_amount * shop_info.loyalty_points_per_currency)|round|int if active_invoice else 0 }} {{ _('pts') }}</span>
+                        </div>
+                        {% endif %}
                         <div class="d-flex justify-content-between border-top pt-2 mb-1 fw-bold">
                             <span>{{ _('Grand Total:') }}</span>
-                            <span>{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.grand_total or 0) }}</span>
+                            <span id="grand_total_display">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.grand_total or 0) }}</span>
                         </div>
                         <div class="d-flex justify-content-between text-success mb-1">
                             <span>{{ _('Paid:') }}</span>
-                            <span>- {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.total_paid or 0) }}</span>
+                            <span id="total_paid_display">- {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.total_paid or 0) }}</span>
                         </div>
-                        <div class="d-flex justify-content-between border-top pt-2 fw-bold text-{{ 'success' if ticket.balance_due <= 0 else 'danger' }}">
-                            {% if ticket.balance_due < 0 %}
-                                <span>{{ _('Change Due:') }}</span>
-                                <span style="font-size: 1.2rem;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.balance_due|abs) }}</span>
-                            {% else %}
-                                <span>{{ _('Balance Due:') }}</span>
-                                <span style="font-size: 1.2rem;">{{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.balance_due or 0) }}</span>
-                            {% endif %}
+                        <div class="d-flex justify-content-between border-top pt-2 fw-bold text-{{ 'success' if ticket.balance_due <= 0 else 'danger' }}" id="balanceDueRow">
+                            <span id="balance_due_label">{{ _('Change Due:') if ticket.balance_due < 0 else _('Balance Due:') }}</span>
+                            <span style="font-size: 1.2rem;" id="balance_due_display" data-change-due-text="{{ _('Change Due:') }}" data-balance-due-text="{{ _('Balance Due:') }}">
+                                {{ currency_symbol }}{{ "%.*f"|format(currency_decimals, ticket.balance_due|abs) }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -260,9 +331,9 @@
                                 <td class="text-end">
                                     {{ payment.paid_at.strftime('%Y-%m-%d %H:%M') }}
                                     {% if current_user.has_permission('process_payments') and ticket.current_phase != 'Already Taken' %}
-                                    <form action="{{ url_for('ticket.void_payment', ticket_id=ticket.id, payment_id=payment.id) }}" method="POST" class="d-inline ms-2">
+                                    <form action="{{ url_for('ticket.void_payment', ticket_id=ticket.id, payment_id=payment.id) }}" method="POST" class="d-inline ms-2 confirm-action" data-confirm="{{ _('Void this payment? This will update the invoice balance.')|forceescape }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-link text-danger p-0 confirm-action" class="btn-link text-decoration-none" title="{{ _('Void Payment') }}" data-confirm="{{ _('Void this payment? This will update the invoice balance.')|forceescape }}"><i class="fas fa-trash-alt"></i></button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Void Payment') }}"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
                                     </form>
                                     {% endif %}
                                 </td>
@@ -331,7 +402,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-outline-primary">{{ _('Update Phase') }}</button>
+                    <button type="submit" class="btn btn-outline-primary"><i class="fas fa-sync-alt me-2" aria-hidden="true"></i>{{ _('Update Phase') }}</button>
                 </div>
             </form>
         </div>
@@ -367,7 +438,7 @@
                                    data-decimals="{{ currency_decimals }}"
                                    value="{{ "%.*f"|format(currency_decimals, ticket.balance_due|abs) if ticket.balance_due != 0 else '' }}">
                             <button type="button" class="btn btn-outline-secondary" id="fillBalanceBtn">
-                                {{ _('Return All') if ticket.balance_due < 0 else _('Pay Full') }}
+                                <i class="fas fa-check-double me-1" aria-hidden="true"></i>{{ _('Return All') if ticket.balance_due < 0 else _('Pay Full') }}
                             </button>
                         </div>
                         {% if ticket.balance_due < 0 %}
@@ -409,7 +480,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
                     <button type="submit" class="btn btn-{{ 'danger' if ticket.balance_due < 0 else 'success' }}">
-                        {{ _('Record Return') if ticket.balance_due < 0 else _('Record Payment') }}
+                        <i class="fas fa-save me-2" aria-hidden="true"></i>{{ _('Record Return') if ticket.balance_due < 0 else _('Record Payment') }}
                     </button>
                 </div>
             </form>
@@ -465,7 +536,7 @@
                     <div class="mb-3">
                         <label for="partSkuSearch" class="form-label">{{ _('Quick Search SKU / Barcode') }}</label>
                         <div class="input-group mb-2">
-                            <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                            <span class="input-group-text"><i class="fas fa-barcode" aria-hidden="true"></i></span>
                             <input type="text" id="partSkuSearch" class="form-control" placeholder="{{ _('Scan or type SKU...') }}" autocomplete="off">
                         </div>
 

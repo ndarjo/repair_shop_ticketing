@@ -68,8 +68,8 @@
                         <tr>
                             <td class="text-break"><strong>{{ device.display or _('Unknown Device') }}</strong></td>
                             <td class="text-break"><code>{{ device.serial_number or _('N/A') }}</code></td>
-                            <td class="text-end text-nowrap">
-                                <a href="{{ url_for('device.view_device', device_id=device.id) }}" class="btn btn-sm btn-outline-primary"  class="btn-link text-decoration-none" title="{{ _('View Device Details') }}">
+                            <td class="text-end text-nowrap"> {# Removed redundant class="btn-link text-decoration-none" #}
+                                <a href="{{ url_for('device.view_device', device_id=device.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('View Device Details') }}">
                                     <i class="fas fa-search-plus" aria-hidden="true"></i></a>
                             </td>
                         </tr>
@@ -106,13 +106,13 @@
                             <td class="text-break"><strong>{{ ticket.ticket_number }}</strong></td>
                             <td class="text-break"><strong>{{ ticket.device.display or _('Unknown Device') }}</strong></td>
                             <td class="text-center">
-                                <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}info{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
-                                    {{ _(ticket.current_phase) or _('N/A') }}
+                                <span class="badge bg-{% if ticket.current_phase in ['Finished', 'Fully Paid', 'Already Taken'] %}success{% elif ticket.current_phase == 'Open' %}primary{% elif ticket.current_phase == 'Diagnostic' %}secondary{% elif ticket.current_phase == 'Repairing' %}warning{% elif ticket.current_phase == 'Waiting for Parts' %}secondary{% else %}danger{% endif %}">
+                                    {{ _(ticket.current_phase) if ticket.current_phase else _('Unknown') }}
                                 </span>
                             </td>
                             <td>{{ ticket.created_at.strftime('%Y-%m-%d') if ticket.created_at else _('Unknown') }}</td>
-                            <td class="text-end text-nowrap">
-                                <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary"  class="btn-link text-decoration-none" title="{{ _('View Ticket Details') }}">
+                            <td class="text-end text-nowrap"> {# Removed redundant class="btn-link text-decoration-none" #}
+                                <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('View Ticket Details') }}">
                                     <i class="fas fa-search-plus" aria-hidden="true"></i></a>
                             </td>
                         </tr>

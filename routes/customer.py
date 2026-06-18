@@ -43,7 +43,11 @@ def customers_list():
 
     if search_query:
         query_hash = Customer.get_search_hash(search_query)
-        stmt = stmt.where(or_(Customer.name.ilike(f'%{search_query}%'), Customer.phone_hash == query_hash))
+        # INTEGRITY: Only compare against phone_hash if the query contains numeric digits
+        search_filters = [Customer.name.ilike(f'%{search_query}%')]
+        if query_hash:
+            search_filters.append(Customer.phone_hash == query_hash)
+        stmt = stmt.where(or_(*search_filters))
     customers = db.paginate(stmt.order_by(desc(Customer.created_at)), page=page, per_page=15)
     return render_template('customers/customers.html', customers=customers, search_query=search_query, locations=locations, selected_location=selected_location, show_deleted=show_deleted)
 
@@ -60,7 +64,7 @@ def view_customer(customer_id):
     customer = db.session.scalar(stmt)
 
     if not customer or (not current_user.is_superuser and customer.location_id != current_user.location_id):
-        flash(_('Customer not found'), 'error')
+        flash(_('Customer not found'), 'danger')
         return redirect(url_for('customer.customers_list'))
     return render_template('customers/customer_detail.html', customer=customer)
 
@@ -74,7 +78,7 @@ def new_customer():
         address = request.form.get('address', '').strip()
         
         if not name or not phone:
-            flash(_('Name and phone are required.'), 'error')
+            flash(_('Name and phone are required.'), 'danger')
         else:
             # INTEGRITY: Ensure a location is associated even if created by a global superuser
             loc_id = current_user.location_id or db.session.scalar(db.select(Location.id).limit(1))
@@ -91,9 +95,9 @@ def new_customer():
                 except Exception as e:
                     db.session.rollback()
                     current_app.logger.error(f"Customer creation database error: {str(e)}")
-                    flash(_('A database error occurred while creating the customer.'), 'error')
+                    flash(_('A database error occurred while creating the customer.'), 'danger')
             else:
-                flash(result, 'error')
+                flash(result, 'danger')
             
         # UX: Return form data to template to prevent data loss on validation error
         return render_template('customers/new_customer.html', name=name, phone=phone, address=address)
@@ -107,7 +111,7 @@ def edit_customer(customer_id):
     customer = db.session.get(Customer, customer_id)
     
     if not customer or (not current_user.is_superuser and customer.location_id != current_user.location_id):
-        flash(_('Customer not found'), 'error')
+        flash(_('Customer not found'), 'danger')
         return redirect(url_for('customer.customers_list'))
 
     if request.method == 'POST':
@@ -116,13 +120,25 @@ def edit_customer(customer_id):
         address = request.form.get('address', '').strip()
         
         if not name or not phone:
-            flash(_('Name and phone are required.'), 'error')
+            flash(_('Name and phone are required.'), 'danger')
         else:
-            # The model setters for phone and address handle re-encryption and hashing automatically
+            # INTEGRITY: Check for duplicate phone number at this location before updating
+            # This prevents record fragmentation and maintains CRM accuracy.
+            new_hash = Customer.get_search_hash(phone)
+            exists = db.session.scalar(db.select(Customer.id).where(
+                Customer.phone_hash == new_hash,
+                Customer.location_id == customer.location_id,
+                Customer.id != customer_id
+            ))
+            if exists:
+                flash(_('A customer with this phone number already exists at this location.'), 'danger')
+                # UX FIX: Return attempted values to prevent data loss on validation error
+                return render_template('customers/edit_customer.html', customer=customer,
+                                       name=name, phone=phone, address=address)
+
             customer.name = name
             customer.phone = phone
             customer.address = address
-            
             try:
                 db.session.commit()
                 flash(_('Customer updated successfully!'), 'success')
@@ -130,10 +146,10 @@ def edit_customer(customer_id):
             except Exception as e:
                 db.session.rollback()
                 current_app.logger.error(f"Customer update database error: {str(e)}")
-                flash(_('A database error occurred while updating the customer.'), 'error')
+                flash(_('A database error occurred while updating the customer.'), 'danger')
         
-        # Return to form on validation error
-        return render_template('customers/edit_customer.html', customer=customer)
+        # UX FIX: Return attempted values to prevent data loss on validation error
+        return render_template('customers/edit_customer.html', customer=customer, name=name, phone=phone, address=address)
         
     return render_template('customers/edit_customer.html', customer=customer)
 
@@ -149,12 +165,16 @@ def search_customers():
     active_filter = (Customer.is_anonymized.is_(False)) & (~Customer.name.ilike('DELETED_USER_%'))
 
     # SCALABILITY: Scope search to current location or all if superuser
-    location_filter = Customer.location_id == current_user.location_id if not current_user.is_superuser else True
+    location_filter = Customer.location_id == current_user.location_id if not current_user.is_superuser else (Customer.location_id == request.args.get('location_id', type=int) if request.args.get('location_id') else True)
     stmt = db.select(Customer).where(location_filter).where(active_filter)
-    
-    stmt = stmt.where(
-        or_(Customer.name.ilike(f'%{query}%'), Customer.phone_hash == query_hash)
-    ).limit(10)
+
+    # INTEGRITY: Ensure the search logic handles text-only queries safely
+    search_filters = [Customer.name.ilike(f'%{query}%')]
+    if query_hash:
+        search_filters.append(Customer.phone_hash == query_hash)
+        
+    stmt = stmt.where(or_(*search_filters)).limit(10)
+
     customers = db.session.scalars(stmt).all()
     return jsonify([{'id': c.id, 'name': c.name, 'phone': c.phone} for c in customers])
 
@@ -164,7 +184,7 @@ def search_customers():
 def export_customer_data(customer_id):
     customer = db.session.get(Customer, customer_id)
     if not customer or (not current_user.is_superuser and customer.location_id != current_user.location_id):
-        flash(_('Access denied or customer not found.'), 'error')
+        flash(_('Access denied or customer not found.'), 'danger')
         return redirect(url_for('customer.customers_list'))
         
     data = customer.export_data()
@@ -178,7 +198,7 @@ def export_customer_data(customer_id):
 def anonymize_customer(customer_id):
     customer = db.session.get(Customer, customer_id)
     if not customer or (not current_user.is_superuser and customer.location_id != current_user.location_id):
-        flash(_('Access denied or customer not found.'), 'error')
+        flash(_('Access denied or customer not found.'), 'danger')
         return redirect(url_for('customer.customers_list'))
         
     try:
@@ -189,7 +209,7 @@ def anonymize_customer(customer_id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Customer anonymization error: {str(e)}")
-        flash(_('A database error occurred during anonymization.'), 'error')
+        flash(_('A database error occurred during anonymization.'), 'danger')
 
     return redirect(url_for('customer.customers_list'))
 
